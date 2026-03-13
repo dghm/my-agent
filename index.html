@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="dghm-agent.svg" />
   <title>My Agent — 工具總覽</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -374,6 +375,22 @@
   <script>
     const THEME_KEY = 'my-agent-theme';
 
+    function syncIframeTheme(theme) {
+      try {
+        const frame = document.getElementById('preview-frame');
+        if (!frame || !frame.contentWindow) return;
+        const doc = frame.contentWindow.document;
+        if (!doc || !doc.documentElement) return;
+        if (theme === 'dark') {
+          doc.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          doc.documentElement.removeAttribute('data-theme');
+        }
+      } catch {
+        // ignore cross-origin or access errors
+      }
+    }
+
     function applyTheme(theme) {
       const root = document.documentElement;
       if (theme === 'dark') {
@@ -381,6 +398,7 @@
       } else {
         root.removeAttribute('data-theme');
       }
+      syncIframeTheme(theme);
     }
 
     (function initTheme() {
@@ -500,6 +518,13 @@
       if (tool.type === 'html') {
         openBtn.href = tool.src;
         openBtn.style.display = 'flex';
+        frame.onload = () => {
+          const currentTheme =
+            document.documentElement.getAttribute('data-theme') === 'dark'
+              ? 'dark'
+              : 'light';
+          syncIframeTheme(currentTheme);
+        };
         frame.src = tool.src;
         frame.style.display = 'block';
 
