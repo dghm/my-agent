@@ -68,13 +68,16 @@
     }
 
     .sidebar-logo .logo-icon {
-      width: 32px; height: 32px;
-      background: var(--brand);
+      width: 32px;
+      height: 32px;
       border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      color: #fff;
-      font-size: 16px;
       flex-shrink: 0;
+      overflow: hidden;
+    }
+    .sidebar-logo .logo-icon img {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
 
     .sidebar-section {
@@ -295,7 +298,9 @@
 
   <aside class="sidebar">
     <div class="sidebar-logo">
-      <div class="logo-icon">✦</div>
+      <div class="logo-icon">
+        <img src="dghm-agent.svg" alt="My Agent logo" />
+      </div>
       My Agent
     </div>
 
