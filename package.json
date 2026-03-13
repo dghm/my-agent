@@ -1,0 +1,25 @@
+{
+  "name": "my-agent",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node research-agent.js",
+    "agent": "node research-agent.js",
+    "social": "node social-post-agent.js",
+    "social:server": "node tool-api-server.js",
+    "social:agent": "node social-post-agent.js",
+    "tools:server": "node tool-api-server.js",
+    "quote": "node quote.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@tavily/core": "^0.7.1",
+    "dotenv": "^17.3.1"
+  }
+}

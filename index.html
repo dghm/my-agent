@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Agent — 工具總覽</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sidebar-w: 200px;
+      --brand:     #2563EB;
+      --brand-lt:  #EFF6FF;
+      --accent:    #0EA5E9;
+      --text:      #1E293B;
+      --muted:     #64748B;
+      --border:    #E2E8F0;
+      --bg:        #F1F5F9;
+      --card-bg:   #FFFFFF;
+      --radius:    12px;
+    }
+
+    /* Dark theme overrides */
+    :root[data-theme="dark"] {
+      --brand:     #60A5FA;
+      --brand-lt:  #1E293B;
+      --accent:    #38BDF8;
+      --text:      #E5E7EB;
+      --muted:     #9CA3AF;
+      --border:    #111827;
+      --bg:        #020617;
+      --card-bg:   #020617;
+    }
+
+    body {
+      font-family: -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--card-bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      height: 100vh;
+      padding: 0 0 24px;
+      z-index: 10;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--brand);
+      letter-spacing: .5px;
+    }
+
+    .sidebar-logo .logo-icon {
+      width: 32px; height: 32px;
+      background: var(--brand);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-section {
+      padding: 16px 12px 4px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .sidebar nav a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 16px;
+      text-decoration: none;
+      font-size: 14px;
+      color: var(--muted);
+      border-radius: 8px;
+      margin: 1px 8px;
+      transition: background .15s, color .15s;
+      cursor: pointer;
+    }
+
+    .sidebar nav a:hover {
+      background: var(--brand-lt);
+      color: var(--brand);
+    }
+
+    .sidebar nav a.active {
+      background: var(--brand-lt);
+      color: var(--brand);
+      font-weight: 600;
+    }
+
+    .sidebar nav a .nav-icon {
+      font-size: 16px;
+      width: 20px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 12px 16px 0;
+      font-size: 11px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── Preview Panel ── */
+    .preview-panel {
+      flex: 1;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--card-bg);
+      overflow: hidden;
+    }
+
+    .preview-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--card-bg);
+      flex-shrink: 0;
+      min-height: 46px;
+    }
+
+    .preview-toolbar .tool-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .preview-toolbar .tool-url {
+      font-size: 12px;
+      color: var(--muted);
+      font-family: monospace;
+      margin-left: 4px;
+    }
+
+    .preview-toolbar .spacer { flex: 1; }
+
+    .preview-toolbar a.open-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--brand);
+      text-decoration: none;
+      padding: 5px 10px;
+      border: 1px solid var(--brand);
+      border-radius: 6px;
+      transition: background .15s;
+      white-space: nowrap;
+    }
+
+    .preview-toolbar a.open-btn:hover {
+      background: var(--brand-lt);
+    }
+
+    .preview-frame {
+      flex: 1;
+      min-height: 0;
+      border: none;
+      width: 100%;
+      display: block;
+    }
+
+    /* ── Empty State ── */
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--muted);
+    }
+
+    .empty-state .empty-icon {
+      font-size: 48px;
+      opacity: .3;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+    }
+
+    /* ── Node script info box ── */
+    .script-info {
+      flex: 1;
+      padding: 48px 40px;
+      overflow-y: auto;
+    }
+
+    .script-info h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .script-info .desc {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-bottom: 24px;
+    }
+
+    .cmd-block {
+      background: #0F172A;
+      color: #E2E8F0;
+      font-family: "SF Mono", "Fira Mono", monospace;
+      font-size: 13px;
+      border-radius: 10px;
+      padding: 20px 24px;
+      line-height: 1.8;
+    }
+
+    .cmd-block .comment { color: #64748B; }
+    .cmd-block .prompt  { color: #38BDF8; -webkit-user-select: none; user-select: none; }
+    .cmd-block .cmd     { color: #A5F3FC; }
+
+    .doc-content {
+      margin-top: 18px;
+      padding: 20px 22px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--card-bg);
+      line-height: 1.75;
+      color: var(--text);
+      font-size: 14px;
+    }
+    .doc-content h1, .doc-content h2, .doc-content h3 {
+      margin: 0 0 12px;
+      line-height: 1.4;
+      color: #0f172a;
+    }
+    .doc-content h1 { font-size: 24px; }
+    .doc-content h2 { font-size: 20px; margin-top: 24px; }
+    .doc-content h3 { font-size: 17px; margin-top: 20px; }
+    .doc-content p { margin: 0 0 12px; color: #334155; }
+    .doc-content ul, .doc-content ol {
+      margin: 0 0 14px 20px;
+      color: #334155;
+    }
+    .doc-content li { margin-bottom: 6px; }
+    .doc-content code {
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .doc-content pre {
+      margin: 14px 0;
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 14px;
+      overflow-x: auto;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+    .doc-content pre code {
+      background: transparent;
+      padding: 0;
+      color: inherit;
+      font-size: inherit;
+    }
+  </style>
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">✦</div>
+      My Agent
+    </div>
+
+    <div class="sidebar-section">介面工具</div>
+    <nav>
+      <a onclick="selectTool('brief')" id="nav-brief">
+        <span class="nav-icon">📋</span> 客戶訪談 Brief
+      </a>
+      <a onclick="selectTool('meetingNotes')" id="nav-meetingNotes">
+        <span class="nav-icon">📝</span> 既有客戶會議記錄
+      </a>
+      <a onclick="selectTool('sections')" id="nav-sections">
+        <span class="nav-icon">🧩</span> Section 生成
+      </a>
+    </nav>
+
+    <div class="sidebar-section">腳本工具</div>
+    <nav>
+      <a onclick="selectTool('quote')" id="nav-quote">
+        <span class="nav-icon">💰</span> 報價生成
+      </a>
+      <a onclick="selectTool('social')" id="nav-social">
+        <span class="nav-icon">✍️</span> 社群文案
+      </a>
+      <a onclick="selectTool('agent')" id="nav-agent">
+        <span class="nav-icon">🤖</span> AI Agent
+      </a>
+    </nav>
+
+    <div class="sidebar-section">參考文件</div>
+    <nav>
+      <a onclick="selectTool('readme')" id="nav-readme">
+        <span class="nav-icon">📝</span> 工具總覽 README
+      </a>
+      <a onclick="selectTool('guide')" id="nav-guide">
+        <span class="nav-icon">📖</span> 報價指南
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <span>DGHM · my-agent</span>
+      <button
+        id="theme-toggle"
+        style="margin-left:8px;padding:3px 10px;font-size:11px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;"
+      >
+        🌞 / 🌙
+      </button>
+    </div>
+  </aside>
+
+  <!-- Right: preview -->
+  <div class="preview-panel" id="preview-panel">
+
+    <!-- toolbar -->
+    <div class="preview-toolbar" id="preview-toolbar" style="display:none;">
+      <span id="preview-icon" style="font-size:18px;"></span>
+      <span class="tool-title" id="preview-title"></span>
+      <span class="spacer"></span>
+      <a class="open-btn" id="preview-open" href="#" target="_blank">↗ 另開新分頁</a>
+    </div>
+
+    <!-- iframe (for HTML tools) -->
+    <iframe class="preview-frame" id="preview-frame" src="about:blank" style="display:none;"></iframe>
+
+    <!-- script info (for Node.js tools) -->
+    <div class="script-info" id="script-info" style="display:none;"></div>
+
+    <!-- empty state -->
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">⊞</div>
+      <p>從左側選擇工具以在此預覽</p>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    const THEME_KEY = 'my-agent-theme';
+
+    function applyTheme(theme) {
+      const root = document.documentElement;
+      if (theme === 'dark') {
+        root.setAttribute('data-theme', 'dark');
+      } else {
+        root.removeAttribute('data-theme');
+      }
+    }
+
+    (function initTheme() {
+      try {
+        const saved = localStorage.getItem(THEME_KEY);
+        const prefersDark =
+          window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        applyTheme(saved || (prefersDark ? 'dark' : 'light'));
+      } catch {
+        applyTheme('light');
+      }
+
+      window.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('theme-toggle');
+        if (!btn) return;
+        btn.addEventListener('click', () => {
+          const current =
+            document.documentElement.getAttribute('data-theme') === 'dark'
+              ? 'dark'
+              : 'light';
+          const next = current === 'dark' ? 'light' : 'dark';
+          applyTheme(next);
+          try {
+            localStorage.setItem(THEME_KEY, next);
+          } catch {}
+        });
+      });
+    })();
+
+    const TOOLS = {
+      brief: {
+        icon: '📋',
+        title: '客戶訪談 Brief',
+        type: 'html',
+        src: 'client-brief.html',
+      },
+      meetingNotes: {
+        icon: '📝',
+        title: '既有客戶會議記錄',
+        type: 'html',
+        src: 'meeting-notes.html',
+      },
+      sections: {
+        icon: '🧩',
+        title: 'Section 生成工作台',
+        type: 'html',
+        src: 'breakdance-section-generator.html',
+      },
+      quote: {
+        icon: '💰',
+        title: '報價生成 — quote.js',
+        type: 'node',
+        file: 'quote.js',
+        desc: '以 AI + 網路搜尋自動生成 Airtable / Interface 專案報價，輸出 Markdown 報告。',
+        cmd: 'node quote.js',
+      },
+      social: {
+        icon: '✍️',
+        title: '社群文案工作台',
+        type: 'html',
+        src: 'social-ui.html',
+      },
+      agent: {
+        icon: '🤖',
+        title: '研究型 Agent — research-agent.js',
+        type: 'node',
+        file: 'research-agent.js',
+        desc: '研究型 AI Agent，結合 Anthropic 與 Tavily 進行網路搜尋與主題報告整理。',
+        cmd: 'node research-agent.js',
+      },
+      readme: {
+        icon: '📝',
+        title: '工具總覽 README',
+        type: 'doc',
+        file: 'README.md',
+        desc: 'my-agent 目前工具、腳本、啟動方式與用途總覽。',
+      },
+      guide: {
+        icon: '📖',
+        title: '報價研擬指南',
+        type: 'doc',
+        file: 'quote-pricing-guide.md',
+        desc: 'Airtable + Interface 專案範圍界定、報價原則與常見情境速查表。',
+      },
+    };
+
+    let current = null;
+
+    function selectTool(id) {
+      if (current === id) return;
+      current = id;
+
+      // update nav selection
+      document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+      const nav  = document.getElementById('nav-' + id);
+      if (nav)  nav.classList.add('active');
+
+      const tool = TOOLS[id];
+      if (!tool) return;
+
+      const toolbar    = document.getElementById('preview-toolbar');
+      const frame      = document.getElementById('preview-frame');
+      const scriptInfo = document.getElementById('script-info');
+      const emptyState = document.getElementById('empty-state');
+      const iconEl     = document.getElementById('preview-icon');
+      const titleEl    = document.getElementById('preview-title');
+      const openBtn    = document.getElementById('preview-open');
+
+      // reset
+      frame.style.display      = 'none';
+      scriptInfo.style.display = 'none';
+      emptyState.style.display = 'none';
+      toolbar.style.display    = 'flex';
+      iconEl.textContent  = tool.icon;
+      titleEl.textContent = tool.title;
+
+      if (tool.type === 'html') {
+        openBtn.href = tool.src;
+        openBtn.style.display = 'flex';
+        frame.src = tool.src;
+        frame.style.display = 'block';
+
+      } else if (tool.type === 'node') {
+        openBtn.style.display = 'none';
+        scriptInfo.style.display = 'block';
+        scriptInfo.innerHTML = `
+          <h2>${tool.icon} ${tool.title}</h2>
+          <p class="desc">${tool.desc}</p>
+          <div class="cmd-block">
+            <div class="comment"># 在專案根目錄執行</div>
+            <div><span class="prompt">$ </span><span class="cmd">${tool.cmd}</span></div>
+          </div>
+          <p style="margin-top:16px;font-size:13px;color:var(--muted);">
+            原始檔案：<code style="background:#F1F5F9;padding:2px 6px;border-radius:4px;font-size:12px;">${tool.file}</code>
+          </p>`;
+
+      } else if (tool.type === 'doc') {
+        openBtn.href = tool.file;
+        openBtn.style.display = 'flex';
+        scriptInfo.style.display = 'block';
+        scriptInfo.innerHTML = `
+          <h2>${tool.icon} ${tool.title}</h2>
+          <p class="desc">${tool.desc}</p>
+          <p style="font-size:13px;color:var(--muted);">
+            原始檔案：<code style="background:#F1F5F9;padding:2px 6px;border-radius:4px;font-size:12px;">${tool.file}</code>
+          </p>
+          <div class="doc-content" id="doc-content">載入文件中...</div>`;
+        fetch(tool.file)
+          .then((res) => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.text();
+          })
+          .then((md) => {
+            const el = document.getElementById('doc-content');
+            if (!el || current !== id) return;
+            if (window.marked && window.marked.parse) {
+              el.innerHTML = window.marked.parse(md);
+            } else {
+              el.innerHTML = `<pre>${md.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`;
+            }
+          })
+          .catch((err) => {
+            const el = document.getElementById('doc-content');
+            if (!el || current !== id) return;
+            el.innerHTML = `<p>文件載入失敗：${err.message}</p>`;
+          });
+      }
+    }
+  </script>
+
+</body>
+</html>

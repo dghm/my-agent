@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Breakdance Section 版型生成工作台</title>
+  <style>
+    :root {
+      --bg: #f3f6fc; --card: #fff; --text: #1f2430;
+      --muted: #5a6478; --line: #d8deea; --brand: #1f2f8f; --accent: #1f9acb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 24px;
+      background: var(--bg); color: var(--text);
+      font-family: "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    }
+    .wrap {
+      max-width: 1200px; margin: 0 auto;
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 14px; padding: 24px;
+    }
+    h1 { margin: 0 0 6px; color: var(--brand); font-size: 26px; }
+    .hint { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
+
+    /* 範本列 */
+    .template-bar { margin-bottom: 14px; }
+    .template-title { font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+    .template-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
+    .template-btn {
+      font-size: 12px; padding: 5px 10px;
+      background: #f0f4ff; border: 1px solid #c7d1e5;
+      border-radius: 6px; color: #1f2f8f; cursor: pointer;
+    }
+    .template-btn:hover { background: #e3ebff; }
+
+    /* 表單 */
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .full { grid-column: 1 / -1; }
+    label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+    input, select {
+      width: 100%; border: 1px solid #c7d1e5; border-radius: 8px;
+      padding: 10px 11px; font-size: 14px; background: #fff; font-family: inherit;
+    }
+
+    /* Section 單選 */
+    .section-type-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 8px; margin-top: 6px;
+    }
+    .section-type-item {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      border: 2px solid #d7deee; border-radius: 8px; padding: 10px;
+      background: #fafcff; font-size: 14px; cursor: pointer;
+      transition: all .15s; user-select: none; font-weight: 500;
+    }
+    .section-type-item:hover { border-color: var(--accent); background: #f0faff; }
+    .section-type-item.active { border-color: var(--brand); background: #eef1ff; color: var(--brand); font-weight: 700; }
+
+    /* 數量滑桿 */
+    .count-row { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+    .count-row label { margin: 0; white-space: nowrap; }
+    .count-row input[type=range] { flex: 1; accent-color: var(--brand); }
+    .count-val { font-size: 14px; font-weight: 700; color: var(--brand); min-width: 20px; }
+
+    /* 按鈕 */
+    .actions { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+    button {
+      border: 0; border-radius: 8px; padding: 10px 16px;
+      font-size: 14px; cursor: pointer; color: #fff; background: var(--brand); font-family: inherit;
+    }
+    button.dark { background: #2b2f3b; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .status { margin-top: 8px; color: var(--muted); font-size: 13px; min-height: 20px; }
+
+    h2 { margin: 24px 0 12px; color: var(--brand); font-size: 18px; border-left: 4px solid var(--accent); padding-left: 10px; }
+
+    /* 歷史 */
+    #historyBar { margin-bottom: 14px; }
+
+    /* 版型輸出：全寬垂直堆疊 */
+    .variant-list { display: flex; flex-direction: column; gap: 0; }
+
+    .variant-block { border: 1px solid #d0d8ee; border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+
+    .variant-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 18px; background: #f5f8ff; border-bottom: 1px solid #e0e8f8;
+    }
+    .variant-title { font-weight: 700; font-size: 14px; color: var(--brand); }
+    .variant-badge {
+      font-size: 11px; padding: 3px 10px; background: #e8eeff;
+      color: var(--brand); border-radius: 20px; font-weight: 600;
+    }
+
+    /* iframe 全寬，模擬桌機 */
+    .variant-preview {
+      width: 100%; background: #fff;
+      border: 0; display: block;
+      min-height: 400px;
+    }
+
+    /* 空狀態 */
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 15px; margin: 0; line-height: 1.7; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Breakdance Section 版型生成工作台</h1>
+  <p class="hint">選擇 Section 類型，Agent 為你生成多種版型排版，挑選後再進 Breakdance 實作。</p>
+
+  <!-- 快速範本 -->
+  <div class="template-bar">
+    <div class="template-title">快速套用範本：</div>
+    <div class="template-buttons">
+      <button type="button" class="template-btn" onclick="applyTemplate('interior')">🏠 室內設計</button>
+      <button type="button" class="template-btn" onclick="applyTemplate('saas')">💻 SaaS 產品</button>
+      <button type="button" class="template-btn" onclick="applyTemplate('food')">🍽️ 餐飲品牌</button>
+      <button type="button" class="template-btn" onclick="applyTemplate('event')">🎯 一頁式活動</button>
+    </div>
+  </div>
+
+  <!-- 表單 -->
+  <div class="grid">
+    <div><label for="projectType">專案類型</label><input id="projectType" placeholder="例：室內設計品牌官網 / SaaS 產品官網" /></div>
+    <div><label for="brandStyle">品牌風格</label><input id="brandStyle" placeholder="例：極簡、專業、溫暖、高端、科技感" /></div>
+    <div><label for="audience">目標受眾</label><input id="audience" placeholder="例：25-45 歲企業主、行銷主管" /></div>
+    <div><label for="ctaGoal">主要 CTA</label><input id="ctaGoal" placeholder="例：填表諮詢、預約體驗、立即購買" /></div>
+    <div><label for="colorPalette">主色系（選填）</label><input id="colorPalette" placeholder="例：深藍 + 金色 / 大地棕 + 米白" /></div>
+    <div>
+      <label for="typographyStyle">字型方向</label>
+      <select id="typographyStyle">
+        <option value="serif-editorial">襯線＋雜誌感</option>
+        <option value="sans-minimal">無襯線＋極簡</option>
+        <option value="bold-display">粗獷展示型</option>
+        <option value="mixed-bilingual">中英混排對比</option>
+        <option value="monospace-tech">等寬科技感</option>
+      </select>
+    </div>
+    <div>
+      <label for="layoutPreference">版面偏好</label>
+      <select id="layoutPreference">
+        <option value="full-bleed">滿版大圖留白型</option>
+        <option value="card-dense">卡片密集型</option>
+        <option value="asymmetric">不對稱分割型</option>
+        <option value="centered-editorial">置中敘事型</option>
+        <option value="grid-structured">網格結構型</option>
+      </select>
+    </div>
+    <div>
+      <label for="copyLanguage">文案語言</label>
+      <select id="copyLanguage">
+        <option value="zh-TW">繁體中文</option>
+        <option value="en-placeholder">英文佔位符</option>
+        <option value="bilingual">中英雙語</option>
+      </select>
+    </div>
+
+    <!-- Section 單選 -->
+    <div class="full">
+      <label>選擇要生成版型的 Section</label>
+      <div class="section-type-grid">
+        <div class="section-type-item active" data-value="Hero" onclick="selectSection(this)">🖼 Hero</div>
+        <div class="section-type-item" data-value="服務介紹" onclick="selectSection(this)">📋 服務介紹</div>
+        <div class="section-type-item" data-value="特色優勢" onclick="selectSection(this)">⭐ 特色優勢</div>
+        <div class="section-type-item" data-value="作品案例" onclick="selectSection(this)">🗂 作品案例</div>
+        <div class="section-type-item" data-value="流程說明" onclick="selectSection(this)">🔄 流程說明</div>
+        <div class="section-type-item" data-value="客戶見證" onclick="selectSection(this)">💬 客戶見證</div>
+        <div class="section-type-item" data-value="FAQ" onclick="selectSection(this)">❓ FAQ</div>
+        <div class="section-type-item" data-value="CTA 區塊" onclick="selectSection(this)">🎯 CTA 區塊</div>
+      </div>
+    </div>
+
+    <!-- 版型數量 -->
+    <div class="full">
+      <label>生成版型數量</label>
+      <div class="count-row">
+        <input type="range" id="variantCount" min="3" max="8" value="6"
+          oninput="document.getElementById('countVal').textContent = this.value" />
+        <span class="count-val" id="countVal">6</span> 種
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="runBtn" onclick="runSectionAgent()">⚡ 生成版型</button>
+    <button class="dark" onclick="clearOutput()">清空</button>
+  </div>
+  <div class="status" id="status">狀態：待命中</div>
+
+  <h2 id="outputHeading" style="display:none">版型預覽</h2>
+  <div id="historyBar" style="display:none; margin-bottom:14px;">
+    <div style="font-size:13px; font-weight:700; color:#5a6478; margin-bottom:6px;">歷史記錄（本次工作階段）</div>
+    <div id="historyList" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
+  </div>
+
+  <div id="outputArea">
+    <div class="empty-state">
+      <div class="icon">🧩</div>
+      <p>選好 Section 類型，按「生成版型」<br>Agent 會產出多種排版版型，一個一個完整呈現供你挑選</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = "http://localhost:8780";
+  const sessionHistory = [];
+  let selectedSection = "Hero";
+
+  function setStatus(t) { document.getElementById("status").textContent = `狀態：${t}`; }
+
+  function selectSection(el) {
+    document.querySelectorAll(".section-type-item").forEach(i => i.classList.remove("active"));
+    el.classList.add("active");
+    selectedSection = el.dataset.value;
+  }
+
+  function applyTemplate(type) {
+    const templates = {
+      interior: { projectType:"室內設計品牌官網", brandStyle:"高端、溫暖、質感", audience:"30-50 歲屋主、重視生活品味的家庭", ctaGoal:"預約免費丈量諮詢", colorPalette:"大地棕 + 米白 + 深炭灰", typographyStyle:"serif-editorial", layoutPreference:"full-bleed" },
+      saas:     { projectType:"SaaS 產品官網", brandStyle:"科技感、專業、簡潔有力", audience:"中小企業主、IT 主管、行銷團隊", ctaGoal:"免費試用 14 天", colorPalette:"深藍 #0f172a + 電藍 #3b82f6", typographyStyle:"sans-minimal", layoutPreference:"grid-structured" },
+      food:     { projectType:"餐飲品牌形象官網", brandStyle:"溫暖、手感、在地感", audience:"25-40 歲都會女性、重視食材來源的消費者", ctaGoal:"線上訂位 / 查看菜單", colorPalette:"磚紅 + 奶油白 + 深橄欖綠", typographyStyle:"mixed-bilingual", layoutPreference:"centered-editorial" },
+      event:    { projectType:"一頁式活動報名頁", brandStyle:"活力、緊湊、行動導向", audience:"20-35 歲對主題感興趣的潛在參與者", ctaGoal:"立即報名（Early Bird）", colorPalette:"高對比黑 + 螢光黃 #facc15", typographyStyle:"bold-display", layoutPreference:"asymmetric" },
+    };
+    const t = templates[type];
+    if (!t) return;
+    Object.keys(t).forEach(k => { const el = document.getElementById(k); if (el) el.value = t[k]; });
+    setStatus("已套用範本");
+  }
+
+  function renderVariants(blocks, sectionType) {
+    const container = document.getElementById("outputArea");
+    container.innerHTML = "";
+    document.getElementById("outputHeading").style.display = "block";
+
+    const list = document.createElement("div");
+    list.className = "variant-list";
+
+    blocks.forEach((block, i) => {
+      const titleMatch = block.match(/^##\s+(.+)/);
+      const title = titleMatch ? titleMatch[1].trim() : `${sectionType} 版型 ${i + 1}`;
+      const htmlMatch = block.match(/```html\s*([\s\S]*?)```/i);
+      const htmlCode = htmlMatch ? htmlMatch[1].trim() : null;
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "variant-block";
+      wrapper.innerHTML = `
+        <div class="variant-header">
+          <span class="variant-title">${title}</span>
+          <span class="variant-badge">版型 ${i + 1} / ${blocks.length}</span>
+        </div>
+        ${htmlCode
+          ? `<iframe class="variant-preview" sandbox="allow-same-origin allow-scripts" scrolling="no"></iframe>`
+          : `<div style="padding:40px;text-align:center;color:#aaa;">無預覽</div>`}
+      `;
+      list.appendChild(wrapper);
+
+      if (htmlCode) {
+        const iframe = wrapper.querySelector("iframe");
+        iframe.srcdoc = htmlCode;
+        iframe.onload = () => {
+          try {
+            const h = iframe.contentDocument.documentElement.scrollHeight;
+            if (h > 100) iframe.style.minHeight = h + "px";
+          } catch(e) {}
+        };
+      }
+    });
+
+    container.appendChild(list);
+  }
+
+  function saveToHistory(sectionType, output) {
+    const time = new Date().toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" });
+    sessionHistory.unshift({ time, label: sectionType, output });
+    if (sessionHistory.length > 10) sessionHistory.pop();
+    const bar = document.getElementById("historyBar");
+    const list = document.getElementById("historyList");
+    bar.style.display = "block";
+    list.innerHTML = sessionHistory.map((item, i) =>
+      `<button onclick="loadHistory(${i})" style="font-size:12px;padding:4px 10px;background:#f0f4ff;border:1px solid #c7d1e5;border-radius:6px;color:#1f2f8f;cursor:pointer;">[${item.time}] ${item.label}</button>`
+    ).join("");
+  }
+
+  function loadHistory(index) {
+    const item = sessionHistory[index];
+    const blocks = String(item.output).split(/\n(?=##\s)/).filter(s => s.trim());
+    renderVariants(blocks, item.label);
+    setStatus(`已載入歷史：${item.label}`);
+  }
+
+  async function runSectionAgent() {
+    const payload = {
+      projectType:     document.getElementById("projectType").value.trim(),
+      brandStyle:      document.getElementById("brandStyle").value.trim(),
+      audience:        document.getElementById("audience").value.trim(),
+      ctaGoal:         document.getElementById("ctaGoal").value.trim(),
+      colorPalette:    document.getElementById("colorPalette").value.trim(),
+      typographyStyle: document.getElementById("typographyStyle").value,
+      layoutPreference:document.getElementById("layoutPreference").value,
+      copyLanguage:    document.getElementById("copyLanguage").value,
+      sectionType:     selectedSection,
+      variantCount:    parseInt(document.getElementById("variantCount").value),
+    };
+
+    if (!payload.projectType || !payload.brandStyle || !payload.audience || !payload.ctaGoal) {
+      setStatus("請先填完整四個基本欄位"); return;
+    }
+
+    const runBtn = document.getElementById("runBtn");
+    runBtn.disabled = true;
+    setStatus(`生成「${selectedSection}」的 ${payload.variantCount} 種版型中，請稍候⋯⋯`);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/sections/generate`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "生成失敗");
+
+      const blocks = String(data.output || "").split(/\n(?=##\s)/).filter(s => s.trim());
+      renderVariants(blocks, selectedSection);
+      saveToHistory(selectedSection, data.output);
+      setStatus(`完成！共生成 ${blocks.length} 種「${selectedSection}」版型 ✓`);
+    } catch (err) {
+      setStatus(`失敗：${err.message}`);
+    } finally {
+      runBtn.disabled = false;
+    }
+  }
+
+  function clearOutput() {
+    document.getElementById("outputArea").innerHTML = `
+      <div class="empty-state">
+        <div class="icon">🧩</div>
+        <p>選好 Section 類型，按「生成版型」<br>Agent 會產出多種排版版型，一個一個完整呈現供你挑選</p>
+      </div>`;
+    document.getElementById("outputHeading").style.display = "none";
+    setStatus("已清空");
+  }
+</script>
+</body>
+</html>

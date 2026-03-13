@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>既有客戶會議記錄工作台</title>
+  <style>
+    :root {
+      --primary: #1f2f8f;
+      --accent: #1f9acb;
+      --bg: #f5f7fb;
+      --text: #1f2430;
+      --line: #d8deea;
+      --ok: #1b8a5a;
+      --card: #eef1f8;
+      --card-inner: #ffffff;
+      --muted: #5a6478;
+      --input-bg: #ffffff;
+      --input-border: #c7d1e5;
+      --chip-bg: #fafcff;
+      --chip-border: #d7deee;
+      --code-bg: #111722;
+    }
+
+    :root[data-theme="dark"] {
+      --primary: #93c5fd;
+      --accent: #38bdf8;
+      --bg: #020617;
+      --text: #e5e7eb;
+      --line: #1f2937;
+      --ok: #4ade80;
+      --card: #020617;
+      --card-inner: #020617;
+      --muted: #9ca3af;
+      --input-bg: #020617;
+      --input-border: #334155;
+      --chip-bg: #020617;
+      --chip-border: #1f2937;
+      --code-bg: #020617;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", Arial, sans-serif;
+      line-height: 1.55;
+    }
+    .wrap {
+      max-width: 1080px;
+      margin: 24px auto;
+      padding: 20px;
+      background: var(--card);
+      border-radius: 14px;
+      border: 1px solid var(--line);
+    }
+    .section-block {
+      border: 1px solid #d8deea;
+      border-radius: 12px;
+      padding: 20px 20px 12px;
+      margin: 20px 0;
+      background: var(--card-inner);
+    }
+    .section-block h2 { margin: 0 0 14px 0; }
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    h1 { margin: 0; color: var(--primary); font-size: 26px; }
+    .btn-import-top {
+      display: inline-flex; align-items: center; gap: 6px;
+      flex-shrink: 0; margin-top: 4px;
+      font-size: 13px; font-weight: 600;
+      color: var(--primary);
+      background: #f0f4ff;
+      border: 1px solid #c7d4f5;
+      border-radius: 8px;
+      padding: 7px 14px;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .btn-import-top:hover { background: #dde8ff; border-color: var(--primary); }
+    .hint { margin: 8px 0 18px; color: var(--muted); font-size: 14px; }
+    h2 {
+      margin: 22px 0 10px;
+      color: var(--primary);
+      font-size: 18px;
+      border-left: 4px solid var(--accent);
+      padding-left: 8px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .full { grid-column: 1 / -1; }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      padding: 9px 11px;
+      font-size: 14px;
+      background: var(--input-bg);
+      color: var(--text);
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1) brightness(1.4);
+    }
+    textarea { min-height: 80px; resize: vertical; }
+    .check-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(160px, 1fr));
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .img-upload-row { margin-top: 8px; }
+    .img-preview-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .img-preview-item {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--input-border);
+      background: var(--input-bg);
+    }
+    .img-preview-item img { width: 100%; height: 100%; object-fit: cover; }
+    .img-preview-item .img-remove {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 22px;
+      height: 22px;
+      border: none;
+      border-radius: 4px;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+    }
+    .img-preview-item .img-remove:hover { background: #c00; }
+    .table-toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+    .table-toolbar label { margin: 0; font-weight: 600; }
+    .table-toolbar select { width: auto; min-width: 60px; }
+    #table-editor { overflow-x: auto; }
+    .table-editor-grid { display: grid; gap: 2px; margin-top: 8px; }
+    .table-editor-grid .cell { min-width: 80px; }
+    .table-editor-grid .cell input { width: 100%; min-width: 0; padding: 6px 8px; font-size: 13px; }
+    .table-editor-grid .cell.header input { font-weight: 700; background: var(--chip-bg); }
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--chip-border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      background: var(--chip-bg);
+      font-size: 14px;
+    }
+    .check-item input {
+      width: auto;
+      margin: 0;
+    }
+    details {
+      margin: 12px 0 18px;
+      border: 1px dashed var(--line);
+      border-radius: 10px;
+      background: rgba(148, 163, 184, 0.08);
+      padding: 10px 12px;
+      color: var(--muted);
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    ul { margin: 8px 0 0 20px; padding: 0; }
+    .actions {
+      margin-top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      cursor: pointer;
+      color: #fff;
+    }
+    .btn-primary { background: var(--primary); }
+    .btn-accent { background: var(--accent); }
+    .btn-ok { background: var(--ok); }
+    .btn-dark { background: #2b2f3b; }
+    pre {
+      margin: 10px 0 0;
+      background: var(--code-bg);
+      color: #e7edf8;
+      border-radius: 10px;
+      padding: 14px;
+      white-space: pre-wrap;
+      min-height: 200px;
+      font-size: 13px;
+    }
+    .status {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <script>
+    (function syncTheme() {
+      const THEME_KEY = 'my-agent-theme';
+      function apply(theme) {
+        if (theme === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          document.documentElement.removeAttribute('data-theme');
+        }
+      }
+      try {
+        if (window.parent && window.parent !== window) {
+          const parentTheme =
+            window.parent.document.documentElement.getAttribute('data-theme') === 'dark'
+              ? 'dark'
+              : 'light';
+          apply(parentTheme);
+        } else {
+          const saved = localStorage.getItem(THEME_KEY);
+          apply(saved || 'light');
+        }
+      } catch {
+        apply('light');
+      }
+    })();
+  </script>
+
+  <div class="wrap">
+    <div class="page-header">
+      <h1>既有客戶會議記錄</h1>
+      <button class="btn-import-top" onclick="importNotes()" title="載入先前下載的 .md 以還原表單內容">↑ 匯入 .md</button>
+    </div>
+    <p class="hint">適合與既有客戶的例行會議／檢討會，邊開會邊填，結束後一鍵輸出可交付的會議紀錄 Brief。</p>
+
+    <details>
+      <summary>會議引導建議（展開提示）</summary>
+      <ul>
+        <li>這段期間網站或專案的表現，客戶最有感的是哪幾點？</li>
+        <li>目前最想優先改善的是什麼？（成效、流程、內容、UI/UX…）</li>
+        <li>這次會議後 1–2 週內，希望能看到哪些具體行動或成果？</li>
+      </ul>
+    </details>
+
+    <div class="section-block">
+      <h2>1. 基本資訊</h2>
+      <div class="grid">
+        <div class="full" style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div><label for="titleDate">文件標題（左）日期</label><input id="titleDate" placeholder="例：260218 或 2026-02-18" /></div>
+          <div><label for="titleName">文件標題（右）會議名稱</label><input id="titleName" placeholder="例：年節期間 OSM 討論" /></div>
+        </div>
+        <div><label for="clientName">客戶公司／品牌</label><input id="clientName" placeholder="例：DGHM Design" /></div>
+        <div><label for="projectName">專案／網站名稱</label><input id="projectName" placeholder="例：品牌官網維護、會員系統" /></div>
+        <div><label for="meetingDate">會議日期</label><input id="meetingDate" type="date" /></div>
+        <div><label for="meetingTime">會議時間</label><input id="meetingTime" placeholder="例：14:00–15:30" /></div>
+        <div><label for="meetingPlace">會議地點</label>
+          <select id="meetingPlace">
+            <option value="Google Meet">Google Meet</option>
+            <option value="LINE">LINE</option>
+            <option value="現場討論">現場討論</option>
+          </select>
+        </div>
+        <div><label for="meetingType">會議類型</label>
+          <select id="meetingType">
+            <option>改版／新需求討論</option>
+            <option>問題排除／緊急支援</option>
+            <option>其他</option>
+          </select>
+        </div>
+        <div class="full"><label for="attendeesClient">客戶與會者</label><input id="attendeesClient" placeholder="例：行銷經理 Alice、老闆 Kevin" /></div>
+        <div class="full"><label for="attendeesVendor">我方與會者</label><input id="attendeesVendor" value="Aries" placeholder="例：Aries、PM 小明、設計師 Wendy" /></div>
+      </div>
+    </div>
+
+    <div class="section-block">
+      <h2>2. 目前狀態與成效</h2>
+      <div class="grid">
+        <div class="full">
+          <label for="background">背景說明</label>
+          <textarea id="background" placeholder="例：專案目前階段、最近一次上線內容、為何要開這次會議…"></textarea>
+        </div>
+        <div class="full img-upload-row">
+          <label>上傳圖片</label>
+          <input type="file" id="meetingImages" accept="image/*" multiple />
+          <div class="img-preview-wrap" id="meeting-images-preview"></div>
+        </div>
+        <div class="full">
+          <label for="recentPerformance">這段期間的重要數據／觀察</label>
+          <textarea id="recentPerformance" placeholder="例：過去 30 天流量、轉換、表單送出數、客服回饋重點…"></textarea>
+        </div>
+        <div class="full">
+          <label for="clientFeels">客戶主觀感受（變好／變差）</label>
+          <textarea id="clientFeels" placeholder="例：詢問變多但成交率還是偏低；客服來電減少；某些頁面 loading 偏慢…"></textarea>
+        </div>
+        <div class="full">
+          <label>目前主要問題／挑戰（多選）</label>
+          <div class="check-grid">
+            <label class="check-item"><input type="checkbox" id="issue-traffic" />流量不足／來源單一</label>
+            <label class="check-item"><input type="checkbox" id="issue-conversion" />有流量但轉換率偏低</label>
+            <label class="check-item"><input type="checkbox" id="issue-content" />內容過時／資訊難找</label>
+            <label class="check-item"><input type="checkbox" id="issue-ux" />流程複雜／使用體驗不佳</label>
+            <label class="check-item"><input type="checkbox" id="issue-tech" />技術問題（速度、安全性、錯誤）</label>
+            <label class="check-item"><input type="checkbox" id="issue-ops" />內部維護流程卡關</label>
+          </div>
+          <input class="check-other" id="issueOther" placeholder="其他挑戰（選填）" />
+        </div>
+      </div>
+    </div>
+
+    <div class="section-block">
+      <h2>插入表格（選填）</h2>
+      <p class="section-desc">設定欄數與列數後，在下方填寫表頭與各儲存格，產出時會轉成 Markdown 表格（<code>| 欄A | 欄B |</code>）。</p>
+      <div class="table-toolbar">
+        <label>欄數</label>
+        <select id="tableCols">
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5" selected>5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+        </select>
+        <label>資料列數</label>
+        <select id="tableRows">
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="8">8</option>
+          <option value="10">10</option>
+        </select>
+        <button type="button" class="btn-dark" onclick="clearTableEditor()">清空表格</button>
+      </div>
+      <div id="table-editor"></div>
+    </div>
+
+    <div class="section-block">
+      <h2>3. 討論重點摘要</h2>
+      <div class="grid">
+        <div class="full">
+          <label for="discussionPoints">討論重點條列（可直接輸入 - 開頭的項目）</label>
+          <textarea id="discussionPoints" placeholder="- 第一點…&#10;- 第二點…"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-block">
+      <h2>4. 後續任務與責任分工</h2>
+      <div class="grid">
+        <div class="full">
+          <label for="todoVendor">我方待辦事項（含負責人＋期限）</label>
+          <textarea id="todoVendor" placeholder="- [ ] 小明：3/20 前整理改版 wireframe&#10;- [ ] Wendy：3/25 前提供首頁設計提案…"></textarea>
+        </div>
+        <div class="full">
+          <label for="todoClient">客戶端待辦事項（含負責人＋期限）</label>
+          <textarea id="todoClient" placeholder="- [ ] 客戶：提供新產品照片、確認文案…"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-block">
+      <h2>5. 其他討論與補充</h2>
+      <div class="grid">
+        <div class="full">
+          <label for="otherTopics">其他討論事項</label>
+          <textarea id="otherTopics" placeholder="例：展示其他系統功能、順便討論未來 roadmap…"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-block">
+      <h2>6. Meta 資訊</h2>
+      <div class="grid">
+        <div><label for="lastUpdated">最後更新日期</label><input id="lastUpdated" type="date" /></div>
+        <div><label for="docVersion">文件版本</label><input id="docVersion" placeholder="例：1.0（產出時自動加 v.）" /></div>
+        <div class="full"><label for="docOwner">文件負責人</label><input id="docOwner" placeholder="例：Aries" /></div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-primary" onclick="generateNotes()">產生會議紀錄</button>
+      <button class="btn-accent" onclick="copyNotes()">複製文字</button>
+      <button class="btn-ok" onclick="downloadNotes('md')">下載 .md</button>
+      <button class="btn-ok" onclick="downloadNotes('txt')">下載 .txt</button>
+      <button class="btn-dark" onclick="clearForm()">清空表單</button>
+    </div>
+    <input type="file" id="import-file-input" accept=".md" style="display:none" onchange="handleImportFile(event)" />
+    <div class="status" id="status">狀態：尚未產生</div>
+
+    <h2>📄 輸出結果</h2>
+    <pre id="out">按「產生會議紀錄」後，輸出內容會顯示在這裡。</pre>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'existing-client-meeting-notes-v2';
+    const ISSUE_IDS = [
+      ['issue-traffic', '流量不足／來源單一'],
+      ['issue-conversion', '有流量但轉換率偏低'],
+      ['issue-content', '內容過時／資訊難找'],
+      ['issue-ux', '流程複雜／使用體驗不佳'],
+      ['issue-tech', '技術問題（速度、安全性、錯誤）'],
+      ['issue-ops', '內部維護流程卡關'],
+    ];
+
+    function v(id) {
+      const el = document.getElementById(id);
+      return el ? el.value.trim() : '';
+    }
+
+    function setStatus(msg) {
+      document.getElementById('status').textContent = `狀態：${msg}`;
+    }
+
+    function selectedIssues() {
+      const picked = ISSUE_IDS
+        .filter(([id]) => document.getElementById(id).checked)
+        .map(([, label]) => label);
+      const other = v('issueOther');
+      if (other) picked.push(`其他：${other}`);
+      return picked.length ? picked.join('、') : '（未特別標記）';
+    }
+
+    function allFieldIds() {
+      return [
+        'titleDate',
+        'titleName',
+        'clientName',
+        'projectName',
+        'meetingDate',
+        'meetingTime',
+        'meetingPlace',
+        'meetingType',
+        'attendeesClient',
+        'attendeesVendor',
+        'background',
+        'recentPerformance',
+        'clientFeels',
+        'discussionPoints',
+        'newRequests',
+        'priorities',
+        'todoVendor',
+        'todoClient',
+        'budgetNote',
+        'timeline',
+        'summary',
+        'risks',
+        'nextMeeting',
+        'otherTopics',
+        'lastUpdated',
+        'docVersion',
+        'docOwner',
+        'issueOther',
+      ];
+    }
+
+    function collectData() {
+      const data = {};
+      allFieldIds().forEach((id) => { data[id] = v(id); });
+      ISSUE_IDS.forEach(([id]) => { data[id] = document.getElementById(id).checked; });
+      return data;
+    }
+
+    function restoreData(data, msg) {
+      allFieldIds().forEach((id) => {
+        if (Object.prototype.hasOwnProperty.call(data, id)) {
+          const el = document.getElementById(id);
+          if (el) el.value = data[id] || '';
+        }
+      });
+      ISSUE_IDS.forEach(([id]) => {
+        const el = document.getElementById(id);
+        if (el) el.checked = Boolean(data[id]);
+      });
+      setStatus(msg || '已載入資料');
+    }
+
+    function saveDraft() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(collectData()));
+      } catch {}
+    }
+
+    function loadDraft() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      try {
+        restoreData(JSON.parse(raw), '已載入上次草稿');
+      } catch {
+        setStatus('草稿讀取失敗，請重新填寫');
+      }
+    }
+
+    function importantMissing() {
+      const required = [
+        ['clientName', '客戶公司／品牌'],
+        ['projectName', '專案／網站名稱'],
+        ['meetingDate', '會議日期'],
+        ['summary', '會議結論摘要'],
+      ];
+      return required.filter(([id]) => !v(id)).map(([, label]) => label);
+    }
+
+    /** 上傳的圖片（File 物件），預覽用 object URL 需在清除時 revoke */
+    let attachedImages = [];
+
+    function handleMeetingImagesChange(e) {
+      const files = Array.from(e.target.files || []);
+      attachedImages = files;
+      const wrap = document.getElementById('meeting-images-preview');
+      wrap.innerHTML = '';
+      wrap.previousObjectUrls = wrap.previousObjectUrls || [];
+      wrap.previousObjectUrls.forEach(u => URL.revokeObjectURL(u));
+      wrap.previousObjectUrls = [];
+      files.forEach((file, i) => {
+        const url = URL.createObjectURL(file);
+        wrap.previousObjectUrls.push(url);
+        const item = document.createElement('div');
+        item.className = 'img-preview-item';
+        item.dataset.index = String(i);
+        item.innerHTML = '<img src="' + url + '" alt="預覽" /><button type="button" class="img-remove" aria-label="移除">×</button>';
+        item.querySelector('.img-remove').onclick = () => {
+          attachedImages = attachedImages.filter((_, j) => j !== i);
+          URL.revokeObjectURL(url);
+          renderMeetingImagesPreview();
+          document.getElementById('meetingImages').value = '';
+        };
+        wrap.appendChild(item);
+      });
+    }
+
+    function renderMeetingImagesPreview() {
+      const wrap = document.getElementById('meeting-images-preview');
+      if (!wrap) return;
+      wrap.previousObjectUrls = wrap.previousObjectUrls || [];
+      wrap.previousObjectUrls.forEach(u => URL.revokeObjectURL(u));
+      wrap.previousObjectUrls = [];
+      wrap.innerHTML = '';
+      attachedImages.forEach((file, i) => {
+        const url = URL.createObjectURL(file);
+        wrap.previousObjectUrls.push(url);
+        const item = document.createElement('div');
+        item.className = 'img-preview-item';
+        item.innerHTML = '<img src="' + url + '" alt="預覽" /><button type="button" class="img-remove" aria-label="移除">×</button>';
+        item.querySelector('.img-remove').onclick = () => {
+          attachedImages = attachedImages.filter((_, j) => j !== i);
+          URL.revokeObjectURL(url);
+          renderMeetingImagesPreview();
+          document.getElementById('meetingImages').value = '';
+        };
+        wrap.appendChild(item);
+      });
+    }
+
+    function renderTableEditor() {
+      const cols = Math.max(2, parseInt(document.getElementById('tableCols').value, 10) || 5);
+      const rows = Math.max(1, parseInt(document.getElementById('tableRows').value, 10) || 2);
+      const wrap = document.getElementById('table-editor');
+      if (!wrap) return;
+
+      const saved = { header: [], rows: [] };
+      for (let c = 0; c < 8; c++) {
+        const el = document.getElementById(`table-h-${c}`);
+        if (!el) break;
+        saved.header[c] = el.value;
+      }
+      for (let r = 0; r < 15; r++) {
+        saved.rows[r] = [];
+        for (let c = 0; c < 8; c++) {
+          const el = document.getElementById(`table-r-${r}-${c}`);
+          if (!el) break;
+          saved.rows[r][c] = el.value;
+        }
+        if (saved.rows[r].length === 0) { saved.rows.pop(); break; }
+      }
+
+      wrap.innerHTML = '';
+      const grid = document.createElement('div');
+      grid.className = 'table-editor-grid';
+      grid.style.gridTemplateColumns = `repeat(${cols}, minmax(80px, 1fr))`;
+      for (let c = 0; c < cols; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell header';
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = `table-h-${c}`;
+        input.placeholder = `欄${c + 1}`;
+        if (saved.header[c] !== undefined) input.value = saved.header[c];
+        cell.appendChild(input);
+        grid.appendChild(cell);
+      }
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.id = `table-r-${r}-${c}`;
+          input.placeholder = '';
+          if (saved.rows[r] && saved.rows[r][c] !== undefined) input.value = saved.rows[r][c];
+          cell.appendChild(input);
+          grid.appendChild(cell);
+        }
+      }
+      wrap.appendChild(grid);
+    }
+
+    function clearTableEditor() {
+      for (let c = 0; c < 8; c++) {
+        const el = document.getElementById(`table-h-${c}`);
+        if (el) el.value = '';
+      }
+      for (let r = 0; r < 15; r++) {
+        for (let c = 0; c < 8; c++) {
+          const el = document.getElementById(`table-r-${r}-${c}`);
+          if (el) el.value = '';
+        }
+      }
+      setStatus('表格已清空');
+    }
+
+    function getTableMarkdown() {
+      const cols = Math.max(2, parseInt(document.getElementById('tableCols').value, 10) || 5);
+      const rows = Math.max(1, parseInt(document.getElementById('tableRows').value, 10) || 2);
+      const escapeCell = (s) => (s || '').replace(/\|/g, '｜').trim();
+      const headerCells = [];
+      for (let c = 0; c < cols; c++) {
+        const el = document.getElementById(`table-h-${c}`);
+        headerCells.push(escapeCell(el ? el.value : ''));
+      }
+      const hasHeader = headerCells.some((v) => v.length > 0);
+      let hasData = false;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const el = document.getElementById(`table-r-${r}-${c}`);
+          if (el && escapeCell(el.value).length > 0) { hasData = true; break; }
+        }
+        if (hasData) break;
+      }
+      if (!hasHeader || !hasData) return '';
+      const sep = '| ' + Array(cols).fill('---').join(' | ') + ' |';
+      const headerRow = '| ' + headerCells.join(' | ') + ' |';
+      const dataRows = [];
+      for (let r = 0; r < rows; r++) {
+        const cells = [];
+        for (let c = 0; c < cols; c++) {
+          const el = document.getElementById(`table-r-${r}-${c}`);
+          cells.push(escapeCell(el ? el.value : ''));
+        }
+        dataRows.push('| ' + cells.join(' | ') + ' |');
+      }
+      return '\n' + headerRow + '\n' + sep + '\n' + dataRows.join('\n') + '\n';
+    }
+
+    /** 產生會議記錄用檔名與 slug：MM = Meeting minutes，YYMMDD = 西元年月日六碼 */
+    function getMeetingSlug() {
+      const fmDate = v('meetingDate') || new Date().toISOString().slice(0, 10);
+      const yyymmdd = fmDate.replace(/-/g, '').slice(2);
+      return { filePrefix: `MM-${yyymmdd}`, slug: `mm-${yyymmdd}` };
+    }
+
+    function generateNotes() {
+      const now = new Date();
+      const exportedAt = now.toISOString().slice(0, 10);
+      const missing = importantMissing();
+      const issueText = selectedIssues();
+      const { slug } = getMeetingSlug();
+
+      const fmTitle = `${v('titleDate') || v('meetingDate') || exportedAt}｜${v('titleName') || v('projectName') || '會議紀錄'}`;
+      const fmDate = v('meetingDate') || exportedAt;
+      const displayTime = v('meetingTime') || '（時間待補）';
+      const displayPlace = v('meetingPlace') || '（地點待補）';
+      const docVersionRaw = v('docVersion') || '1.0';
+      const docVersionDisplay = docVersionRaw.replace(/^v\.?/i, '') ? 'v.' + docVersionRaw.replace(/^v\.?/i, '') : 'v.1.0';
+
+      const md = `---\n` +
+`title: ${fmTitle}\n` +
+`date: ${fmDate}\n` +
+`slug: ${slug}\n` +
+`---\n\n` +
+`# 會議記錄\n\n` +
+`## **主題：${v('projectName') || '（會議主題待補）'}**\n\n` +
+`---\n\n` +
+`## 一、基本資訊\n\n` +
+`- **會議時間：** ${fmDate} ${displayTime}\n` +
+`- **會議地點：** ${displayPlace}\n` +
+`- **與會人員：** ${v('attendeesClient') || '（客戶與會者待補）'}；${v('attendeesVendor') || '（我方與會者待補）'}\n\n` +
+`---\n\n` +
+`## 二、背景說明\n\n` +
+`${v('background') || '（背景說明待補）'}\n\n` +
+(attachedImages.length ? `## 附圖\n\n` + attachedImages.map((file, i) => {
+      const ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
+      const { filePrefix } = getMeetingSlug();
+      return `![附圖 ${i + 1}](./${filePrefix}-${i + 1}.${ext})`;
+    }).join('\n\n') + '\n\n' : '') +
+(getTableMarkdown() ? '## 表格\n\n' + getTableMarkdown() + '\n' : '') +
+`## 三、討論重點摘要\n\n` +
+`${v('recentPerformance') ? `- 近期成效觀察：${v('recentPerformance')}\n\n` : ''}` +
+`${v('clientFeels') ? `- 客戶主觀感受：${v('clientFeels')}\n\n` : ''}` +
+`${issueText ? `- 目前主要問題／挑戰：${issueText}\n\n` : ''}` +
+`${v('discussionPoints') || ''}\n\n` +
+`## 四、其他討論\n\n` +
+`${v('otherTopics') || '（無其他討論事項或待補）'}\n\n` +
+`## 五、待辦事項\n\n` +
+`${v('todoVendor') ? `- 我方待辦事項：\n${v('todoVendor')}\n\n` : ''}` +
+`${v('todoClient') ? `- 客戶端待辦事項：\n${v('todoClient')}\n\n` : ''}` +
+`${missing.length ? `- 尚待補充關鍵資訊：${missing.join('、')}\n\n` : ''}` +
+`---\n\n` +
+`- **最後更新：** ${v('lastUpdated') || exportedAt}\n` +
+`- **文件版本：** ${docVersionDisplay}\n` +
+`- **文件負責人：** ${v('docOwner') || '（待填）'}\n`;
+
+      document.getElementById('out').textContent = md;
+      setStatus(`已產生（${now.toLocaleTimeString('zh-Hant')}）`);
+      return md;
+    }
+
+    async function copyNotes() {
+      const text = generateNotes();
+      try {
+        await navigator.clipboard.writeText(text);
+        setStatus('已複製到剪貼簿');
+      } catch {
+        setStatus('複製失敗，請手動選取文字');
+      }
+    }
+
+    function downloadNotes(ext) {
+      const text = generateNotes();
+      const { filePrefix } = getMeetingSlug();
+      const filename = `${filePrefix}.${ext}`;
+
+      let content = text;
+      if (ext === 'md') {
+        content += `\n\n<!-- MEETING_FORM_DATA:${JSON.stringify(collectData())} -->`;
+      }
+
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      if (ext === 'md' && attachedImages.length > 0) {
+        const { filePrefix } = getMeetingSlug();
+        attachedImages.forEach((file, i) => {
+          const extName = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
+          const imgUrl = URL.createObjectURL(file);
+          const link = document.createElement('a');
+          link.href = imgUrl;
+          link.download = `${filePrefix}-${i + 1}.${extName}`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(imgUrl);
+        });
+        setStatus(`已下載 ${filename} 與 ${attachedImages.length} 張圖片`);
+      } else {
+        setStatus(`已下載 ${filename}`);
+      }
+    }
+
+    function importNotes() {
+      document.getElementById('import-file-input').click();
+    }
+
+    function handleImportFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target.result;
+        const match = content.match(/<!--\s*MEETING_FORM_DATA:([\s\S]+?)\s*-->/);
+        if (!match) {
+          setStatus('⚠️ 找不到表單資料，請確認此 .md 檔由本工具產出');
+          return;
+        }
+        try {
+          const data = JSON.parse(match[1]);
+          restoreData(data, `✅ 已從「${file.name}」載入表單資料`);
+          saveDraft();
+        } catch {
+          setStatus('⚠️ 載入失敗，資料格式有誤');
+        }
+      };
+      reader.readAsText(file, 'utf-8');
+      event.target.value = '';
+    }
+
+    function clearForm() {
+      allFieldIds().forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      ISSUE_IDS.forEach(([id]) => {
+        const el = document.getElementById(id);
+        if (el) el.checked = false;
+      });
+      const imgInput = document.getElementById('meetingImages');
+      if (imgInput) imgInput.value = '';
+      const previewWrap = document.getElementById('meeting-images-preview');
+      if (previewWrap && previewWrap.previousObjectUrls) {
+        previewWrap.previousObjectUrls.forEach(u => URL.revokeObjectURL(u));
+        previewWrap.previousObjectUrls = [];
+      }
+      if (previewWrap) previewWrap.innerHTML = '';
+      attachedImages = [];
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch {}
+      document.getElementById('out').textContent = '（按「產生會議紀錄」後會出現在這裡）';
+      setStatus('表單已清空');
+    }
+
+    // 自動儲存草稿
+    allFieldIds().forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', saveDraft);
+      el.addEventListener('change', saveDraft);
+    });
+    ISSUE_IDS.forEach(([id]) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('change', saveDraft);
+    });
+    const meetingImagesInput = document.getElementById('meetingImages');
+    if (meetingImagesInput) {
+      meetingImagesInput.addEventListener('change', handleMeetingImagesChange);
+    }
+    const tableCols = document.getElementById('tableCols');
+    const tableRows = document.getElementById('tableRows');
+    if (tableCols) tableCols.addEventListener('change', renderTableEditor);
+    if (tableRows) tableRows.addEventListener('change', renderTableEditor);
+
+    renderTableEditor();
+    loadDraft();
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,1434 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>客戶網站需求訪談工作台</title>
+  <style>
+    :root {
+      --primary: #1f2f8f;
+      --accent: #1f9acb;
+      --bg: #f5f7fb;
+      --text: #1f2430;
+      --line: #d8deea;
+      --ok: #1b8a5a;
+      --card: #eef1f8;
+      --card-inner: #ffffff;
+      --muted: #5a6478;
+      --input-bg: #ffffff;
+      --input-border: #c7d1e5;
+      --chip-bg: #fafcff;
+      --chip-border: #d7deee;
+      --code-bg: #111722;
+    }
+
+    :root[data-theme="dark"] {
+      --primary: #93c5fd;
+      --accent: #38bdf8;
+      --bg: #020617;
+      --text: #e5e7eb;
+      --line: #1f2937;
+      --ok: #4ade80;
+      --card: #020617;
+      --card-inner: #020617;
+      --muted: #9ca3af;
+      --input-bg: #020617;
+      --input-border: #334155;
+      --chip-bg: #020617;
+      --chip-border: #1f2937;
+      --code-bg: #020617;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", Arial, sans-serif;
+      line-height: 1.55;
+    }
+    .wrap {
+      max-width: 1080px;
+      margin: 24px auto;
+      padding: 20px;
+      background: var(--card);
+      border-radius: 14px;
+      border: 1px solid var(--line);
+    }
+    .section-block {
+      border: 1px solid #d8deea;
+      border-radius: 12px;
+      padding: 20px 20px 12px;
+      margin: 20px 0;
+      background: var(--card-inner);
+    }
+    .section-block h2 {
+      margin: 0 0 14px 0;
+    }
+    .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    h1 { margin: 0; color: var(--primary); font-size: 28px; }
+    .btn-import-top {
+      display: inline-flex; align-items: center; gap: 6px;
+      flex-shrink: 0; margin-top: 4px;
+      font-size: 13px; font-weight: 600;
+      color: var(--primary);
+      background: #f0f4ff;
+      border: 1px solid #c7d4f5;
+      border-radius: 8px;
+      padding: 7px 14px;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .btn-import-top:hover { background: #dde8ff; border-color: var(--primary); }
+    .hint { margin: 8px 0 18px; color: var(--muted); font-size: 14px; }
+    h2 {
+      margin: 22px 0 10px;
+      color: var(--primary);
+      font-size: 18px;
+      border-left: 4px solid var(--accent);
+      padding-left: 8px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .full { grid-column: 1 / -1; }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      padding: 10px 11px;
+      font-size: 14px;
+      background: var(--input-bg);
+      color: var(--text);
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1) brightness(1.4);
+    }
+    .check-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(160px, 1fr));
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--chip-border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      background: var(--chip-bg);
+      font-size: 14px;
+    }
+    .check-item input {
+      width: auto;
+      margin: 0;
+    }
+    .check-other {
+      margin-top: 8px;
+    }
+    textarea { min-height: 84px; resize: vertical; }
+    details {
+      margin: 12px 0 18px;
+      border: 1px dashed var(--line);
+      border-radius: 10px;
+      background: rgba(148, 163, 184, 0.08);
+      padding: 10px 12px;
+      color: var(--muted);
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    ul { margin: 8px 0 0 20px; padding: 0; }
+    .actions {
+      margin-top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      cursor: pointer;
+      color: #fff;
+    }
+    .btn-primary { background: var(--primary); }
+    .btn-accent { background: var(--accent); }
+    .btn-ok { background: var(--ok); }
+    .btn-dark { background: #2b2f3b; }
+    pre {
+      margin: 10px 0 0;
+      background: var(--code-bg);
+      color: #e7edf8;
+      border-radius: 10px;
+      padding: 14px;
+      white-space: pre-wrap;
+      min-height: 220px;
+      font-size: 13px;
+    }
+    .status {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .logo-panel {
+      border: 1px dashed var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: rgba(148, 163, 184, 0.06);
+    }
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(140px, 1fr));
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .color-item {
+      border: 1px solid var(--chip-border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      background: var(--chip-bg);
+    }
+    .color-item-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .color-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .color-picker {
+      width: 32px;
+      height: 32px;
+      border: 1px solid #c7d1e5;
+      border-radius: 50%;
+      padding: 0;
+      background: #fff;
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .color-picker::-webkit-color-swatch-wrapper {
+      padding: 0;
+      border-radius: 50%;
+    }
+    .color-picker::-webkit-color-swatch {
+      border: 0;
+      border-radius: 50%;
+    }
+    .color-picker::-moz-color-swatch {
+      border: 0;
+      border-radius: 50%;
+    }
+    .hex-input {
+      flex: 1;
+      min-width: 90px;
+    }
+    .logo-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .logo-preview {
+      margin-top: 8px;
+      max-height: 90px;
+      max-width: 220px;
+      object-fit: contain;
+      display: none;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--card-inner);
+      padding: 6px;
+    }
+    .logo-meta {
+      font-size: 12px;
+      color: #5f6a82;
+    }
+    .ref-site-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <script>
+    (function syncTheme() {
+      const THEME_KEY = 'my-agent-theme';
+      function apply(theme) {
+        if (theme === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          document.documentElement.removeAttribute('data-theme');
+        }
+      }
+      try {
+        // 優先跟隨父層（Dashboard）主題
+        if (window.parent && window.parent !== window) {
+          const parentTheme =
+            window.parent.document.documentElement.getAttribute('data-theme') === 'dark'
+              ? 'dark'
+              : 'light';
+          apply(parentTheme);
+        } else {
+          const saved = localStorage.getItem(THEME_KEY);
+          apply(saved || 'light');
+        }
+      } catch {
+        apply('light');
+      }
+    })();
+  </script>
+  <div class="wrap">
+    <div class="page-header">
+      <h1>網站需求訪談記錄</h1>
+      <button class="btn-import-top" onclick="importBrief()" title="載入先前下載的 .md 檔以還原表單內容">↑ 匯入 .md</button>
+    </div>
+    <p class="hint">適合與新客戶會談時現場填寫，討論結束後一鍵輸出可交付的 Brief 文件。</p>
+
+    <details>
+      <summary>訪談引導建議（展開提示）</summary>
+      <ul>
+        <li>這次做網站，最想解決的核心問題是什麼？</li>
+        <li>理想中的訪客是誰？希望他們在網站上完成什麼動作？</li>
+        <li>預計的上線時程、預算範圍，以及誰來拍板決定？</li>
+        <li>現有系統（CRM、GA4、表單、金流、會員）是否需要串接？</li>
+      </ul>
+    </details>
+
+    <div class="section-block">
+    <h2>1. 基本資訊</h2>
+    <div class="grid">
+      <div><label for="project">專案名稱</label><input id="project" title="專案名稱" placeholder="例：品牌官網改版、新品上市 LP" /></div>
+      <div><label for="company">公司 / 品牌名稱</label><input id="company" title="客戶公司或品牌" placeholder="例：XX 設計有限公司" /></div>
+      <div><label for="contact">聯絡窗口</label><input id="contact" title="聯絡窗口" placeholder="例：王小姐（行銷）" /></div>
+      <div><label for="meetingDate">訪談日期</label><input id="meetingDate" title="訪談日期" type="date" /></div>
+      <div><label for="source">案件來源</label><input id="source" title="案件來源" placeholder="例：舊客轉介紹、官網詢問、活動認識" /></div>
+      <div class="full">
+        <label>品牌色號</label>
+        <div class="color-grid">
+          <div class="color-item">
+            <div class="color-item-title">主色</div>
+            <div class="color-row">
+              <input class="color-picker" id="colorPrimary" title="主色" type="color" value="#1F2F8F" />
+              <input class="hex-input" id="colorPrimaryHex" title="主色 HEX" placeholder="#1F2F8F" value="#1F2F8F" />
+            </div>
+          </div>
+          <div class="color-item">
+            <div class="color-item-title">輔色</div>
+            <div class="color-row">
+              <input class="color-picker" id="colorSecondary" title="輔色" type="color" value="#1F9ACB" />
+              <input class="hex-input" id="colorSecondaryHex" title="輔色 HEX" placeholder="#1F9ACB" value="#1F9ACB" />
+            </div>
+          </div>
+          <div class="color-item">
+            <div class="color-item-title">強調色</div>
+            <div class="color-row">
+              <input class="color-picker" id="colorAccent" title="強調色" type="color" value="#FF7A00" />
+              <input class="hex-input" id="colorAccentHex" title="強調色 HEX" placeholder="#FF7A00" value="#FF7A00" />
+            </div>
+          </div>
+          <div class="color-item">
+            <div class="color-item-title">背景色</div>
+            <div class="color-row">
+              <input class="color-picker" id="colorBackground" title="背景色" type="color" value="#FFFFFF" />
+              <input class="hex-input" id="colorBackgroundHex" title="背景色 HEX" placeholder="#FFFFFF" value="#FFFFFF" />
+            </div>
+          </div>
+          <div class="color-item">
+            <div class="color-item-title">文字色</div>
+            <div class="color-row">
+              <input class="color-picker" id="colorText" title="文字色" type="color" value="#333333" />
+              <input class="hex-input" id="colorTextHex" title="文字色 HEX" placeholder="#333333" value="#333333" />
+            </div>
+          </div>
+          <div class="color-item">
+            <div class="color-item-title">其他</div>
+            <div class="color-row">
+              <input class="color-picker" id="colorOther" title="其他色" type="color" value="#FEFEFE" />
+              <input class="hex-input" id="colorOtherHex" title="其他色 HEX" placeholder="#FEFEFE" value="#FEFEFE" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="full">
+        <label for="logoFile">Logo 上傳</label>
+        <div class="logo-panel">
+          <input id="logoFile" title="Logo 檔案上傳" type="file" accept="image/*,.svg" />
+          <div class="logo-row">
+            <button type="button" class="btn-dark" onclick="clearLogo()">移除 Logo</button>
+            <span id="logoMeta" class="logo-meta">尚未選擇檔案</span>
+          </div>
+          <img id="logoPreview" class="logo-preview" alt="Logo 預覽" />
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <div class="section-block">
+    <h2>2. 商業目標與目標受眾</h2>
+    <div class="grid">
+      <div><label for="goal">主要目標</label>
+        <select id="goal" title="主要目標">
+          <option>名單蒐集／潛在客戶開發</option>
+          <option>提高詢價轉換</option>
+          <option>品牌形象重塑</option>
+          <option>電商銷售</option>
+          <option>客服分流／自助查詢</option>
+          <option>其他</option>
+        </select>
+      </div>
+      <div><label for="audience">目標受眾</label><input id="audience" title="目標受眾" placeholder="例：25–45 歲家長、企業採購主管" /></div>
+      <div class="full">
+        <label>理想客戶裝置習慣（多選）</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="checkbox" id="device-desktop" /> 電腦／筆電</label>
+          <label class="check-item"><input type="checkbox" id="device-mobile" /> 手機</label>
+          <label class="check-item"><input type="checkbox" id="device-tablet" /> 平板</label>
+        </div>
+      </div>
+      <div class="full">
+        <label for="successGoal">三個月後，這個網站成功的樣子是？</label>
+        <textarea id="successGoal" placeholder="例：每月詢問表單送出 20 筆、Google 搜尋品牌名稱出現在首頁…"></textarea>
+      </div>
+      <div class="full">
+        <label>競品與參考網站</label>
+        <div id="refSiteList">
+          <div class="ref-site-row">
+            <input class="ref-url" placeholder="https://…" />
+            <input class="ref-like" placeholder="喜歡的地方" />
+            <input class="ref-dislike" placeholder="不喜歡的地方" />
+          </div>
+          <div class="ref-site-row">
+            <input class="ref-url" placeholder="https://…" />
+            <input class="ref-like" placeholder="喜歡的地方" />
+            <input class="ref-dislike" placeholder="不喜歡的地方" />
+          </div>
+          <div class="ref-site-row">
+            <input class="ref-url" placeholder="https://…" />
+            <input class="ref-like" placeholder="喜歡的地方" />
+            <input class="ref-dislike" placeholder="不喜歡的地方" />
+          </div>
+        </div>
+        <button type="button" class="btn-dark" onclick="addRefSite()" style="margin-top:8px;font-size:13px;padding:6px 12px;">＋ 新增參考網站</button>
+      </div>
+    </div>
+    </div>
+
+    <div class="section-block">
+    <h2>3. 網站範圍與功能規格</h2>
+    <div class="grid">
+      <div><label for="siteType">網站類型</label>
+        <select id="siteType" title="網站類型">
+          <option>企業官網（多頁）</option>
+          <option>一頁式 Landing Page</option>
+          <option>品牌形象站</option>
+          <option>內容型網站（部落格／知識庫）</option>
+          <option>電商網站</option>
+          <option>會員／預約系統</option>
+        </select>
+      </div>
+      <div><label for="deadline">預計上線日期</label><input id="deadline" title="預計上線日期" type="date" /></div>
+      <div><label for="budget">預算範圍（NTD）</label><input id="budget" title="預算範圍" placeholder="例：300,000–500,000" /></div>
+      <div>
+        <label>語言版本</label>
+        <div class="check-grid" style="grid-template-columns:repeat(3,minmax(120px,1fr));margin-top:6px;">
+          <label class="check-item"><input type="checkbox" id="lang-zh" checked />繁體中文</label>
+          <label class="check-item"><input type="checkbox" id="lang-en" />英文</label>
+          <label class="check-item" style="align-items:center;gap:6px;">
+            <input type="checkbox" id="lang-other" onchange="toggleLangOther(this)" />其他
+            <input id="lang-other-text" class="check-other" title="其他語言" placeholder="請填寫語言" style="display:none;margin:0;flex:1;" />
+          </label>
+        </div>
+      </div>
+      <div class="full">
+        <label>頁面架構（Sitemap）</label>
+        <div class="hint">預設包含：RWD 響應式設計、基本 SEO 設定、後台內容編輯、聯絡表單。</div>
+        <div class="check-grid">
+          <label class="check-item"><input type="checkbox" id="page-home" />首頁</label>
+          <label class="check-item"><input type="checkbox" id="page-about" />關於我們</label>
+          <label class="check-item"><input type="checkbox" id="page-service" />服務項目</label>
+          <label class="check-item"><input type="checkbox" id="page-product" />產品介紹</label>
+          <label class="check-item"><input type="checkbox" id="page-case" />案例／作品集</label>
+          <label class="check-item"><input type="checkbox" id="page-blog" />最新消息／部落格</label>
+          <label class="check-item"><input type="checkbox" id="page-faq" />FAQ</label>
+          <label class="check-item"><input type="checkbox" id="page-contact" />聯絡我們</label>
+          <label class="check-item"><input type="checkbox" id="page-privacy" />隱私權政策／條款</label>
+        </div>
+        <input class="check-other" id="pagesOther" title="其他頁面需求" placeholder="其他頁面（選填）：例：招募、門市據點、下載專區" />
+      </div>
+      <div class="full">
+        <label>進階功能需求（加選）</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="checkbox" id="feature-member" />會員登入／註冊</label>
+          <label class="check-item"><input type="checkbox" id="feature-search" />站內搜尋</label>
+          <label class="check-item"><input type="checkbox" id="feature-booking" />線上預約／排程</label>
+          <label class="check-item"><input type="checkbox" id="feature-multilang" />多語系切換</label>
+          <label class="check-item"><input type="checkbox" id="feature-floating" />側邊浮動按鈕</label>
+        </div>
+        <input class="check-other" id="featureOther" title="其他進階功能需求" placeholder="其他功能（選填）：例：即時客服、推播通知、A/B 測試" />
+      </div>
+      <div class="full">
+        <label>第三方系統整合</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="checkbox" id="integration-ga4" />GA4</label>
+          <label class="check-item"><input type="checkbox" id="integration-pixel" />Meta Pixel</label>
+          <label class="check-item"><input type="checkbox" id="integration-line" />LINE OA</label>
+          <label class="check-item"><input type="checkbox" id="integration-crm" />CRM</label>
+          <label class="check-item"><input type="checkbox" id="integration-edm" />EDM 電子報</label>
+          <label class="check-item"><input type="checkbox" id="integration-payment" />金流／物流</label>
+        </div>
+        <input class="check-other" id="integrationOther" title="其他第三方整合需求" placeholder="其他整合（選填）：例：HubSpot、Salesforce、客服系統" />
+      </div>
+    </div>
+    </div>
+
+    <div class="section-block">
+    <h2>4. 基礎架構與代管服務</h2>
+    <div class="grid">
+      <div class="full">
+        <label>代辦服務項目（多選）</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="checkbox" id="infra-hosting" />主機租用代辦</label>
+          <label class="check-item"><input type="checkbox" id="infra-domain" />網域註冊／移轉代辦</label>
+          <label class="check-item"><input type="checkbox" id="infra-ssl" />SSL 憑證申請／續約</label>
+          <label class="check-item"><input type="checkbox" id="infra-dns" />DNS 設定</label>
+          <label class="check-item"><input type="checkbox" id="infra-mail" />企業郵件設定</label>
+        </div>
+        <input class="check-other" id="infraServiceOther" title="其他基礎架構服務" placeholder="其他服務（選填）" />
+      </div>
+      <div class="full">
+        <label>帳號責任模式</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="radio" name="infraOwnershipMode" id="infra-owner-client" value="客戶自有帳號，我方協助設定" />客戶自有帳號，我方協助設定</label>
+          <label class="check-item"><input type="radio" name="infraOwnershipMode" id="infra-owner-vendor" value="我方代管（年費計算）" />我方代管（年費計算）</label>
+          <label class="check-item"><input type="radio" name="infraOwnershipMode" id="infra-owner-mixed" value="混合模式（依項目分工）" />混合模式（依項目分工）</label>
+        </div>
+      </div>
+      <div class="full">
+        <label>計費方式</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="radio" name="infraBillingMode" id="infra-bill-setup" value="建置階段一次性設定" />建置階段一次性設定</label>
+          <label class="check-item"><input type="radio" name="infraBillingMode" id="infra-bill-yearly" value="年度代管／維護費" />年度代管／維護費</label>
+          <label class="check-item"><input type="radio" name="infraBillingMode" id="infra-bill-custom" value="依需求另行報價" />依需求另行報價</label>
+        </div>
+      </div>
+      <div class="full">
+        <label>第三方費用由客戶自付（多選）</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="checkbox" id="cost-hosting-client" />主機／雲端服務費</label>
+          <label class="check-item"><input type="checkbox" id="cost-domain-client" />網域年費</label>
+          <label class="check-item"><input type="checkbox" id="cost-ssl-client" />SSL 憑證費用</label>
+          <label class="check-item"><input type="checkbox" id="cost-plugin-client" />外掛授權費</label>
+          <label class="check-item"><input type="checkbox" id="cost-asset-client" />圖庫／字型授權費</label>
+        </div>
+        <input class="check-other" id="thirdPartyCostOther" title="其他第三方費用歸屬" placeholder="其他費用歸屬（選填）" />
+      </div>
+      <div class="full"><label for="infraRenewalContact">到期續約聯絡窗口</label><input id="infraRenewalContact" title="到期續約聯絡窗口" placeholder="例：it@example.com、王小姐" /></div>
+    </div>
+    </div>
+
+    <div class="section-block">
+    <h2>5. 素材與內容準備</h2>
+    <div class="grid">
+      <div class="full">
+        <label>現有品牌素材清單（多選）</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="checkbox" id="asset-logo-source" /> Logo 原始檔（AI / EPS / SVG）</label>
+          <label class="check-item"><input type="checkbox" id="asset-brand-color" /> 品牌色票規範</label>
+          <label class="check-item"><input type="checkbox" id="asset-font-license" /> 字型授權文件</label>
+          <label class="check-item"><input type="checkbox" id="asset-brand-guideline" /> 品牌規範手冊</label>
+        </div>
+        <input class="check-other" id="brandAssetListOther" placeholder="其他素材（選填）" />
+      </div>
+      <div class="full">
+        <label>品牌素材準備狀況</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="radio" name="brandAssetStatus" id="brand-asset-ready" value="已備齊" />已備齊</label>
+          <label class="check-item"><input type="radio" name="brandAssetStatus" id="brand-asset-partial" value="部分備齊" />部分備齊</label>
+          <label class="check-item"><input type="radio" name="brandAssetStatus" id="brand-asset-missing" value="尚未備齊" />尚未備齊</label>
+        </div>
+      </div>
+      <div class="full">
+        <label>內容文案準備狀況</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="radio" name="contentAssetStatus" id="content-asset-ready" value="已備齊" />已備齊</label>
+          <label class="check-item"><input type="radio" name="contentAssetStatus" id="content-asset-partial" value="部分備齊" />部分備齊</label>
+          <label class="check-item"><input type="radio" name="contentAssetStatus" id="content-asset-missing" value="尚未備齊" />尚未備齊</label>
+        </div>
+      </div>
+      <div class="full">
+        <label>文案支援方式</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="radio" name="contentSupportMode" id="content-support-client" value="客戶自行提供完整文案" />客戶自行提供完整文案</label>
+          <label class="check-item"><input type="radio" name="contentSupportMode" id="content-support-structure" value="我方提供文案架構，客戶填入" />我方提供文案架構，客戶填入</label>
+          <label class="check-item"><input type="radio" name="contentSupportMode" id="content-support-full" value="委託我方代寫（加價服務）" />委託我方代寫（加價服務）</label>
+        </div>
+      </div>
+      <div class="full">
+        <label>內容服務項目（多選）</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="checkbox" id="content-service-sitemap" />頁面架構與區塊規劃</label>
+          <label class="check-item"><input type="checkbox" id="content-service-copy-home" />首頁文案撰寫</label>
+          <label class="check-item"><input type="checkbox" id="content-service-copy-inner" />內頁文案撰寫</label>
+          <label class="check-item"><input type="checkbox" id="content-service-edit" />文案潤稿與校對</label>
+          <label class="check-item"><input type="checkbox" id="content-service-interview" />訪談採集素材</label>
+        </div>
+        <input class="check-other" id="contentServiceOther" title="其他內容服務" placeholder="其他內容服務（選填）" />
+      </div>
+    </div>
+    </div>
+
+    <div class="section-block">
+    <h2>6. SEO 與上線設定</h2>
+    <div class="grid">
+      <div class="full">
+        <label>SEO 需求（多選）</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="checkbox" id="seo-meta" />基本 Meta 標籤設定</label>
+          <label class="check-item"><input type="checkbox" id="seo-sitemap" />XML Sitemap</label>
+          <label class="check-item"><input type="checkbox" id="seo-ga4-sc" />GA4 ／ Search Console 串接</label>
+          <label class="check-item"><input type="checkbox" id="seo-redirect" />301 舊網址轉址</label>
+          <label class="check-item"><input type="checkbox" id="seo-none" />本次暫不處理</label>
+        </div>
+        <input class="check-other" id="seoOther" title="其他 SEO 需求" placeholder="其他 SEO 需求（選填）" />
+      </div>
+      <div class="full">
+        <label for="seoKeywords">目標 SEO 關鍵字</label>
+        <input id="seoKeywords" placeholder="例：台北室內設計、系統家具推薦（以逗號分隔）" />
+      </div>
+    </div>
+    </div>
+
+    <div class="section-block">
+    <h2>7. 後台維護與交接</h2>
+    <div class="grid">
+      <div class="full">
+        <label>維護責任歸屬</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="radio" name="maintenanceMode" id="maintenance-client" value="客戶自行維護" />客戶自行維護</label>
+          <label class="check-item"><input type="radio" name="maintenanceMode" id="maintenance-vendor" value="委託我方維護" />委託我方維護</label>
+          <label class="check-item"><input type="radio" name="maintenanceMode" id="maintenance-shared" value="雙方共同維護" />雙方共同維護</label>
+        </div>
+      </div>
+      <div class="full">
+        <label>後台編輯權限模式</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="radio" name="editorAccessMode" id="editor-access-vendor" value="由我方統一維護，客戶不直接進站修改" />由我方統一維護，客戶不直接進站修改</label>
+          <label class="check-item"><input type="radio" name="editorAccessMode" id="editor-access-content-only" value="客戶僅可自行更新文字與圖片" />客戶僅可自行更新文字與圖片</label>
+          <label class="check-item"><input type="radio" name="editorAccessMode" id="editor-access-full" value="客戶可自行調整版面與內容" />客戶可自行調整版面與內容</label>
+        </div>
+      </div>
+      <div class="full">
+        <label>客戶可自行編輯範圍（多選）</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="checkbox" id="editable-posts" />文章／最新消息</label>
+          <label class="check-item"><input type="checkbox" id="editable-page-text" />指定頁面文字與圖片</label>
+          <label class="check-item"><input type="checkbox" id="editable-all-pages" />全站頁面</label>
+          <label class="check-item"><input type="checkbox" id="editable-forms" />表單設定</label>
+          <label class="check-item"><input type="checkbox" id="editable-seo" />SEO 欄位</label>
+        </div>
+        <input class="check-other" id="editableScopeOther" title="其他可編輯範圍" placeholder="其他可編輯範圍（選填）" />
+      </div>
+      <div class="full">
+        <label>改版上線流程</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="radio" name="changeFlowMode" id="change-flow-direct" value="修改後直接上線" />修改後直接上線</label>
+          <label class="check-item"><input type="radio" name="changeFlowMode" id="change-flow-staging" value="先於測試站確認再上線" />先於測試站確認再上線</label>
+          <label class="check-item"><input type="radio" name="changeFlowMode" id="change-flow-review" value="需經我方審核後上線" />需經我方審核後上線</label>
+        </div>
+      </div>
+      <div class="full">
+        <label>教育訓練與交接方式</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="radio" name="trainingMode" id="training-none" value="不需要" />不需要</label>
+          <label class="check-item"><input type="radio" name="trainingMode" id="training-once" value="一次交接教學" />一次交接教學</label>
+          <label class="check-item"><input type="radio" name="trainingMode" id="training-full" value="教學 + SOP 文件 + 錄影存檔" />教學 + SOP 文件 + 錄影存檔</label>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <div class="section-block">
+    <h2>8. 專案風險與備註</h2>
+    <div class="grid">
+      <div class="full">
+        <label>客戶端注意事項（多選）</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="checkbox" id="risk-asset-delay" />品牌素材尚未備齊</label>
+          <label class="check-item"><input type="checkbox" id="risk-content-pending" />文案內容待確認</label>
+          <label class="check-item"><input type="checkbox" id="risk-decision-pending" />內部決策尚未定案</label>
+          <label class="check-item"><input type="checkbox" id="risk-slow-response" />回覆週期較長</label>
+          <label class="check-item"><input type="checkbox" id="risk-fixed-date" />上線日期為硬性限制</label>
+        </div>
+        <input class="check-other" id="riskOther" title="其他注意事項" placeholder="其他注意事項（選填）" />
+      </div>
+      <div class="full"><label for="notes">補充備註</label><textarea id="notes" title="補充備註" placeholder="其他在訪談中需要記錄的事項（選填）"></textarea></div>
+    </div>
+    </div>
+
+    <div class="section-block">
+    <h2>9. 合約與交付條件</h2>
+    <div class="grid">
+      <div class="full">
+        <label>數位資產歸屬客戶（多選）</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="checkbox" id="owner-domain" />網域帳號</label>
+          <label class="check-item"><input type="checkbox" id="owner-hosting" />主機帳號</label>
+          <label class="check-item"><input type="checkbox" id="owner-ssl" />SSL 憑證</label>
+          <label class="check-item"><input type="checkbox" id="owner-code" />網站程式碼</label>
+          <label class="check-item"><input type="checkbox" id="owner-analytics" />GA4 ／ Meta 廣告帳號</label>
+          <label class="check-item"><input type="checkbox" id="owner-design" />設計稿原始檔</label>
+          <label class="check-item"><input type="checkbox" id="owner-copy" />文案原始檔</label>
+          <label class="check-item"><input type="checkbox" id="owner-image" />圖像素材原始檔</label>
+        </div>
+        <input class="check-other" id="assetOwnershipOther" title="其他資產歸屬" placeholder="其他資產（選填）" />
+      </div>
+      <div class="full">
+        <label>授權使用限制說明（多選）</label>
+        <div class="check-grid">
+          <label class="check-item"><input type="checkbox" id="license-plugin-subscription" />外掛授權僅於訂閱期間有效</label>
+          <label class="check-item"><input type="checkbox" id="license-font-restricted" />商業字型依原始授權範圍使用</label>
+          <label class="check-item"><input type="checkbox" id="license-stock-restricted" />圖庫素材依購買授權範圍使用</label>
+          <label class="check-item"><input type="checkbox" id="license-thirdparty-account" />第三方服務帳號須由客戶自行續約</label>
+        </div>
+        <input class="check-other" id="licenseExceptionOther" title="其他授權限制" placeholder="其他授權限制（選填）" />
+      </div>
+      <div class="full"><label for="handoverNotes">交付與終止條件</label><textarea id="handoverNotes" title="交付與終止條件" placeholder="例：尾款結清後移交正式站管理權限；若終止合作，代管服務於當期結束後停用。"></textarea></div>
+      <div class="full">
+        <label>付款里程碑（NTD）</label>
+        <div class="grid" style="grid-template-columns: 1fr 1fr 1fr;">
+          <div><label for="payDeposit">訂金</label><input id="payDeposit" placeholder="例：30,000" /></div>
+          <div><label for="payMidterm">初稿確認</label><input id="payMidterm" placeholder="例：50,000" /></div>
+          <div><label for="payFinal">上線交付</label><input id="payFinal" placeholder="例：20,000" /></div>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-primary" onclick="generateBrief()">產生 Brief</button>
+      <button class="btn-accent" onclick="copyBrief()">複製文字</button>
+      <button class="btn-ok" onclick="downloadBrief('md')">下載 .md</button>
+      <button class="btn-ok" onclick="downloadBrief('txt')">下載 .txt</button>
+      <button class="btn-dark" onclick="window.print()">列印 ／ 儲存 PDF</button>
+      <button class="btn-dark" onclick="clearForm()">清空表單</button>
+    </div>
+    <input type="file" id="import-file-input" accept=".md" style="display:none" onchange="handleImportFile(event)" />
+    <div class="status" id="status">狀態：尚未產生</div>
+
+    <h2>📄 輸出結果</h2>
+    <pre id="out">按「產生 Brief」後，輸出內容會顯示在這裡。</pre>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "client-brief-form-v2";
+    const PAGE_IDS = [
+      ["page-home", "首頁"],
+      ["page-about", "關於我們"],
+      ["page-service", "服務項目"],
+      ["page-product", "產品介紹"],
+      ["page-case", "案例／作品集"],
+      ["page-blog", "最新消息／部落格"],
+      ["page-faq", "FAQ"],
+      ["page-contact", "聯絡我們"],
+      ["page-privacy", "隱私權政策／條款"]
+    ];
+    const FEATURE_IDS = [
+      ["feature-member", "會員登入／註冊"],
+      ["feature-search", "站內搜尋"],
+      ["feature-booking", "線上預約／排程"],
+      ["feature-multilang", "多語系切換"],
+      ["feature-floating", "側邊浮動按鈕"]
+    ];
+    const INTEGRATION_IDS = [
+      ["integration-ga4", "GA4"],
+      ["integration-pixel", "Meta Pixel"],
+      ["integration-line", "LINE OA"],
+      ["integration-crm", "CRM"],
+      ["integration-edm", "EDM 電子報"],
+      ["integration-payment", "金流／物流"]
+    ];
+    const DEVICE_IDS = [
+      ["device-desktop", "電腦／筆電"],
+      ["device-mobile", "手機"],
+      ["device-tablet", "平板"]
+    ];
+    const BRAND_ASSET_STATUS_IDS = [
+      ["brand-asset-ready", "已備齊"],
+      ["brand-asset-partial", "部分備齊"],
+      ["brand-asset-missing", "尚未備齊"]
+    ];
+    const CONTENT_ASSET_STATUS_IDS = [
+      ["content-asset-ready", "已備齊"],
+      ["content-asset-partial", "部分備齊"],
+      ["content-asset-missing", "尚未備齊"]
+    ];
+    const SEO_IDS = [
+      ["seo-meta", "基本 Meta 標籤設定"],
+      ["seo-sitemap", "XML Sitemap"],
+      ["seo-ga4-sc", "GA4 ／ Search Console 串接"],
+      ["seo-redirect", "301 舊網址轉址"],
+      ["seo-none", "本次暫不處理"]
+    ];
+    const MAINTENANCE_MODE_IDS = [
+      ["maintenance-client", "客戶自行維護"],
+      ["maintenance-vendor", "委託我方維護"],
+      ["maintenance-shared", "雙方共同維護"]
+    ];
+    const EDITOR_ACCESS_MODE_IDS = [
+      ["editor-access-vendor", "由我方統一維護，客戶不直接進站修改"],
+      ["editor-access-content-only", "客戶僅可自行更新文字與圖片"],
+      ["editor-access-full", "客戶可自行調整版面與內容"]
+    ];
+    const EDITABLE_SCOPE_IDS = [
+      ["editable-posts", "文章／最新消息"],
+      ["editable-page-text", "指定頁面文字與圖片"],
+      ["editable-all-pages", "全站頁面"],
+      ["editable-forms", "表單設定"],
+      ["editable-seo", "SEO 欄位"]
+    ];
+    const CHANGE_FLOW_IDS = [
+      ["change-flow-direct", "修改後直接上線"],
+      ["change-flow-staging", "先於測試站確認再上線"],
+      ["change-flow-review", "需經我方審核後上線"]
+    ];
+    const TRAINING_IDS = [
+      ["training-none", "不需要"],
+      ["training-once", "一次交接教學"],
+      ["training-full", "教學 + SOP 文件 + 錄影存檔"]
+    ];
+    const INFRA_SERVICE_IDS = [
+      ["infra-hosting", "主機租用代辦"],
+      ["infra-domain", "網域註冊／移轉代辦"],
+      ["infra-ssl", "SSL 憑證申請／續約"],
+      ["infra-dns", "DNS 設定"],
+      ["infra-mail", "企業郵件設定"]
+    ];
+    const INFRA_OWNERSHIP_IDS = [
+      ["infra-owner-client", "客戶自有帳號，我方協助設定"],
+      ["infra-owner-vendor", "我方代管（年費計算）"],
+      ["infra-owner-mixed", "混合模式（依項目分工）"]
+    ];
+    const INFRA_BILLING_IDS = [
+      ["infra-bill-setup", "建置階段一次性設定"],
+      ["infra-bill-yearly", "年度代管／維護費"],
+      ["infra-bill-custom", "依需求另行報價"]
+    ];
+    const THIRD_PARTY_COST_IDS = [
+      ["cost-hosting-client", "主機／雲端服務費"],
+      ["cost-domain-client", "網域年費"],
+      ["cost-ssl-client", "SSL 憑證費用"],
+      ["cost-plugin-client", "外掛授權費"],
+      ["cost-asset-client", "圖庫／字型授權費"]
+    ];
+    const CONTENT_SUPPORT_MODE_IDS = [
+      ["content-support-client", "客戶自行提供完整文案"],
+      ["content-support-structure", "我方提供文案架構，客戶填入"],
+      ["content-support-full", "委託我方代寫（加價服務）"]
+    ];
+    const CONTENT_SERVICE_IDS = [
+      ["content-service-sitemap", "頁面架構與區塊規劃"],
+      ["content-service-copy-home", "首頁文案撰寫"],
+      ["content-service-copy-inner", "內頁文案撰寫"],
+      ["content-service-edit", "文案潤稿與校對"],
+      ["content-service-interview", "訪談採集素材"]
+    ];
+    const RISK_IDS = [
+      ["risk-asset-delay", "品牌素材尚未備齊"],
+      ["risk-content-pending", "文案內容待確認"],
+      ["risk-decision-pending", "內部決策尚未定案"],
+      ["risk-slow-response", "回覆週期較長"],
+      ["risk-fixed-date", "上線日期為硬性限制"]
+    ];
+    const ASSET_OWNERSHIP_IDS = [
+      ["owner-domain", "網域帳號"],
+      ["owner-hosting", "主機帳號"],
+      ["owner-ssl", "SSL 憑證"],
+      ["owner-code", "網站程式碼"],
+      ["owner-analytics", "GA4 ／ Meta 廣告帳號"],
+      ["owner-design", "設計稿原始檔"],
+      ["owner-copy", "文案原始檔"],
+      ["owner-image", "圖像素材原始檔"]
+    ];
+    const LICENSE_EXCEPTION_IDS = [
+      ["license-plugin-subscription", "外掛授權僅於訂閱期間有效"],
+      ["license-font-restricted", "商業字型依原始授權範圍使用"],
+      ["license-stock-restricted", "圖庫素材依購買授權範圍使用"],
+      ["license-thirdparty-account", "第三方服務帳號須由客戶自行續約"]
+    ];
+    const BRAND_ASSET_LIST_IDS = [
+      ["asset-logo-source", "Logo 原始檔（AI / EPS / SVG）"],
+      ["asset-brand-color", "品牌色票規範"],
+      ["asset-font-license", "字型授權文件"],
+      ["asset-brand-guideline", "品牌規範手冊"]
+    ];
+    const BRAND_COLOR_FIELDS = [
+      { label: "主色", picker: "colorPrimary", hex: "colorPrimaryHex", defaultHex: "#1F2F8F" },
+      { label: "輔色", picker: "colorSecondary", hex: "colorSecondaryHex", defaultHex: "#1F9ACB" },
+      { label: "強調色", picker: "colorAccent", hex: "colorAccentHex", defaultHex: "#FF7A00" },
+      { label: "背景色", picker: "colorBackground", hex: "colorBackgroundHex", defaultHex: "#FFFFFF" },
+      { label: "文字色", picker: "colorText", hex: "colorTextHex", defaultHex: "#333333" },
+      { label: "其他", picker: "colorOther", hex: "colorOtherHex", defaultHex: "#FEFEFE" }
+    ];
+    const BASELINE_FEATURES = "RWD 響應式設計、基本 SEO 設定、後台內容編輯、聯絡表單";
+    let uploadedLogoName = "";
+
+    function val(id) {
+      return document.getElementById(id).value.trim();
+    }
+
+    function toggleLangOther(cb) {
+      const txt = document.getElementById("lang-other-text");
+      txt.style.display = cb.checked ? "inline-block" : "none";
+      if (!cb.checked) txt.value = "";
+      saveDraft();
+    }
+
+    function languagesText() {
+      const langs = [];
+      if (document.getElementById("lang-zh").checked) langs.push("繁體中文");
+      if (document.getElementById("lang-en").checked) langs.push("英文");
+      if (document.getElementById("lang-other").checked) {
+        const other = val("lang-other-text");
+        langs.push(other ? other : "其他");
+      }
+      return langs.length ? langs.join("、") : "（待填）";
+    }
+
+    function allFields() {
+      return [
+        "project", "company", "contact", "meetingDate", "source",
+        "colorPrimaryHex", "colorSecondaryHex", "colorAccentHex", "colorBackgroundHex", "colorTextHex", "colorOtherHex",
+        "goal", "audience", "siteType", "deadline", "budget", "lang-other-text",
+        "successGoal",
+        "pagesOther", "featureOther", "integrationOther", "infraServiceOther", "infraRenewalContact",
+        "thirdPartyCostOther", "seoOther", "seoKeywords", "editableScopeOther", "contentServiceOther", "riskOther", "notes",
+        "brandAssetListOther", "assetOwnershipOther", "licenseExceptionOther", "handoverNotes",
+        "payDeposit", "payMidterm", "payFinal"
+      ];
+    }
+
+    function normalizeHex(value) {
+      const raw = String(value || "").trim();
+      const withHash = raw.startsWith("#") ? raw : `#${raw}`;
+      return /^#[0-9a-fA-F]{6}$/.test(withHash) ? withHash.toUpperCase() : "";
+    }
+
+    function collectBrandColors() {
+      const picked = BRAND_COLOR_FIELDS.map((item) => {
+        const normalized = normalizeHex(val(item.hex));
+        return normalized ? `${item.label} ${normalized}` : "";
+      }).filter(Boolean);
+      return picked.length ? picked.join("、") : "待補";
+    }
+
+    function updateLogoMeta(text) {
+      document.getElementById("logoMeta").textContent = text;
+    }
+
+    function handleLogoUpload(event) {
+      const file = event.target.files && event.target.files[0];
+      const preview = document.getElementById("logoPreview");
+      if (!file) {
+        uploadedLogoName = "";
+        preview.style.display = "none";
+        preview.removeAttribute("src");
+        updateLogoMeta("尚未選擇檔案");
+        saveDraft();
+        return;
+      }
+      uploadedLogoName = file.name;
+      updateLogoMeta(`已上傳：${file.name}`);
+      const reader = new FileReader();
+      reader.onload = function onLoad(e) {
+        preview.src = String(e.target && e.target.result ? e.target.result : "");
+        preview.style.display = preview.src ? "block" : "none";
+      };
+      reader.readAsDataURL(file);
+      saveDraft();
+    }
+
+    function clearLogo() {
+      const input = document.getElementById("logoFile");
+      const preview = document.getElementById("logoPreview");
+      input.value = "";
+      uploadedLogoName = "";
+      preview.style.display = "none";
+      preview.removeAttribute("src");
+      updateLogoMeta("尚未選擇檔案");
+      saveDraft();
+      setStatus("Logo 已移除");
+    }
+
+    function selectedPages() {
+      const picked = PAGE_IDS
+        .filter(([id]) => document.getElementById(id).checked)
+        .map(([, label]) => label);
+      if (val("pagesOther")) picked.push(`其他：${val("pagesOther")}`);
+      return picked;
+    }
+
+    function pagesText() {
+      const picked = selectedPages();
+      return picked.length ? picked.join("、") : "待補";
+    }
+
+    function selectedFeatures() {
+      const picked = FEATURE_IDS
+        .filter(([id]) => document.getElementById(id).checked)
+        .map(([, label]) => label);
+      if (val("featureOther")) picked.push(`其他：${val("featureOther")}`);
+      return picked;
+    }
+
+    function featuresText() {
+      const picked = selectedFeatures();
+      return picked.length ? picked.join("、") : "無（僅含基礎功能）";
+    }
+
+    function selectedIntegrations() {
+      const picked = INTEGRATION_IDS
+        .filter(([id]) => document.getElementById(id).checked)
+        .map(([, label]) => label);
+      if (val("integrationOther")) picked.push(`其他：${val("integrationOther")}`);
+      return picked;
+    }
+
+    function integrationsText() {
+      const picked = selectedIntegrations();
+      return picked.length ? picked.join("、") : "無";
+    }
+
+    function selectedSingle(ids) {
+      const found = ids.find(([id]) => document.getElementById(id).checked);
+      return found ? found[1] : "待補";
+    }
+
+    function selectedMultiple(ids, otherFieldId) {
+      const picked = ids
+        .filter(([id]) => document.getElementById(id).checked)
+        .map(([, label]) => label);
+      if (otherFieldId && val(otherFieldId)) picked.push(`其他：${val(otherFieldId)}`);
+      return picked.length ? picked.join("、") : "無";
+    }
+
+    function contentQuoteSuggestion() {
+      const mode = selectedSingle(CONTENT_SUPPORT_MODE_IDS);
+      if (mode === "委託我方代寫（加價服務）") {
+        return "建議加列內容服務費（架構規劃＋撰寫＋校對），並於合約中明定文案修訂回合上限。";
+      }
+      if (mode === "我方提供文案架構，客戶填入") {
+        return "建議加列內容架構規劃費（不含完整代寫），文案填寫由客戶自行完成；交稿後時程方可推進。";
+      }
+      return "本案以網站建置為主，文案由客戶自行提供；專案時程以客戶完成交稿日為起算基準。";
+    }
+
+    function setStatus(text) {
+      document.getElementById("status").textContent = `狀態：${text}`;
+    }
+
+    function getMissing() {
+      const required = [
+        ["project", "專案名稱"],
+        ["contact", "聯絡窗口"],
+        ["goal", "主要目標"],
+        ["audience", "目標受眾"],
+        ["deadline", "上線目標日期"],
+        ["budget", "預算區間"]
+      ];
+      const missing = required.filter(([id]) => !val(id)).map(([, name]) => name);
+      if (!selectedPages().length) missing.push("頁面架構");
+      return missing;
+    }
+
+    function generateBrief() {
+      const missing = getMissing();
+      const now = new Date().toISOString().slice(0, 10);
+      const exportedAt = new Date().toLocaleString("zh-Hant", { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+      const refRows = document.querySelectorAll(".ref-site-row");
+      const refLines = [];
+      refRows.forEach((row, i) => {
+        const url = row.querySelector(".ref-url").value.trim();
+        const like = row.querySelector(".ref-like").value.trim();
+        const dislike = row.querySelector(".ref-dislike").value.trim();
+        if (url || like || dislike) refLines.push(`  參考 ${i + 1}：${url} ｜ 喜歡：${like || "—"} ｜ 不喜歡：${dislike || "—"}`);
+      });
+      const successBlock = val("successGoal") ? `\n【成功指標】\n${val("successGoal")}\n` : "";
+      const refBlock = refLines.length ? `\n【競品參考網站】\n${refLines.join("\n")}\n` : "";
+      const seoKeywordBlock = val("seoKeywords") ? `\n【SEO 目標關鍵字】\n${val("seoKeywords")}\n` : "";
+      const payD = val("payDeposit");
+      const payM = val("payMidterm");
+      const payF = val("payFinal");
+      const payBlock = (payD || payM || payF)
+        ? `\n【付款里程碑】\n  訂金：${payD || "—"} ／ 初稿確認：${payM || "—"} ／ 上線交付：${payF || "—"}\n`
+        : "";
+      const md = `# 網站需求訪談 Brief
+> 匯出時間：${exportedAt}
+
+## A. 專案基本資訊
+- 專案名稱：${val("project") || "（待填）"}
+- 客戶公司／品牌：${val("company") || "（待填）"}
+- 聯絡窗口：${val("contact") || "（待填）"}
+- 訪談日期：${val("meetingDate") || now}
+- 案件來源：${val("source") || "（待填）"}
+- 品牌色號：${collectBrandColors()}
+- Logo 檔案：${uploadedLogoName || "（待提供）"}
+
+## B. 商業目標與目標受眾
+- 主要目標：${val("goal") || "（待填）"}
+- 目標受眾：${val("audience") || "（待填）"}
+- 理想客戶裝置習慣（多選）：${selectedMultiple(DEVICE_IDS)}
+
+## C. 網站範圍與功能規格
+- 網站類型：${val("siteType") || "（待填）"}
+- 預計上線日期：${val("deadline") || "（待填）"}
+- 預算範圍（NTD）：${val("budget") || "（待填）"}
+- 語言版本：${languagesText()}
+- 頁面架構（Sitemap）：${pagesText()}
+- 基礎功能（預設包含）：${BASELINE_FEATURES}
+- 進階功能：${featuresText()}
+- 第三方系統整合：${integrationsText()}
+- 基礎架構代辦服務：${selectedMultiple(INFRA_SERVICE_IDS, "infraServiceOther")}
+- 帳號責任模式：${selectedSingle(INFRA_OWNERSHIP_IDS)}
+- 計費方式：${selectedSingle(INFRA_BILLING_IDS)}
+- 第三方費用由客戶自付：${selectedMultiple(THIRD_PARTY_COST_IDS, "thirdPartyCostOther")}
+- 到期續約聯絡窗口：${val("infraRenewalContact") || "（待填）"}
+
+## D. 內容規劃與後續維運
+- 品牌素材準備狀況：${selectedSingle(BRAND_ASSET_STATUS_IDS)}
+- 現有品牌素材清單（多選）：${selectedMultiple(BRAND_ASSET_LIST_IDS, "brandAssetListOther")}
+- 內容文案準備狀況：${selectedSingle(CONTENT_ASSET_STATUS_IDS)}
+- SEO 需求：${selectedMultiple(SEO_IDS, "seoOther")}
+- 維護責任歸屬：${selectedSingle(MAINTENANCE_MODE_IDS)}
+- 後台編輯權限模式：${selectedSingle(EDITOR_ACCESS_MODE_IDS)}
+- 客戶可自行編輯範圍：${selectedMultiple(EDITABLE_SCOPE_IDS, "editableScopeOther")}
+- 改版上線流程：${selectedSingle(CHANGE_FLOW_IDS)}
+- 教育訓練與交接：${selectedSingle(TRAINING_IDS)}
+- 文案支援方式：${selectedSingle(CONTENT_SUPPORT_MODE_IDS)}
+- 內容服務項目：${selectedMultiple(CONTENT_SERVICE_IDS, "contentServiceOther")}
+
+## E. 待確認事項與注意事項
+- 訪談後仍需補齊：${missing.length ? missing.join("、") : "目前無"}
+- 客戶端注意事項：${selectedMultiple(RISK_IDS, "riskOther")}
+- 補充備註：${val("notes") || "無"}
+${successBlock}${refBlock}${seoKeywordBlock}${payBlock}
+
+## F. 合約與交付條件
+- 數位資產歸屬客戶：${selectedMultiple(ASSET_OWNERSHIP_IDS, "assetOwnershipOther")}
+- 授權使用限制：${selectedMultiple(LICENSE_EXCEPTION_IDS, "licenseExceptionOther")}
+- 交付與終止條件：${val("handoverNotes") || "（待填）"}
+
+## G. 報價方向建議（文案服務）
+- ${contentQuoteSuggestion()}
+
+## H. 建議後續步驟
+1. 確認最終 Sitemap 與 MVP 功能清單
+2. 客戶提供品牌素材與核心文案後，進行排版定稿
+3. 優先製作首頁與核心轉換頁 Wireframe 並確認方向
+4. 確認追蹤碼串接口徑（GA4、Meta Pixel、表單）
+`;
+      document.getElementById("out").textContent = md;
+      setStatus(`已產生（${new Date().toLocaleTimeString("zh-Hant")})`);
+      return md;
+    }
+
+    async function copyBrief() {
+      const text = generateBrief();
+      await navigator.clipboard.writeText(text);
+      setStatus("已複製到剪貼簿");
+    }
+
+    function downloadBrief(ext) {
+      const text = generateBrief();
+      const base = (val("project") || "website-brief").replace(/[\\/:*?"<>|]/g, "-");
+      const d = new Date();
+      const ts = d.getFullYear().toString()
+        + String(d.getMonth()+1).padStart(2,"0")
+        + String(d.getDate()).padStart(2,"0") + "-"
+        + String(d.getHours()).padStart(2,"0")
+        + String(d.getMinutes()).padStart(2,"0");
+      const filename = `${base}-brief-${ts}.${ext}`;
+      let content = text;
+      if (ext === "md") {
+        content += `\n\n<!-- BRIEF_FORM_DATA:${JSON.stringify(collectFormData())} -->`;
+      }
+      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setStatus(`已下載 ${filename}`);
+    }
+
+    const LANG_IDS = [
+      ["lang-zh", "繁體中文"],
+      ["lang-en", "英文"],
+      ["lang-other", "其他"]
+    ];
+
+    const ALL_CHECK_ID_GROUPS = [
+      LANG_IDS,
+      PAGE_IDS, FEATURE_IDS, INTEGRATION_IDS,
+      DEVICE_IDS,
+      INFRA_SERVICE_IDS, INFRA_OWNERSHIP_IDS, INFRA_BILLING_IDS, THIRD_PARTY_COST_IDS,
+      BRAND_ASSET_STATUS_IDS, BRAND_ASSET_LIST_IDS, CONTENT_ASSET_STATUS_IDS,
+      SEO_IDS, MAINTENANCE_MODE_IDS, EDITOR_ACCESS_MODE_IDS, EDITABLE_SCOPE_IDS,
+      CHANGE_FLOW_IDS, TRAINING_IDS,
+      CONTENT_SUPPORT_MODE_IDS, CONTENT_SERVICE_IDS,
+      RISK_IDS, ASSET_OWNERSHIP_IDS, LICENSE_EXCEPTION_IDS
+    ];
+
+    function collectFormData() {
+      const data = {};
+      const newIds = ["successGoal","seoKeywords","payDeposit","payMidterm","payFinal"];
+      newIds.forEach(id => { const el = document.getElementById(id); if(el) data[id] = el.value; });
+      const checkboxNewIds = [
+        ["device-desktop","電腦／筆電"],["device-mobile","手機"],["device-tablet","平板"],
+        ["asset-logo-source","Logo 原始檔"],["asset-brand-color","品牌色票"],
+        ["asset-font-license","字型授權"],["asset-brand-guideline","品牌規範手冊"]
+      ];
+      checkboxNewIds.forEach(([id]) => { const el = document.getElementById(id); if(el) data[id] = el.checked; });
+      allFields().forEach((id) => { data[id] = document.getElementById(id).value; });
+      ALL_CHECK_ID_GROUPS.forEach((group) => {
+        group.forEach(([id]) => { data[id] = document.getElementById(id).checked; });
+      });
+      data.logoName = uploadedLogoName;
+      return data;
+    }
+
+    function restoreFormData(data, statusMsg) {
+      allFields().forEach((id) => {
+        if (Object.prototype.hasOwnProperty.call(data, id)) {
+          document.getElementById(id).value = data[id] || "";
+        }
+      });
+      BRAND_COLOR_FIELDS.forEach((item) => {
+        const normalized = normalizeHex(val(item.hex)) || item.defaultHex;
+        document.getElementById(item.picker).value = normalized;
+        document.getElementById(item.hex).value = normalized;
+      });
+      ALL_CHECK_ID_GROUPS.forEach((group) => {
+        group.forEach(([id]) => {
+          document.getElementById(id).checked = Boolean(data[id]);
+        });
+      });
+      const langOtherEl = document.getElementById("lang-other-text");
+      langOtherEl.style.display = document.getElementById("lang-other").checked ? "inline-block" : "none";
+      uploadedLogoName = data.logoName || "";
+      updateLogoMeta(uploadedLogoName ? `已上傳：${uploadedLogoName}` : "尚未選擇檔案");
+      setStatus(statusMsg || "已載入資料");
+    }
+
+    function saveDraft() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(collectFormData()));
+    }
+
+    function loadDraft() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      try {
+        restoreFormData(JSON.parse(raw), "已載入上次草稿");
+      } catch (e) {
+        setStatus("草稿讀取失敗，請重新填寫");
+      }
+    }
+
+    function importBrief() {
+      document.getElementById("import-file-input").click();
+    }
+
+    function handleImportFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const content = e.target.result;
+        const match = content.match(/<!--\s*BRIEF_FORM_DATA:([\s\S]+?)\s*-->/);
+        if (!match) {
+          setStatus("⚠️ 找不到表單資料，請確認此 .md 檔由本工具產出");
+          return;
+        }
+        try {
+          const data = JSON.parse(match[1]);
+          restoreFormData(data, `✅ 已從「${file.name}」載入表單資料`);
+          saveDraft();
+        } catch (err) {
+          setStatus("⚠️ 載入失敗，資料格式有誤");
+        }
+      };
+      reader.readAsText(file, "utf-8");
+      event.target.value = "";
+    }
+
+    function clearForm() {
+      allFields().forEach((id) => { document.getElementById(id).value = ""; });
+      BRAND_COLOR_FIELDS.forEach((item) => {
+        document.getElementById(item.picker).value = item.defaultHex;
+        document.getElementById(item.hex).value = item.defaultHex;
+      });
+      PAGE_IDS.forEach(([id]) => { document.getElementById(id).checked = false; });
+      FEATURE_IDS.forEach(([id]) => { document.getElementById(id).checked = false; });
+      INTEGRATION_IDS.forEach(([id]) => { document.getElementById(id).checked = false; });
+      INFRA_SERVICE_IDS.forEach(([id]) => { document.getElementById(id).checked = false; });
+      INFRA_OWNERSHIP_IDS.forEach(([id]) => { document.getElementById(id).checked = false; });
+      INFRA_BILLING_IDS.forEach(([id]) => { document.getElementById(id).checked = false; });
+      THIRD_PARTY_COST_IDS.forEach(([id]) => { document.getElementById(id).checked = false; });
+      BRAND_ASSET_STATUS_IDS.forEach(([id]) => { document.getElementById(id).checked = false; });
+      CONTENT_ASSET_STATUS_IDS.forEach(([id]) => { document.getElementById(id).checked = false; });
+      SEO_IDS.forEach(([id]) => { document.getElementById(id).checked = false; });
+      MAINTENANCE_MODE_IDS.forEach(([id]) => { document.getElementById(id).checked = false; });
+      EDITOR_ACCESS_MODE_IDS.forEach(([id]) => { document.getElementById(id).checked = false; });
+      EDITABLE_SCOPE_IDS.forEach(([id]) => { document.getElementById(id).checked = false; });
+      CHANGE_FLOW_IDS.forEach(([id]) => { document.getElementById(id).checked = false; });
+      TRAINING_IDS.forEach(([id]) => { document.getElementById(id).checked = false; });
+      CONTENT_SUPPORT_MODE_IDS.forEach(([id]) => { document.getElementById(id).checked = false; });
+      CONTENT_SERVICE_IDS.forEach(([id]) => { document.getElementById(id).checked = false; });
+      RISK_IDS.forEach(([id]) => { document.getElementById(id).checked = false; });
+      ASSET_OWNERSHIP_IDS.forEach(([id]) => { document.getElementById(id).checked = false; });
+      LICENSE_EXCEPTION_IDS.forEach(([id]) => { document.getElementById(id).checked = false; });
+      document.querySelectorAll(".ref-url,.ref-like,.ref-dislike").forEach(el => el.value = "");
+      document.getElementById("successGoal").value = "";
+      document.getElementById("seoKeywords").value = "";
+      document.getElementById("payDeposit").value = "";
+      document.getElementById("payMidterm").value = "";
+      document.getElementById("payFinal").value = "";
+      document.getElementById("lang-zh").checked = true;
+      document.getElementById("lang-en").checked = false;
+      document.getElementById("lang-other").checked = false;
+      document.getElementById("lang-other-text").style.display = "none";
+      clearLogo();
+      localStorage.removeItem(STORAGE_KEY);
+      document.getElementById("out").textContent = "（按「產生 Brief」後會出現在這裡）";
+      setStatus("表單已清空");
+    }
+
+    allFields().forEach((id) => {
+      document.getElementById(id).addEventListener("input", saveDraft);
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    PAGE_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    FEATURE_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    INTEGRATION_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    INFRA_SERVICE_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    INFRA_OWNERSHIP_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    INFRA_BILLING_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    THIRD_PARTY_COST_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    BRAND_ASSET_STATUS_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    CONTENT_ASSET_STATUS_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    SEO_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    MAINTENANCE_MODE_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    EDITOR_ACCESS_MODE_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    EDITABLE_SCOPE_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    CHANGE_FLOW_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    TRAINING_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    CONTENT_SUPPORT_MODE_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    CONTENT_SERVICE_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    RISK_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    ASSET_OWNERSHIP_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    LICENSE_EXCEPTION_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    DEVICE_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    BRAND_ASSET_LIST_IDS.forEach(([id]) => {
+      document.getElementById(id).addEventListener("change", saveDraft);
+    });
+    BRAND_COLOR_FIELDS.forEach((item) => {
+      document.getElementById(item.picker).addEventListener("input", (e) => {
+        const hex = String(e.target.value || "").toUpperCase();
+        document.getElementById(item.hex).value = hex;
+        saveDraft();
+      });
+      document.getElementById(item.hex).addEventListener("input", (e) => {
+        const normalized = normalizeHex(e.target.value);
+        if (normalized) {
+          document.getElementById(item.picker).value = normalized;
+        }
+        saveDraft();
+      });
+      document.getElementById(item.hex).addEventListener("blur", () => {
+        const normalized = normalizeHex(val(item.hex)) || item.defaultHex;
+        document.getElementById(item.hex).value = normalized;
+        document.getElementById(item.picker).value = normalized;
+        saveDraft();
+      });
+    });
+    document.getElementById("logoFile").addEventListener("change", handleLogoUpload);
+    document.addEventListener("input", (event) => {
+      if (event.target.matches(".ref-url,.ref-like,.ref-dislike")) {
+        saveDraft();
+      }
+    });
+
+    loadDraft();
+
+    function addRefSite() {
+      const list = document.getElementById("refSiteList");
+      const row = document.createElement("div");
+      row.className = "ref-site-row";
+      row.style.cssText = "display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;margin-top:8px;";
+      row.innerHTML = '<input class="ref-url" placeholder="https://…" /><input class="ref-like" placeholder="喜歡的地方" /><input class="ref-dislike" placeholder="不喜歡的地方" />';
+      list.appendChild(row);
+    }
+  </script>
+</body>
+</html>
