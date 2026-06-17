@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DGHM 品牌風格指南產生器</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    margin: 0;
+    background: #F4F6F8;
+    color: #1f2933;
+  }
+  .app { display: flex; height: 100vh; }
+
+  /* ---- Form panel ---- */
+  .form-panel {
+    width: 440px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    padding: 20px;
+    background: #fff;
+    border-right: 1px solid #E1E5EA;
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; color: #143463; }
+  .hint { font-size: 12px; color: #667085; margin: 0 0 16px; line-height: 1.6; }
+  fieldset { border: 1px solid #E1E5EA; border-radius: 8px; margin-bottom: 16px; padding: 12px 14px; }
+  legend { font-size: 12px; font-weight: 700; color: #143463; padding: 0 4px; }
+  label { display: block; font-size: 12px; color: #475467; margin: 10px 0 4px; }
+  label:first-of-type { margin-top: 4px; }
+  input[type=text], input[type=number], textarea, select {
+    width: 100%; padding: 6px 8px; font-size: 13px;
+    border: 1px solid #D0D5DD; border-radius: 6px; font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 54px; line-height: 1.5; }
+  .color-row { display: flex; gap: 6px; align-items: center; }
+  .color-row input[type=color] { width: 36px; height: 32px; padding: 0; border: 1px solid #D0D5DD; border-radius: 6px; }
+  .color-row input[type=text] { flex: 1; font-family: "SF Mono", Menlo, monospace; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* ---- Compact color rows (Colors / Palette，仿 Breakdance Global Colors) ---- */
+  .group-label {
+    font-size: 11px; font-weight: 700; color: #143463;
+    letter-spacing: 0.5px; margin: 14px 0 6px;
+  }
+  .group-label:first-child { margin-top: 0; }
+  .color-line { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+  .color-line .color-name { flex: 1; }
+  .color-line .color-hex { width: 92px; font-family: "SF Mono", Menlo, monospace; font-size: 12px; }
+  .color-line .color-swatch {
+    width: 32px; height: 32px; padding: 0; flex-shrink: 0;
+    border: 1px solid #D0D5DD; border-radius: 6px;
+  }
+  .palette-row .palette-delete {
+    flex-shrink: 0; background: none; border: none; color: #C0392B;
+    font-size: 14px; padding: 4px 6px; line-height: 1;
+  }
+  button {
+    cursor: pointer; border: 1px solid #143463; background: #143463; color: #fff;
+    padding: 6px 12px; border-radius: 6px; font-size: 12px;
+  }
+  button.secondary { background: #fff; color: #143463; }
+  button.small { font-size: 11px; padding: 4px 8px; }
+
+  /* ---- Output panel ---- */
+  .output-panel { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow: hidden; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 6px 14px; border-radius: 6px; border: 1px solid #D0D5DD;
+    background: #fff; font-size: 13px; cursor: pointer; color: #475467;
+  }
+  .tab-btn.active { background: #143463; color: #fff; border-color: #143463; }
+  .output-actions { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .output-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .output-view.hidden { display: none; }
+  #out-tokens, #out-html, #out-breakdance {
+    flex: 1; width: 100%; font-family: "SF Mono", Menlo, monospace; font-size: 12px;
+    border: 1px solid #D0D5DD; border-radius: 8px; padding: 12px; resize: none;
+  }
+  #preview-frame { flex: 1; width: 100%; border: 1px solid #D0D5DD; border-radius: 8px; background: #fff; }
+
+  /* ---- Breakdance JSON 合併上傳 ---- */
+  .breakdance-upload { margin-bottom: 8px; }
+  .breakdance-upload .upload-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .breakdance-upload input[type=file] { font-size: 12px; max-width: 280px; }
+  .upload-status { font-size: 12px; color: #1a7f4b; font-weight: 600; }
+
+  /* ---- 檔案上傳（Logo / Icon） ---- */
+  .file-upload-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .file-upload-row input[type=file] { font-size: 12px; max-width: 100%; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ FORM PANEL ============ -->
+  <div class="form-panel">
+    <h1>客戶品牌風格指南產生器</h1>
+    <p class="hint">填入新客戶的品牌色彩與視覺風格資訊，右側會即時產生 <code>tokens.css</code> 與 <code>guideline.html</code>，可直接複製或下載，套用至 DGHM 文件模板。</p>
+
+    <form id="form">
+
+      <fieldset>
+        <legend>01 — 基本資訊</legend>
+        <label>客戶名稱（顯示用，如 TailorMed）</label>
+        <input type="text" id="client-name" value="TailorMed">
+
+        <label>客戶完整名稱（頁尾用，如 TailorMed International Courier LTD.）</label>
+        <input type="text" id="client-full-name" value="TailorMed International Courier LTD.">
+
+        <label>CSS 變數前綴</label>
+        <input type="text" id="css-prefix" value="brand" placeholder="brand">
+        <p class="hint" style="margin:4px 0 0;">輸出的 CSS 變數名稱會是 <code>--{前綴}-navy</code> 等，例如 <code>--brand-navy</code>。建議改成客戶英文簡稱（如 <code>acme</code>），避免沿用 TailorMed 專案的 <code>tm</code>。僅可使用小寫英文、數字與「-」。</p>
+
+        <div class="grid2">
+          <div>
+            <label>版本號</label>
+            <input type="text" id="version" value="v0.1">
+          </div>
+          <div>
+            <label>年份</label>
+            <input type="text" id="year" value="2026">
+          </div>
+        </div>
+
+        <label>Hero 說明文字</label>
+        <textarea id="hero-desc" placeholder="本頁彙整本客戶官方確認之品牌色彩規範，以及相關網站之視覺風格觀察，供 DGHM 為其製作文件（操作手冊、報告、簡報等）時套色與排版參考。"></textarea>
+
+        <label>Logo（完整版）路徑</label>
+        <input type="text" id="logo-full" value="logo/logo-full.png">
+        <div class="file-upload-row">
+          <input type="file" id="logo-full-file" accept="image/png,image/svg+xml,image/*">
+          <button type="button" class="secondary small" id="logo-full-clear" style="display:none;">清除</button>
+          <span id="logo-full-status" class="upload-status"></span>
+        </div>
+
+        <label>Logo（圖標 Mark）路徑</label>
+        <input type="text" id="logo-mark" value="logo/logo-mark.png">
+        <div class="file-upload-row">
+          <input type="file" id="logo-mark-file" accept="image/png,image/svg+xml,image/*">
+          <button type="button" class="secondary small" id="logo-mark-clear" style="display:none;">清除</button>
+          <span id="logo-mark-status" class="upload-status"></span>
+        </div>
+        <p class="hint" style="margin:6px 0 0;">可選擇上傳 PNG / SVG 檔案，會以內嵌（data URI）方式直接放入 <code>guideline.html</code>，預覽與下載皆會顯示實際圖檔，無需另外提供 <code>logo/</code> 資料夾。未上傳則沿用上方路徑文字（供日後正式文件引用實體檔案）。</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>02 — 品牌色彩（Colors）</legend>
+
+        <div class="group-label">主色</div>
+        <div class="color-line">
+          <input type="text" class="color-name" id="navy-name" value="Brand">
+          <input type="text" class="color-hex" id="navy-hex" value="#143463">
+          <input type="color" class="color-swatch" id="navy-color" value="#143463">
+        </div>
+        <div class="color-line">
+          <input type="text" class="color-name" id="accent-name" value="Text">
+          <input type="text" class="color-hex" id="accent-hex" value="#97D3DF">
+          <input type="color" class="color-swatch" id="accent-color" value="#97D3DF">
+        </div>
+        <div class="color-line">
+          <input type="text" class="color-name" id="pale-name" value="Headings">
+          <input type="text" class="color-hex" id="pale-hex" value="#DFEAF3">
+          <input type="color" class="color-swatch" id="pale-color" value="#DFEAF3">
+        </div>
+        <div class="color-line">
+          <input type="text" class="color-name" id="link-name" value="Links">
+          <input type="text" class="color-hex" id="link-hex" value="#DFEAF3">
+          <input type="color" class="color-swatch" id="link-color" value="#DFEAF3">
+        </div>
+
+        <div class="group-label">中性色</div>
+        <div class="color-line">
+          <input type="text" class="color-name" id="ink-name" value="Background">
+          <input type="text" class="color-hex" id="ink-hex" value="#222222">
+          <input type="color" class="color-swatch" id="ink-color" value="#222222">
+        </div>
+        <div class="color-line">
+          <input type="text" class="color-name" id="gray-name" value="Brand Dark">
+          <input type="text" class="color-hex" id="gray-hex" value="#666666">
+          <input type="color" class="color-swatch" id="gray-color" value="#666666">
+        </div>
+        <div class="color-line">
+          <input type="text" class="color-name" id="white-name" value="Surface">
+          <input type="text" class="color-hex" id="white-hex" value="#FFFFFF">
+          <input type="color" class="color-swatch" id="white-color" value="#FFFFFF">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>03 — 衍生色（自動計算・可覆寫）</legend>
+        <p class="hint" style="margin:0 0 8px;">依主色、輔助強調色、淡色自動推算。調整上方顏色後按「重新計算」更新，計算後仍可手動微調 HEX。</p>
+        <button type="button" class="secondary small" id="recalc-btn">重新計算衍生色</button>
+
+        <div class="color-line" style="margin-top:10px;">
+          <input type="text" class="color-name" id="navylight-name" value="Derived Light">
+          <input type="text" class="color-hex" id="navylight-hex" value="#667B9A">
+          <input type="color" class="color-swatch" id="navylight-color" value="#667B9A">
+        </div>
+        <div class="color-line">
+          <input type="text" class="color-name" id="accentdark-name" value="Derived Dark">
+          <input type="text" class="color-hex" id="accentdark-hex" value="#6393AD">
+          <input type="color" class="color-swatch" id="accentdark-color" value="#6393AD">
+        </div>
+        <div class="color-line">
+          <input type="text" class="color-name" id="rowstripe-name" value="Derived 3">
+          <input type="text" class="color-hex" id="rowstripe-hex" value="#EFF5F9">
+          <input type="color" class="color-swatch" id="rowstripe-color" value="#EFF5F9">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>04 — 自訂色票（Palette）</legend>
+        <p class="hint" style="margin:0 0 8px;">額外的品牌色（如 Gold Dark、Surface、Sale Red 等），會加入 <code>tokens.css</code> 並顯示於指南色票區，無需填寫用途說明。</p>
+        <div id="palette-list"></div>
+        <button type="button" class="secondary small" id="palette-add-btn">+ 新增色票</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>05 — 字體與排版示範</legend>
+        <label>字體 font-family</label>
+        <input type="text" id="font-stack" value='"Noto Sans", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", -apple-system, "Segoe UI", Roboto, sans-serif'>
+
+        <label>H1 示範文字</label>
+        <input type="text" id="h1-demo" value="Product Name CRM Interface User Guide">
+
+        <label>Body 示範文字</label>
+        <textarea id="body-demo">這裡放一段內文示範文字，用於展示本客戶文件中標準的正文字級與行高效果。</textarea>
+      </fieldset>
+
+      <fieldset>
+        <legend>06 — 視覺風格 Tokens（每客戶可自訂）</legend>
+        <div class="grid2">
+          <div>
+            <label>按鈕／輸入框圓角 (px)</label>
+            <input type="number" id="radius-sm" value="10">
+          </div>
+          <div>
+            <label>卡片圓角 (px)</label>
+            <input type="number" id="radius-lg" value="16">
+          </div>
+        </div>
+
+        <label>卡片陰影不透明度（0–1，基準色取自主色①）</label>
+        <input type="number" id="shadow-opacity" value="0.4" step="0.05" min="0" max="1">
+
+        <label>Hero 深色疊層顏色</label>
+        <div class="color-row">
+          <input type="color" id="overlay-color" value="#0F172A">
+          <input type="text" id="overlay-hex" value="#0F172A">
+        </div>
+        <label>Hero 深色疊層不透明度（0–1）</label>
+        <input type="number" id="overlay-opacity" value="0.55" step="0.05" min="0" max="1">
+
+        <label>表單區塊底色不透明度（0–1，基準色取自③淡色）</label>
+        <input type="number" id="tint-opacity" value="0.15" step="0.05" min="0" max="1">
+
+        <label>狀態徽章示範文字</label>
+        <input type="text" id="badge-demo" value="Status Badge">
+
+        <label>深色資訊卡標籤 / 數值</label>
+        <div class="grid2">
+          <input type="text" id="darkcard-label" value="REFERENCE NO.">
+          <input type="text" id="darkcard-value" value="ABC12345">
+        </div>
+
+        <label>頁尾色條文字</label>
+        <input type="text" id="footerbar-text" value="© 2026 TailorMed. All Rights Reserved.">
+      </fieldset>
+
+      <fieldset>
+        <legend>07 — 使用原則（Do / Don't）</legend>
+        <label>✓ 建議事項（每行一條）</label>
+        <textarea id="do-list">標題、表頭一律使用主色①
+輔助強調色②避免大面積使用
+頁首放置完整 Logo，比例不變形
+深色底時使用反白版 Logo</textarea>
+
+        <label>✗ 避免事項（每行一條）</label>
+        <textarea id="dont-list">避免在輔助強調色②底色上使用淺色文字（對比不足）
+避免任意調整 Logo 顏色或拉伸變形
+衍生色標記為「待確認」前，避免用於對外正式文件</textarea>
+      </fieldset>
+
+      <fieldset>
+        <legend>08 — 來源說明 / 待確認事項（每行一條）</legend>
+        <textarea id="provenance-list" style="min-height:90px;">主色與中性色由客戶官方提供並確認，可直接用於對外正式文件。
+衍生色為依官方主色推算的輔助色，尚未經客戶確認，僅建議用於 hover、表格交錯等內部預覽用途。
+本頁與 tokens.css 應同步維護；若色彩或風格異動，請同時更新兩者。</textarea>
+      </fieldset>
+
+    </form>
+  </div>
+
+  <!-- ============ OUTPUT PANEL ============ -->
+  <div class="output-panel">
+    <div class="tabs">
+      <button type="button" class="tab-btn active" data-tab="tokens">tokens.css</button>
+      <button type="button" class="tab-btn" data-tab="html">guideline.html</button>
+      <button type="button" class="tab-btn" data-tab="breakdance">Breakdance Colors JSON</button>
+      <button type="button" class="tab-btn" data-tab="preview">即時預覽</button>
+    </div>
+    <div class="output-actions">
+      <button type="button" class="secondary" id="copy-btn">複製目前內容</button>
+      <button type="button" class="secondary" id="download-tokens-btn">下載 tokens.css</button>
+      <button type="button" class="secondary" id="download-html-btn">下載 guideline.html</button>
+      <button type="button" class="secondary" id="download-breakdance-btn">下載 Breakdance JSON</button>
+    </div>
+    <div class="output-view" id="view-tokens">
+      <textarea id="out-tokens" readonly spellcheck="false"></textarea>
+    </div>
+    <div class="output-view hidden" id="view-html">
+      <textarea id="out-html" readonly spellcheck="false"></textarea>
+    </div>
+    <div class="output-view hidden" id="view-breakdance">
+      <div class="breakdance-upload">
+        <label for="breakdance-base-file" style="margin:0 0 6px;">選填：上傳現有 <code>global-settings.json</code>，將本頁色彩套用到完整檔案後一併下載</label>
+        <div class="upload-row">
+          <input type="file" id="breakdance-base-file" accept="application/json,.json">
+          <button type="button" class="secondary small" id="breakdance-base-clear" style="display:none;">清除已上傳檔案</button>
+          <span id="breakdance-base-status" class="upload-status"></span>
+        </div>
+      </div>
+      <p class="hint" id="breakdance-hint" style="margin:0 0 8px;">此 JSON 僅包含 Breakdance 全域設定中的 <code>colors</code> 區塊（含 Palette）。可上傳現有 <code>global-settings.json</code>，將本頁色彩套用到完整檔案後一併下載。</p>
+      <textarea id="out-breakdance" readonly spellcheck="false"></textarea>
+    </div>
+    <div class="output-view hidden" id="view-preview">
+      <iframe id="preview-frame"></iframe>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   色彩工具函式
+   ============================================================ */
+function hexToRgb(hex) {
+  hex = hex.replace('#', '').trim();
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  const num = parseInt(hex, 16);
+  return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+}
+function rgbToHex(r, g, b) {
+  const clamp = v => Math.max(0, Math.min(255, Math.round(v)));
+  return '#' + [r, g, b].map(v => clamp(v).toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+function mixHex(hexA, hexB, p) {
+  const a = hexToRgb(hexA), b = hexToRgb(hexB);
+  return rgbToHex(a.r + (b.r - a.r) * p, a.g + (b.g - a.g) * p, a.b + (b.b - a.b) * p);
+}
+function rgbStr(hex) {
+  const c = hexToRgb(hex);
+  return c.r + ', ' + c.g + ', ' + c.b;
+}
+function esc(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+function val(id) {
+  return document.getElementById(id).value;
+}
+
+/* ============================================================
+   Logo / Icon 上傳（內嵌為 data URI）
+   ============================================================ */
+let logoFullDataURL = null, logoFullFileName = null;
+let logoMarkDataURL = null, logoMarkFileName = null;
+
+/* ============================================================
+   CSS 變數前綴（取代原 TailorMed 專案的 --tm- 前綴）
+   ============================================================ */
+function getCssPrefix() {
+  const raw = val('css-prefix').trim().toLowerCase();
+  const cleaned = raw.replace(/[^a-z0-9-]/g, '-').replace(/^-+|-+$/g, '');
+  return cleaned || 'brand';
+}
+function applyCssPrefix(text) {
+  return text.replace(/--tm-/g, '--' + getCssPrefix() + '-');
+}
+
+/* ============================================================
+   用途說明預設值（不需使用者填寫，固定套用於 guideline.html）
+   ============================================================ */
+const USAGE_DEFAULTS = {
+  navy: '標題、品牌文字、表頭、深色區塊',
+  accent: 'Logo 圖標色、輔助強調、淺色標籤',
+  pale: '頁面／卡片底色、邊框、表格交錯底色',
+  link: '連結文字、可點擊元件強調色',
+  ink: '標題／正文文字',
+  gray: '次要說明文字',
+  white: '頁面底色、深色區塊上的文字',
+  navylight: '次標題、hover 狀態',
+  accentdark: '淺色底上的文字／圖示',
+  rowstripe: '表格交錯底色',
+  palette: '依品牌規範彈性使用'
+};
+
+/* ============================================================
+   自訂色票（Palette）
+   ============================================================ */
+function slugify(name, index) {
+  const s = String(name || '').toLowerCase().trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return s || ('custom-' + (index + 1));
+}
+function getPaletteEntries() {
+  const rows = document.querySelectorAll('#palette-list .palette-row');
+  const entries = [];
+  rows.forEach((row, i) => {
+    const name = row.querySelector('.color-name').value.trim();
+    const hex = row.querySelector('.color-hex').value.trim();
+    if (!name && !hex) return;
+    entries.push({
+      name: name || ('Custom ' + (i + 1)),
+      hex: hex || '#CCCCCC',
+      slug: slugify(name, i)
+    });
+  });
+  return entries;
+}
+
+/* ============================================================
+   衍生色自動計算
+   navy-light  = navy  混合 white  35%
+   accent-dark = accent 混合 navy 40%
+   row-stripe  = pale  混合 white  50%
+   ============================================================ */
+function recalcDerived() {
+  const navy = val('navy-hex');
+  const accent = val('accent-hex');
+  const pale = val('pale-hex');
+
+  const navyLight = mixHex(navy, '#FFFFFF', 0.35);
+  const accentDark = mixHex(accent, navy, 0.40);
+  const rowStripe = mixHex(pale, '#FFFFFF', 0.50);
+
+  document.getElementById('navylight-hex').value = navyLight;
+  document.getElementById('navylight-color').value = navyLight;
+  document.getElementById('accentdark-hex').value = accentDark;
+  document.getElementById('accentdark-color').value = accentDark;
+  document.getElementById('rowstripe-hex').value = rowStripe;
+  document.getElementById('rowstripe-color').value = rowStripe;
+
+  renderOutputs();
+}
+
+/* ============================================================
+   tokens.css 產生器
+   ============================================================ */
+function buildTokensCSS() {
+  const clientName = val('client-name');
+  const version = val('version');
+
+  const paletteEntries = getPaletteEntries();
+  const paletteVarsBlock = paletteEntries.length
+    ? '\n  /* ---- Palette（自訂色票） ---- */\n' + paletteEntries.map(p => `  --tm-${p.slug}: ${p.hex};   /* ${p.name} */`).join('\n') + '\n'
+    : '';
+
+  return applyCssPrefix(`/* ============================================================
+   ${clientName} — Brand Tokens
+   來源：客戶官方提供色彩規範（已確認）／業主認可子網站（視覺風格參考）
+   版本：${version}
+   用法：文件模板於 <head> 加入
+     <link rel="stylesheet" href="../../Brand/tokens.css">
+     （路徑依文件所在層級調整相對路徑）
+   ============================================================ */
+
+:root {
+  /* ---- Primary（官方確認） ---- */
+  --tm-navy: ${val('navy-hex')};        /* ${val('navy-name')} */
+  --tm-accent: ${val('accent-hex')};      /* ${val('accent-name')} */
+  --tm-pale: ${val('pale-hex')};        /* ${val('pale-name')} */
+  --tm-link: ${val('link-hex')};        /* ${val('link-name')} */
+
+  /* ---- Neutral（官方確認） ---- */
+  --tm-ink: ${val('ink-hex')};         /* ${val('ink-name')} */
+  --tm-gray: ${val('gray-hex')};        /* ${val('gray-name')} */
+  --tm-white: ${val('white-hex')};
+
+  /* ---- Derived（依官方色衍生，待確認） ---- */
+  --tm-navy-light: ${val('navylight-hex')};   /* ${val('navylight-name')} */
+  --tm-accent-dark: ${val('accentdark-hex')};  /* ${val('accentdark-name')} */
+  --tm-row-stripe: ${val('rowstripe-hex')};   /* ${val('rowstripe-name')} */
+${paletteVarsBlock}
+  /* ---- Semantic mapping（對應官方色，已確認） ---- */
+  --tm-bg-pale: var(--tm-pale);
+  --tm-border: var(--tm-pale);
+  --tm-text-heading: var(--tm-navy);
+  --tm-text-body: var(--tm-ink);
+  --tm-text-muted: var(--tm-accent);
+
+  /* ---- Semantic（通用語意色，與品牌無關，維持不變） ---- */
+  --tm-note-bg: #FFF8E1;
+  --tm-note-border: #F0AD4E;
+  --tm-todo-bg: #FDECEA;
+  --tm-todo-border: #E07B6E;
+  --tm-todo-text: #C0392B;
+
+  /* ---- Typography ---- */
+  --tm-font: ${val('font-stack')};
+
+  /* ---- Visual Style（每客戶可自訂） ---- */
+  --tm-radius-sm: ${val('radius-sm')}px;    /* 按鈕、輸入框圓角 */
+  --tm-radius-lg: ${val('radius-lg')}px;    /* 卡片圓角 */
+  --tm-shadow-card: 0 5px 10px 0 rgba(${rgbStr(val('navy-hex'))}, ${val('shadow-opacity')});  /* 卡片陰影（主色調柔陰影） */
+  --tm-overlay-dark: rgba(${rgbStr(val('overlay-hex'))}, ${val('overlay-opacity')});             /* Hero 圖片深色疊層 */
+  --tm-tint-pale-15: rgba(${rgbStr(val('pale-hex'))}, ${val('tint-opacity')});          /* 淡色疊色（表單區塊底色） */
+}
+`);
+}
+
+/* ============================================================
+   swatch / list 小工具
+   ============================================================ */
+function swatchHTML(varName, hex, name, usage, status) {
+  let tagClass = 'src-confirmed', tagLabel = '官方確認';
+  if (status === 'derived') { tagClass = 'src-derived'; tagLabel = '衍生・待確認'; }
+  else if (status === 'palette') { tagClass = 'src-confirmed'; tagLabel = '品牌色票'; }
+  return `      <div class="swatch">
+        <div class="color-block" style="background: var(${varName})" data-hex="${esc(hex)}" title="點擊複製 HEX 色碼"></div>
+        <div class="info">
+          <div class="name">${esc(name)}</div>
+          <div class="hex">${esc(hex)}</div>
+          <div class="usage">${esc(usage)}</div>
+          <span class="src-tag ${tagClass}">${tagLabel}</span>
+        </div>
+      </div>`;
+}
+function listItems(textareaId) {
+  return val(textareaId)
+    .split('\n')
+    .map(s => s.trim())
+    .filter(s => s.length > 0)
+    .map(s => `          <li>${esc(s)}</li>`)
+    .join('\n');
+}
+
+/* ============================================================
+   guideline.html 產生器
+   ============================================================ */
+function buildGuidelineHTML() {
+  const clientName = esc(val('client-name'));
+  const clientFullName = esc(val('client-full-name'));
+  const version = esc(val('version'));
+  const year = esc(val('year'));
+
+  const paletteSwatches = getPaletteEntries()
+    .map(p => swatchHTML('--tm-' + p.slug, p.hex, p.name, USAGE_DEFAULTS.palette, 'palette'));
+
+  const primarySwatches = [
+    swatchHTML('--tm-navy', val('navy-hex'), val('navy-name'), USAGE_DEFAULTS.navy, 'confirmed'),
+    swatchHTML('--tm-accent', val('accent-hex'), val('accent-name'), USAGE_DEFAULTS.accent, 'confirmed'),
+    swatchHTML('--tm-pale', val('pale-hex'), val('pale-name'), USAGE_DEFAULTS.pale, 'confirmed'),
+    swatchHTML('--tm-link', val('link-hex'), val('link-name'), USAGE_DEFAULTS.link, 'confirmed'),
+    ...paletteSwatches
+  ].join('\n');
+
+  const neutralSwatches = [
+    swatchHTML('--tm-ink', val('ink-hex'), val('ink-name'), USAGE_DEFAULTS.ink, 'confirmed'),
+    swatchHTML('--tm-gray', val('gray-hex'), val('gray-name'), USAGE_DEFAULTS.gray, 'confirmed'),
+    `      <div class="swatch">
+        <div class="color-block" style="background: var(--tm-white); border: 1px solid var(--tm-border);" data-hex="${esc(val('white-hex'))}" title="點擊複製 HEX 色碼"></div>
+        <div class="info">
+          <div class="name">${esc(val('white-name'))}</div>
+          <div class="hex">${esc(val('white-hex'))}</div>
+          <div class="usage">${esc(USAGE_DEFAULTS.white)}</div>
+          <span class="src-tag src-confirmed">官方確認</span>
+        </div>
+      </div>`
+  ].join('\n');
+
+  const derivedSwatches = [
+    swatchHTML('--tm-navy-light', val('navylight-hex'), val('navylight-name'), USAGE_DEFAULTS.navylight, 'derived'),
+    swatchHTML('--tm-accent-dark', val('accentdark-hex'), val('accentdark-name'), USAGE_DEFAULTS.accentdark, 'derived'),
+    swatchHTML('--tm-row-stripe', val('rowstripe-hex'), val('rowstripe-name'), USAGE_DEFAULTS.rowstripe, 'derived')
+  ].join('\n');
+
+  const logoFullSrc = esc(logoFullDataURL || val('logo-full'));
+  const logoMarkSrc = esc(logoMarkDataURL || val('logo-mark'));
+  const logoFullName = esc(logoFullFileName || val('logo-full'));
+  const logoMarkName = esc(logoMarkFileName || val('logo-mark'));
+  const logoFullDisplayName = logoFullFileName ? esc(logoFullFileName) : esc(val('logo-full').split('/').pop());
+
+  return applyCssPrefix(`<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${clientName} — 品牌色彩指南（內部參考）</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  * { box-sizing: border-box; }
+
+  /* ---- Dark / Day 模式 surface tokens ---- */
+  :root {
+    --surface-page: #ffffff;
+    --surface-card: #ffffff;
+    --surface-card-alt: var(--tm-bg-pale);
+    --surface-text: var(--tm-text-body);
+    --surface-text-muted: var(--tm-text-muted);
+    --surface-heading: var(--tm-text-heading);
+    --surface-border: var(--tm-border);
+    --surface-do-bg: #F2FAFC;
+    --surface-dont-bg: var(--tm-todo-bg);
+    --surface-dont-border: #f3d4d0;
+    --surface-dont-text: var(--tm-todo-text);
+    --surface-accent-text: var(--tm-accent);
+  }
+  :root[data-theme="dark"] {
+    --surface-page: #14181f;
+    --surface-card: #1c222e;
+    --surface-card-alt: #232a38;
+    --surface-text: #cdd3dc;
+    --surface-text-muted: #8b94a3;
+    --surface-heading: #f5f7fa;
+    --surface-border: #2c3342;
+    --surface-do-bg: #15303a;
+    --surface-dont-bg: #3a1f20;
+    --surface-dont-border: #5a2c2c;
+    --surface-dont-text: #e08e85;
+    /* Text（主色）在 Dark 模式下與深色 surface 背景混合提亮，
+       避免品牌色本身偏深時在深色底被吃掉；Day 模式維持原色 */
+    --surface-accent-text: color-mix(in srgb, var(--tm-accent) 65%, #ffffff 35%);
+  }
+
+  body {
+    font-family: var(--tm-font);
+    color: var(--surface-text);
+    background: var(--surface-page);
+    margin: 0;
+    line-height: 1.7;
+    transition: background-color .2s ease, color .2s ease;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  /* ---- Dark / Day 模式切換按鈕 ---- */
+  #theme-toggle {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 100;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--surface-border);
+    background: var(--surface-card);
+    color: var(--surface-accent-text);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  #theme-toggle:hover { opacity: 0.85; }
+  @media print {
+    #theme-toggle { display: none; }
+  }
+
+  /* ---- Hero ---- */
+  .hero {
+    background: var(--tm-navy);
+    color: #fff;
+    padding: 48px 40px;
+    border-radius: 12px;
+    margin-bottom: 40px;
+  }
+  .hero .tag {
+    display: inline-block;
+    font-size: 11px;
+    letter-spacing: 2px;
+    background: rgba(255,255,255,0.12);
+    padding: 4px 10px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+  }
+  .hero img { height: 48px; margin-bottom: 16px; filter: brightness(0) invert(1); opacity: 0.95; }
+  .hero h1 { margin: 0 0 8px; font-size: 28px; }
+  .hero p { margin: 0; color: var(--tm-accent); font-size: 14px; max-width: 640px; }
+
+  /* ---- Section ---- */
+  section { margin-bottom: 48px; }
+  .section-num {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--tm-accent-dark);
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  h2 {
+    color: var(--surface-heading);
+    font-size: 20px;
+    margin: 0 0 6px;
+    border-bottom: 2px solid var(--surface-border);
+    padding-bottom: 10px;
+  }
+  .section-desc { color: var(--surface-text-muted); font-size: 13px; margin: 8px 0 20px; max-width: 700px; }
+
+  /* ---- Color swatches ---- */
+  .swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .swatch {
+    border: 1px solid var(--surface-border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--surface-card);
+  }
+  .swatch .color-block {
+    height: 80px;
+    position: relative;
+    cursor: pointer;
+  }
+  .swatch .color-block::after {
+    content: '已複製 ✓';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+  }
+  .swatch .color-block.copied::after {
+    opacity: 1;
+  }
+  .swatch .info { padding: 12px 14px; }
+  .swatch .name { font-weight: 700; color: var(--surface-heading); font-size: 13px; margin-bottom: 2px; }
+  .swatch .hex { font-family: "SF Mono", Menlo, monospace; font-size: 12px; color: var(--tm-link); }
+  .swatch .usage { font-size: 11px; color: var(--surface-text-muted); margin-top: 6px; }
+  .swatch .src-tag {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-top: 8px;
+  }
+  .src-confirmed { background: #E5F4FA; color: var(--tm-navy); }
+  .src-derived { background: var(--tm-note-bg); color: #9a6b1e; }
+
+  /* ---- Logo usage ---- */
+  .logo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .logo-card {
+    border: 1px solid var(--surface-border);
+    border-radius: 10px;
+    padding: 24px;
+    text-align: center;
+    background: var(--surface-card-alt);
+  }
+  .logo-card img { max-width: 100%; max-height: 80px; }
+  .logo-card .label { margin-top: 12px; font-size: 12px; color: var(--surface-text); font-weight: 600; }
+  .logo-card .filename { font-family: "SF Mono", Menlo, monospace; font-size: 11px; color: var(--surface-text-muted); }
+  .logo-card.dark { background: var(--tm-navy); }
+  .logo-card.dark img { filter: brightness(0) invert(1); }
+  .logo-card.dark .label { color: #fff; }
+  .logo-card.dark .filename { color: var(--tm-accent); }
+
+  /* ---- Typography demo ---- */
+  /* .type-demo 呈現的是文字在「網站上（白底）」的實際樣子，因此維持白底，
+     不隨 Dark / Day 模式變色，只有外框跟隨介面主題 */
+  .type-demo {
+    border: 1px solid var(--surface-border);
+    border-radius: 10px;
+    padding: 24px;
+    background: #fff;
+  }
+  .type-demo .label-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 11px; color: var(--tm-text-muted); margin-bottom: 6px;
+  }
+  .type-demo h3 { margin: 0; color: var(--tm-navy); }
+  .type-demo .h1-demo { font-size: 32px; font-weight: 700; color: var(--tm-navy); margin: 0; }
+  .type-demo .body-demo { font-size: 14px; color: var(--tm-text-body); margin: 0; }
+  .type-demo + .type-demo { margin-top: 12px; }
+
+  /* ---- Do/Don't ---- */
+  .dodont {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .dodont .box { border-radius: 10px; padding: 16px 20px; font-size: 13px; }
+  .do { background: var(--surface-do-bg); border: 1px solid var(--surface-border); }
+  .dont { background: var(--surface-dont-bg); border: 1px solid var(--surface-dont-border); }
+  .dodont h4 { margin: 0 0 8px; font-size: 13px; }
+  .do h4 { color: var(--surface-heading); }
+  .dont h4 { color: var(--surface-dont-text); }
+  .dodont ul { margin: 0; padding-left: 18px; }
+  .dodont li { margin-bottom: 4px; }
+
+  /* ---- Provenance / footer ---- */
+  .provenance {
+    background: var(--surface-card-alt);
+    border-left: 4px solid var(--tm-accent-dark);
+    padding: 16px 20px;
+    font-size: 12px;
+    color: var(--surface-text);
+    border-radius: 0 8px 8px 0;
+  }
+  .provenance h4 { margin: 0 0 8px; color: var(--surface-heading); font-size: 13px; }
+  .provenance ul { margin: 0; padding-left: 18px; }
+  .provenance li { margin-bottom: 4px; }
+
+  footer {
+    margin-top: 60px;
+    padding-top: 16px;
+    border-top: 1px solid var(--surface-border);
+    font-size: 11px;
+    color: var(--surface-text-muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  @media (max-width: 640px) {
+    .dodont { grid-template-columns: 1fr; }
+  }
+
+  /* ---- Visual style demos ---- */
+  .style-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .style-card {
+    border: 1px solid var(--surface-border);
+    border-radius: 10px;
+    padding: 16px;
+    background: var(--surface-card);
+  }
+  .style-card .demo-label { font-size: 12px; color: var(--surface-text-muted); margin-bottom: 10px; }
+  /* .demo-box 系列展示的是品牌色彩 token 在網站（白底）上的樣子，
+     固定白底，不隨 Dark / Day 模式變色 */
+  .demo-box {
+    display: flex; align-items: center; justify-content: center;
+    height: 64px; font-size: 12px; color: var(--tm-navy); font-weight: 600;
+    font-family: "SF Mono", Menlo, monospace;
+    background: #fff;
+  }
+  .radius-sm-box { border-radius: var(--tm-radius-sm); background: var(--tm-pale); }
+  .radius-lg-box { border-radius: var(--tm-radius-lg); background: var(--tm-pale); }
+  .shadow-box { border-radius: var(--tm-radius-lg); background: #fff; box-shadow: var(--tm-shadow-card); }
+  .tint-box { background: var(--tm-tint-pale-15); border: 1px solid var(--tm-border); }
+  .overlay-box {
+    position: relative; height: 64px;
+    border-radius: var(--tm-radius-lg);
+    background: linear-gradient(135deg, var(--tm-navy-light), var(--tm-navy));
+    overflow: hidden;
+  }
+  .overlay-box::after { content: ""; position: absolute; inset: 0; background: var(--tm-overlay-dark); }
+  .overlay-box span {
+    position: relative; z-index: 1; color: #fff; font-size: 11px;
+    display: flex; align-items: center; justify-content: center; height: 100%;
+    font-family: "SF Mono", Menlo, monospace;
+  }
+  .badge-demo {
+    display: inline-block;
+    background: var(--tm-accent);
+    color: var(--tm-navy);
+    font-weight: 700;
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: var(--tm-radius-sm);
+  }
+  .dark-card-demo {
+    background: var(--tm-navy);
+    color: #fff;
+    border-radius: var(--tm-radius-lg);
+    padding: 16px;
+    height: 64px;
+    box-sizing: border-box;
+  }
+  .dark-card-demo .label { font-size: 10px; letter-spacing: 1px; opacity: 0.7; }
+  .dark-card-demo .value { font-size: 16px; font-weight: 700; margin-top: 4px; }
+  .footer-bar-demo {
+    background: var(--tm-navy);
+    color: #fff;
+    text-align: center;
+    font-size: 12px;
+    padding: 0 12px;
+    height: 64px;
+    border-radius: var(--tm-radius-sm);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ---- Mapping table (web -> document component) ---- */
+  .map-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    color: var(--surface-accent-text);
+  }
+  .map-table th, .map-table td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--surface-border);
+    vertical-align: top;
+  }
+  .map-table th {
+    background: var(--surface-card-alt);
+    color: var(--surface-heading);
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+  .map-table code { font-family: "SF Mono", Menlo, monospace; font-size: 11px; }
+  .scope-tag {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .scope-apply { background: #E5F4FA; color: var(--tm-navy); }
+  .scope-internal { background: var(--tm-note-bg); color: #9a6b1e; }
+</style>
+</head>
+<body>
+<button id="theme-toggle" type="button" aria-label="切換 Dark／Day 模式"></button>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="tag">BRAND REFERENCE · 內部參考 · ${version}</div>
+    <img src="${logoFullSrc}" alt="${clientName}">
+    <h1>${clientName} 品牌與視覺風格指南</h1>
+    <p>${esc(val('hero-desc'))}</p>
+  </div>
+
+  <section>
+    <div class="section-num">01 — PRIMARY</div>
+    <h2>主色（官方確認）</h2>
+    <p class="section-desc">由客戶提供並確認之品牌主色，可直接作為主視覺色使用。</p>
+    <div class="swatch-grid">
+${primarySwatches}
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">02 — NEUTRAL</div>
+    <h2>中性色（官方確認）</h2>
+    <p class="section-desc">用於正文、次要說明文字與版面留白。</p>
+    <div class="swatch-grid">
+${neutralSwatches}
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">03 — DERIVED</div>
+    <h2>衍生色（待確認）</h2>
+    <p class="section-desc">依官方主色推算的輔助色，僅用於 hover、次標題、表格交錯等功能性用途。建議與客戶核對是否有官方對應色，確認後更新 <code>tokens.css</code>。</p>
+    <div class="swatch-grid">
+${derivedSwatches}
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">04 — LOGO USAGE</div>
+    <h2>Logo 使用</h2>
+    <p class="section-desc">以下兩款 Logo 取自 <code>Assets/</code>，已存放於 <code>Brand/logo/</code> 供文件模板重複使用。</p>
+    <div class="logo-grid">
+      <div class="logo-card">
+        <img src="${logoFullSrc}" alt="Full Logo">
+        <div class="label">完整 Logo（含字標 + Tagline）</div>
+        <div class="filename">${logoFullName}</div>
+      </div>
+      <div class="logo-card">
+        <img src="${logoMarkSrc}" alt="Logo Mark">
+        <div class="label">圖標 Mark</div>
+        <div class="filename">${logoMarkName}</div>
+      </div>
+      <div class="logo-card dark">
+        <img src="${logoFullSrc}" alt="Full Logo on dark">
+        <div class="label">深色背景示意（套用反白濾鏡）</div>
+        <div class="filename">${logoFullDisplayName} + invert</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">05 — TYPOGRAPHY</div>
+    <h2>字體</h2>
+    <p class="section-desc">內部文件採用以下字體，並保留 Noto Sans TC／Microsoft JhengHei 作繁中與系統字體後備，維持與其他客戶文件排版一致性。</p>
+    <div class="type-demo">
+      <div class="label-row"><span>H1 標題</span><span>700 / 32px</span></div>
+      <h3 class="h1-demo">${esc(val('h1-demo'))}</h3>
+    </div>
+    <div class="type-demo">
+      <div class="label-row"><span>內文 Body</span><span>400 / 14px</span></div>
+      <p class="body-demo">${esc(val('body-demo'))}</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">06 — USAGE RULES</div>
+    <h2>使用原則</h2>
+    <div class="dodont">
+      <div class="box do">
+        <h4>✓ 建議</h4>
+        <ul>
+${listItems('do-list')}
+        </ul>
+      </div>
+      <div class="box dont">
+        <h4>✗ 避免</h4>
+        <ul>
+${listItems('dont-list')}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">07 — VISUAL STYLE</div>
+    <h2>視覺風格元件規範</h2>
+    <p class="section-desc">取自業主已認可子網站的 UI 元件風格觀察，建議套用於本客戶文件中的卡片、按鈕、狀態標示等元件，對應變數已加入 <code>tokens.css</code>。</p>
+    <div class="style-grid">
+      <div class="style-card">
+        <div class="demo-label">圓角 · 按鈕／輸入框 ${esc(val('radius-sm'))}px</div>
+        <div class="demo-box radius-sm-box">--tm-radius-sm</div>
+      </div>
+      <div class="style-card">
+        <div class="demo-label">圓角 · 卡片 ${esc(val('radius-lg'))}px</div>
+        <div class="demo-box radius-lg-box">--tm-radius-lg</div>
+      </div>
+      <div class="style-card">
+        <div class="demo-label">卡片陰影（主色調柔陰影）</div>
+        <div class="demo-box shadow-box">--tm-shadow-card</div>
+      </div>
+      <div class="style-card">
+        <div class="demo-label">Hero 圖片深色疊層</div>
+        <div class="overlay-box"><span>--tm-overlay-dark</span></div>
+      </div>
+      <div class="style-card">
+        <div class="demo-label">表單區塊底色（淡色疊色）</div>
+        <div class="demo-box tint-box radius-sm-box">--tm-tint-pale-15</div>
+      </div>
+      <div class="style-card">
+        <div class="demo-label">狀態徽章（輔助強調色底 + 主色字）</div>
+        <div class="demo-box"><span class="badge-demo">${esc(val('badge-demo'))}</span></div>
+      </div>
+      <div class="style-card">
+        <div class="demo-label">深色資訊卡（主色底 + 白字）</div>
+        <div class="dark-card-demo">
+          <div class="label">${esc(val('darkcard-label'))}</div>
+          <div class="value">${esc(val('darkcard-value'))}</div>
+        </div>
+      </div>
+      <div class="style-card">
+        <div class="demo-label">頁尾色條（主色底 + 白字置中）</div>
+        <div class="footer-bar-demo">${esc(val('footerbar-text'))}</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">08 — DOCUMENT MAPPING</div>
+    <h2>文件元件對應（UserGuide 等可列印文件）</h2>
+    <p class="section-desc">07 區的視覺風格來自網頁元件，UserGuide／操作手冊等 A4 可列印文件不會原樣複製這些網頁元件，而是依下表對應到文件中既有的元件（截圖卡、頁首尾、標籤等），套用相同的 tokens 以維持品牌一致性。</p>
+    <table class="map-table">
+      <thead>
+        <tr>
+          <th style="width:26%">網頁元件（07 區）</th>
+          <th style="width:26%">UserGuide 對應元件</th>
+          <th style="width:22%">套用 Token</th>
+          <th>說明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>卡片陰影 + 圓角<br><span class="scope-tag scope-apply">套用</span></td>
+          <td>截圖說明卡 <code>.screenshot</code></td>
+          <td><code>--tm-radius-lg</code><br><code>--tm-shadow-card</code></td>
+          <td>截圖卡片加上圓角與柔陰影，呼應網站卡片質感，提升文件質感。</td>
+        </tr>
+        <tr>
+          <td>深色資訊卡 / 頁尾色條<br><span class="scope-tag scope-apply">套用</span></td>
+          <td>文件頁首／頁尾 <code>.doc-header</code> <code>.doc-footer</code></td>
+          <td><code>--tm-navy</code> 底 + 白字</td>
+          <td>頁首頁尾沿用主色底色，與網站頁尾色條一致，強化品牌識別。</td>
+        </tr>
+        <tr>
+          <td>狀態徽章（輔助強調色底 + 主色字）<br><span class="scope-tag scope-apply">套用</span></td>
+          <td>重點／必填標籤 <code>.badge-required</code></td>
+          <td><code>--tm-accent</code> 底<br><code>--tm-navy</code> 字 + <code>--tm-radius-sm</code></td>
+          <td>正式標籤改用品牌徽章樣式，取代目前的警示紅。</td>
+        </tr>
+        <tr>
+          <td>表單底色疊色<br><span class="scope-tag scope-apply">套用（可選）</span></td>
+          <td>補充說明區塊（如有）</td>
+          <td><code>--tm-tint-pale-15</code></td>
+          <td>需要比 <code>--tm-pale</code> 更輕量的提示底色時可選用。</td>
+        </tr>
+        <tr>
+          <td>—</td>
+          <td>內部提示框 <code>.note</code> / 待確認 <code>.todo</code> / 草稿戳 <code>.draft-stamp</code></td>
+          <td>維持現有語意色（黃／紅）</td>
+          <td><span class="scope-tag scope-internal">不套用品牌色</span> 這些是 DGHM 內部草稿標記，定稿前會移除，不隨客戶品牌風格調整。</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <div class="provenance">
+      <h4>📌 來源說明 / 待確認事項</h4>
+      <ul>
+${listItems('provenance-list')}
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <span>${clientFullName} — Brand Reference (Internal)</span>
+    <span>${version} · ${year}</span>
+  </footer>
+
+</div>
+<script>
+(function () {
+  var root = document.documentElement;
+  var btn = document.getElementById('theme-toggle');
+  var KEY = 'dghm-guideline-theme';
+  var theme = 'dark';
+  try {
+    theme = localStorage.getItem(KEY) || 'dark';
+  } catch (e) {}
+  apply(theme);
+  btn.addEventListener('click', function () {
+    theme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    apply(theme);
+    try { localStorage.setItem(KEY, theme); } catch (e) {}
+  });
+  function apply(t) {
+    root.setAttribute('data-theme', t);
+    btn.textContent = t === 'dark' ? '☀️ Day 模式' : '🌙 Dark 模式';
+    btn.setAttribute('aria-pressed', t === 'dark' ? 'true' : 'false');
+  }
+})();
+
+(function () {
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    return Promise.resolve();
+  }
+  document.querySelectorAll('.swatch .color-block[data-hex]').forEach(function (block) {
+    block.addEventListener('click', function () {
+      var hex = block.getAttribute('data-hex');
+      copyText(hex).then(function () {
+        block.classList.add('copied');
+        setTimeout(function () { block.classList.remove('copied'); }, 1200);
+      });
+    });
+  });
+})();
+<\/script>
+</body>
+</html>
+`);
+}
+
+/* ============================================================
+   Breakdance Global Colors JSON 產生器
+   ============================================================ */
+function uuidv4() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+/* 使用者選填上傳的現有 global-settings.json（完整物件，用於合併輸出） */
+let breakdanceBaseSettings = null;
+
+function buildBreakdanceColors() {
+  const existingPalette = (breakdanceBaseSettings
+    && breakdanceBaseSettings.settings
+    && breakdanceBaseSettings.settings.colors
+    && breakdanceBaseSettings.settings.colors.palette
+    && breakdanceBaseSettings.settings.colors.palette.colors) || [];
+
+  const palette = getPaletteEntries().map((p, i) => {
+    const matched = existingPalette.find(e =>
+      String(e.label || '').trim().toLowerCase() === p.name.trim().toLowerCase()
+    );
+    return {
+      cssVariableName: matched ? matched.cssVariableName : 'bde-palette-color-' + (i + 1) + '-' + uuidv4(),
+      label: p.name,
+      value: p.hex
+    };
+  });
+
+  return {
+    brand: val('navy-hex'),
+    text: val('ink-hex'),
+    headings: val('navy-hex'),
+    links: val('link-hex'),
+    background: val('white-hex'),
+    palette: { colors: palette }
+  };
+}
+
+function buildBreakdanceJSON() {
+  if (breakdanceBaseSettings) {
+    const merged = JSON.parse(JSON.stringify(breakdanceBaseSettings));
+    merged.settings = merged.settings || {};
+    merged.settings.colors = buildBreakdanceColors();
+    return JSON.stringify(merged, null, 2);
+  }
+  return JSON.stringify({ settings: { colors: buildBreakdanceColors() } }, null, 2);
+}
+
+function updateBreakdanceHint() {
+  const hint = document.getElementById('breakdance-hint');
+  if (breakdanceBaseSettings) {
+    hint.innerHTML = '已載入現有 <code>global-settings.json</code>，下方為套用本頁色彩後的完整檔案（<code>typography</code>／<code>buttons</code> 等其他設定維持原檔內容不變）。下載檔名為 <code>global-settings.json</code>。';
+  } else {
+    hint.innerHTML = '此 JSON 僅包含 Breakdance 全域設定中的 <code>colors</code> 區塊（含 Palette）。可上傳現有 <code>global-settings.json</code>，將本頁色彩套用到完整檔案後一併下載。';
+  }
+}
+
+/* ============================================================
+   輸出 / 互動邏輯
+   ============================================================ */
+function renderOutputs() {
+  const tokensCSS = buildTokensCSS();
+  const guidelineHTML = buildGuidelineHTML();
+  const breakdanceJSON = buildBreakdanceJSON();
+
+  document.getElementById('out-tokens').value = tokensCSS;
+  document.getElementById('out-html').value = guidelineHTML;
+  document.getElementById('out-breakdance').value = breakdanceJSON;
+
+  const frame = document.getElementById('preview-frame');
+  const combined = guidelineHTML.replace(
+    '<link rel="stylesheet" href="tokens.css">',
+    '<style>' + tokensCSS + '</style>'
+  );
+  frame.srcdoc = combined;
+}
+
+function syncColorInputs(e) {
+  const t = e.target;
+  const line = t.closest('.color-line');
+  if (!line) return;
+  if (t.classList.contains('color-swatch')) {
+    const hexInput = line.querySelector('.color-hex');
+    if (hexInput) hexInput.value = t.value.toUpperCase();
+  } else if (t.classList.contains('color-hex')) {
+    const swatch = line.querySelector('.color-swatch');
+    if (swatch && /^#[0-9A-Fa-f]{6}$/.test(t.value)) swatch.value = t.value;
+  }
+}
+
+document.getElementById('form').addEventListener('input', (e) => {
+  syncColorInputs(e);
+  renderOutputs();
+});
+
+document.getElementById('recalc-btn').addEventListener('click', recalcDerived);
+
+/* ============================================================
+   自訂色票（Palette）— 新增 / 刪除
+   ============================================================ */
+function createPaletteRow(name, hex) {
+  const row = document.createElement('div');
+  row.className = 'color-line palette-row';
+  row.innerHTML =
+    '<input type="text" class="color-name" placeholder="名稱，如 Gold Dark" value="' + esc(name) + '">' +
+    '<input type="text" class="color-hex" value="' + esc(hex) + '">' +
+    '<input type="color" class="color-swatch" value="' + hex + '">' +
+    '<button type="button" class="palette-delete" title="刪除色票">✕</button>';
+  return row;
+}
+document.getElementById('palette-add-btn').addEventListener('click', () => {
+  document.getElementById('palette-list').appendChild(createPaletteRow('', '#CCCCCC'));
+  renderOutputs();
+});
+document.getElementById('palette-list').addEventListener('click', (e) => {
+  if (e.target.classList.contains('palette-delete')) {
+    e.target.closest('.palette-row').remove();
+    renderOutputs();
+  }
+});
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.output-view').forEach(v => v.classList.add('hidden'));
+    btn.classList.add('active');
+    document.getElementById('view-' + btn.dataset.tab).classList.remove('hidden');
+  });
+});
+
+document.getElementById('copy-btn').addEventListener('click', async () => {
+  const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+  let text = '';
+  if (activeTab === 'tokens') text = document.getElementById('out-tokens').value;
+  else if (activeTab === 'html') text = document.getElementById('out-html').value;
+  else if (activeTab === 'breakdance') text = document.getElementById('out-breakdance').value;
+  else { alert('預覽分頁無可複製內容，請切換到 tokens.css、guideline.html 或 Breakdance Colors JSON'); return; }
+  try {
+    await navigator.clipboard.writeText(text);
+    const btn = document.getElementById('copy-btn');
+    const original = btn.textContent;
+    btn.textContent = '已複製！';
+    setTimeout(() => { btn.textContent = original; }, 1200);
+  } catch (err) {
+    alert('複製失敗，請手動選取內容複製。');
+  }
+});
+
+function downloadFile(filename, content) {
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('download-tokens-btn').addEventListener('click', () => {
+  downloadFile('tokens.css', document.getElementById('out-tokens').value);
+});
+document.getElementById('download-html-btn').addEventListener('click', () => {
+  downloadFile('guideline.html', document.getElementById('out-html').value);
+});
+document.getElementById('download-breakdance-btn').addEventListener('click', () => {
+  const filename = breakdanceBaseSettings ? 'global-settings.json' : 'global-settings-colors.json';
+  downloadFile(filename, document.getElementById('out-breakdance').value);
+});
+
+/* ============================================================
+   Breakdance global-settings.json 上傳合併
+   ============================================================ */
+document.getElementById('breakdance-base-file').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      breakdanceBaseSettings = JSON.parse(reader.result);
+      document.getElementById('breakdance-base-status').textContent = '已載入：' + file.name;
+      document.getElementById('breakdance-base-clear').style.display = 'inline-block';
+      updateBreakdanceHint();
+      renderOutputs();
+    } catch (err) {
+      alert('JSON 解析失敗，請確認檔案格式是否正確。');
+      e.target.value = '';
+    }
+  };
+  reader.readAsText(file);
+});
+document.getElementById('breakdance-base-clear').addEventListener('click', () => {
+  breakdanceBaseSettings = null;
+  document.getElementById('breakdance-base-file').value = '';
+  document.getElementById('breakdance-base-status').textContent = '';
+  document.getElementById('breakdance-base-clear').style.display = 'none';
+  updateBreakdanceHint();
+  renderOutputs();
+});
+
+/* ============================================================
+   Logo / Icon 上傳（內嵌為 data URI）
+   ============================================================ */
+const MAX_LOGO_SIZE = 2 * 1024 * 1024; // 2MB 軟性上限
+
+function setupLogoUpload(fileInputId, clearBtnId, statusId, setDataURL, setFileName) {
+  const fileInput = document.getElementById(fileInputId);
+  const clearBtn = document.getElementById(clearBtnId);
+  const status = document.getElementById(statusId);
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > MAX_LOGO_SIZE) {
+      alert('檔案超過 2MB，內嵌後 guideline.html 會變得很大，建議改用較小的檔案或改用路徑方式引用。');
+      e.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setDataURL(reader.result);
+      setFileName(file.name);
+      status.textContent = '已載入：' + file.name;
+      clearBtn.style.display = 'inline-block';
+      renderOutputs();
+    };
+    reader.readAsDataURL(file);
+  });
+
+  clearBtn.addEventListener('click', () => {
+    setDataURL(null);
+    setFileName(null);
+    fileInput.value = '';
+    status.textContent = '';
+    clearBtn.style.display = 'none';
+    renderOutputs();
+  });
+}
+
+setupLogoUpload('logo-full-file', 'logo-full-clear', 'logo-full-status',
+  (url) => { logoFullDataURL = url; }, (name) => { logoFullFileName = name; });
+setupLogoUpload('logo-mark-file', 'logo-mark-clear', 'logo-mark-status',
+  (url) => { logoMarkDataURL = url; }, (name) => { logoMarkFileName = name; });
+
+/* 初始渲染 */
+renderOutputs();
+</script>
+</body>
+</html>
