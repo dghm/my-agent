@@ -224,6 +224,34 @@
       color: var(--muted);
       font-size: 13px;
     }
+    .quick-block { background: #fffaf0; }
+    :root[data-theme="dark"] .quick-block { background: var(--card-inner); }
+    .quick-input-row { display: flex; gap: 8px; align-items: flex-start; }
+    .quick-input-row textarea { flex: 1; min-height: 44px; }
+    .quick-input-row button { flex-shrink: 0; white-space: nowrap; }
+    .quick-notes-list { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+    .quick-notes-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      background: var(--chip-bg);
+      border: 1px solid var(--chip-border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+    .quick-notes-list .qn-time { color: var(--muted); font-size: 12px; flex-shrink: 0; padding-top: 2px; }
+    .quick-notes-list .qn-text { flex: 1; word-break: break-word; }
+    .quick-notes-list .qn-remove {
+      background: transparent;
+      color: var(--muted);
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 0 2px;
+    }
+    .quick-notes-list .qn-remove:hover { color: #c00; }
   </style>
 </head>
 <body>
@@ -269,6 +297,20 @@
         <li>這次會議後 1–2 週內，希望能看到哪些具體行動或成果？</li>
       </ul>
     </details>
+
+    <div class="section-block quick-block">
+      <h2>0. 會議中快速記錄</h2>
+      <p class="hint" style="margin-top:-6px;">客戶隨興提到什麼就丟一句進來，不用分類、不用整理，會後再一鍵整理進討論重點。</p>
+      <div class="quick-input-row">
+        <textarea id="quickNoteInput" placeholder="例：客戶問首頁可不可以加客戶見證區塊" rows="2"></textarea>
+        <button type="button" class="btn-primary" onclick="addQuickNote()">＋ 新增一條</button>
+      </div>
+      <ul id="quick-notes-list" class="quick-notes-list"></ul>
+      <div class="actions" style="margin-top:10px;">
+        <button type="button" class="btn-ok" onclick="mergeQuickNotes()">整理進討論重點 ↓</button>
+        <button type="button" class="btn-dark" onclick="clearQuickNotes()">清空快速記錄</button>
+      </div>
+    </div>
 
     <div class="section-block">
       <h2>1. 基本資訊</h2>
@@ -424,6 +466,7 @@
 
   <script>
     const STORAGE_KEY = 'existing-client-meeting-notes-v2';
+    const QUICK_KEY = 'existing-client-meeting-notes-quick-v1';
     const ISSUE_IDS = [
       ['issue-traffic', '流量不足／來源單一'],
       ['issue-conversion', '有流量但轉換率偏低'],
@@ -529,6 +572,87 @@
         ['summary', '會議結論摘要'],
       ];
       return required.filter(([id]) => !v(id)).map(([, label]) => label);
+    }
+
+    /** 會議中快速記錄：{time, text}[]，存在獨立的 localStorage key，跟主表單分開清空 */
+    let quickNotes = [];
+
+    function loadQuickNotes() {
+      try {
+        const raw = localStorage.getItem(QUICK_KEY);
+        quickNotes = raw ? JSON.parse(raw) : [];
+      } catch {
+        quickNotes = [];
+      }
+      renderQuickNotes();
+    }
+
+    function saveQuickNotes() {
+      try {
+        localStorage.setItem(QUICK_KEY, JSON.stringify(quickNotes));
+      } catch {}
+    }
+
+    function renderQuickNotes() {
+      const list = document.getElementById('quick-notes-list');
+      if (!list) return;
+      list.innerHTML = '';
+      quickNotes.forEach((note, i) => {
+        const li = document.createElement('li');
+        const time = document.createElement('span');
+        time.className = 'qn-time';
+        time.textContent = note.time;
+        const text = document.createElement('span');
+        text.className = 'qn-text';
+        text.textContent = note.text;
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'qn-remove';
+        remove.textContent = '×';
+        remove.onclick = () => {
+          quickNotes = quickNotes.filter((_, j) => j !== i);
+          saveQuickNotes();
+          renderQuickNotes();
+        };
+        li.appendChild(time);
+        li.appendChild(text);
+        li.appendChild(remove);
+        list.appendChild(li);
+      });
+    }
+
+    function addQuickNote() {
+      const input = document.getElementById('quickNoteInput');
+      const text = input.value.trim();
+      if (!text) return;
+      const time = new Date().toLocaleTimeString('zh-Hant', { hour: '2-digit', minute: '2-digit' });
+      quickNotes.push({ time, text });
+      saveQuickNotes();
+      renderQuickNotes();
+      input.value = '';
+      input.focus();
+    }
+
+    function mergeQuickNotes() {
+      if (!quickNotes.length) {
+        setStatus('目前沒有快速記錄可整理');
+        return;
+      }
+      const bullets = quickNotes.map((n) => `- [${n.time}] ${n.text}`).join('\n');
+      const el = document.getElementById('discussionPoints');
+      el.value = el.value ? `${el.value}\n${bullets}` : bullets;
+      saveDraft();
+      quickNotes = [];
+      saveQuickNotes();
+      renderQuickNotes();
+      setStatus('已整理進「討論重點摘要」，快速記錄已清空');
+    }
+
+    function clearQuickNotes() {
+      quickNotes = [];
+      saveQuickNotes();
+      renderQuickNotes();
+      setStatus('快速記錄已清空');
     }
 
     /** 上傳的圖片（File 物件），預覽用 object URL 需在清除時 revoke */
@@ -841,6 +965,7 @@
       try {
         localStorage.removeItem(STORAGE_KEY);
       } catch {}
+      clearQuickNotes();
       document.getElementById('out').textContent = '（按「產生會議紀錄」後會出現在這裡）';
       setStatus('表單已清空');
     }
@@ -866,8 +991,19 @@
     if (tableCols) tableCols.addEventListener('change', renderTableEditor);
     if (tableRows) tableRows.addEventListener('change', renderTableEditor);
 
+    const quickNoteInput = document.getElementById('quickNoteInput');
+    if (quickNoteInput) {
+      quickNoteInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          addQuickNote();
+        }
+      });
+    }
+
     renderTableEditor();
     loadDraft();
+    loadQuickNotes();
   </script>
 </body>
 </html>
