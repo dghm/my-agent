@@ -186,6 +186,11 @@
           <input type="text" class="color-hex" id="white-hex" value="#FFFFFF">
           <input type="color" class="color-swatch" id="white-color" value="#FFFFFF">
         </div>
+        <div class="color-line">
+          <input type="text" class="color-name" id="shadow-name" value="Shadow">
+          <input type="text" class="color-hex" id="shadow-hex" value="#143463">
+          <input type="color" class="color-swatch" id="shadow-color" value="#143463">
+        </div>
       </fieldset>
 
       <fieldset>
@@ -242,7 +247,7 @@
           </div>
         </div>
 
-        <label>卡片陰影不透明度（0–1，基準色取自主色①）</label>
+        <label>卡片陰影不透明度（0–1，基準色取自中性色「Shadow」）</label>
         <input type="number" id="shadow-opacity" value="0.4" step="0.05" min="0" max="1">
 
         <label>Hero 深色疊層顏色</label>
@@ -394,6 +399,7 @@ const USAGE_DEFAULTS = {
   ink: '標題／正文文字',
   gray: '次要說明文字',
   white: '頁面底色、深色區塊上的文字',
+  shadow: '卡片陰影基準色',
   navylight: '次標題、hover 狀態',
   accentdark: '淺色底上的文字／圖示',
   rowstripe: '表格交錯底色',
@@ -482,6 +488,7 @@ function buildTokensCSS() {
   --tm-ink: ${val('ink-hex')};         /* ${val('ink-name')} */
   --tm-gray: ${val('gray-hex')};        /* ${val('gray-name')} */
   --tm-white: ${val('white-hex')};
+  --tm-shadow: ${val('shadow-hex')};   /* ${val('shadow-name')} */
 
   /* ---- Derived（依官方色衍生，待確認） ---- */
   --tm-navy-light: ${val('navylight-hex')};   /* ${val('navylight-name')} */
@@ -508,7 +515,7 @@ ${paletteVarsBlock}
   /* ---- Visual Style（每客戶可自訂） ---- */
   --tm-radius-sm: ${val('radius-sm')}px;    /* 按鈕、輸入框圓角 */
   --tm-radius-lg: ${val('radius-lg')}px;    /* 卡片圓角 */
-  --tm-shadow-card: 0 5px 10px 0 rgba(${rgbStr(val('navy-hex'))}, ${val('shadow-opacity')});  /* 卡片陰影（主色調柔陰影） */
+  --tm-shadow-card: 0 5px 10px 0 rgba(${rgbStr(val('shadow-hex'))}, ${val('shadow-opacity')});  /* 卡片陰影（取自中性色 Shadow） */
   --tm-overlay-dark: rgba(${rgbStr(val('overlay-hex'))}, ${val('overlay-opacity')});             /* Hero 圖片深色疊層 */
   --tm-tint-pale-15: rgba(${rgbStr(val('pale-hex'))}, ${val('tint-opacity')});          /* 淡色疊色（表單區塊底色） */
 }
@@ -572,7 +579,8 @@ function buildGuidelineHTML() {
           <div class="usage">${esc(USAGE_DEFAULTS.white)}</div>
           <span class="src-tag src-confirmed">官方確認</span>
         </div>
-      </div>`
+      </div>`,
+    swatchHTML('--tm-shadow', val('shadow-hex'), val('shadow-name'), USAGE_DEFAULTS.shadow, 'confirmed')
   ].join('\n');
 
   const derivedSwatches = [
