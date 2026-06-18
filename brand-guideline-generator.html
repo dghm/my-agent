@@ -670,6 +670,7 @@ function buildGuidelineHTML() {
 
   /* ---- Hero ---- */
   .hero {
+    position: relative;
     background: var(--tm-navy);
     color: #fff;
     padding: 48px 40px;
@@ -677,15 +678,18 @@ function buildGuidelineHTML() {
     margin-bottom: 40px;
   }
   .hero .tag {
+    position: absolute;
+    top: 24px;
+    right: 24px;
     display: inline-block;
     font-size: 11px;
     letter-spacing: 2px;
     background: rgba(255,255,255,0.12);
     padding: 4px 10px;
     border-radius: 4px;
-    margin-bottom: 16px;
+    margin: 0;
   }
-  .hero img { height: 48px; margin-bottom: 16px; filter: brightness(0) invert(1); opacity: 0.95; }
+  .hero img { height: 48px; margin-bottom: 16px; filter: brightness(0) invert(1); opacity: 0.95; display: block; }
   .hero h1 { margin: 0 0 8px; font-size: 28px; }
   .hero p { margin: 0; color: var(--tm-accent); font-size: 14px; max-width: 640px; }
 
@@ -770,7 +774,7 @@ function buildGuidelineHTML() {
     border-radius: 10px;
     padding: 24px;
     text-align: center;
-    background: var(--surface-card-alt);
+    background: var(--surface-card);
   }
   .logo-card img { max-width: 100%; max-height: 80px; }
   .logo-card .label { margin-top: 12px; font-size: 12px; color: var(--surface-text); font-weight: 600; }
@@ -1264,15 +1268,39 @@ function renderOutputs() {
   const guidelineHTML = buildGuidelineHTML();
   const breakdanceJSON = buildBreakdanceJSON();
 
-  document.getElementById('out-tokens').value = tokensCSS;
-  document.getElementById('out-html').value = guidelineHTML;
-  document.getElementById('out-breakdance').value = breakdanceJSON;
+  const outTokens = document.getElementById('out-tokens');
+  const outHtml = document.getElementById('out-html');
+  const outBreakdance = document.getElementById('out-breakdance');
+
+  // 重新賦值會把 textarea 捲動位置重置到頂端，先記住再還原，
+  // 避免使用者在左側編輯時，右側畫面跳掉。
+  const tokensScroll = outTokens.scrollTop;
+  const htmlScroll = outHtml.scrollTop;
+  const breakdanceScroll = outBreakdance.scrollTop;
+
+  outTokens.value = tokensCSS;
+  outHtml.value = guidelineHTML;
+  outBreakdance.value = breakdanceJSON;
+
+  outTokens.scrollTop = tokensScroll;
+  outHtml.scrollTop = htmlScroll;
+  outBreakdance.scrollTop = breakdanceScroll;
 
   const frame = document.getElementById('preview-frame');
   const combined = guidelineHTML.replace(
     '<link rel="stylesheet" href="tokens.css">',
     '<style>' + tokensCSS + '</style>'
   );
+
+  // iframe 重設 srcdoc 等同重新載入頁面，會自動捲回頂端，
+  // 所以記住舊的捲動位置，等新內容載入完成後再還原。
+  let frameScroll = 0;
+  try { frameScroll = frame.contentWindow.scrollY || 0; } catch (e) {}
+  const restoreScroll = () => {
+    try { frame.contentWindow.scrollTo(0, frameScroll); } catch (e) {}
+    frame.removeEventListener('load', restoreScroll);
+  };
+  frame.addEventListener('load', restoreScroll);
   frame.srcdoc = combined;
 }
 
