@@ -374,6 +374,11 @@ function pickReadableText(bgHex, baseHex) {
     ? mixHex(baseHex, '#FFFFFF', 0.6)
     : mixHex(baseHex, '#000000', 0.6);
 }
+/* 「深色背景示意」卡片必須真的是深色才有示範意義；
+   若 Brand 本身偏淺，往黑色加深到保證夠暗，否則維持原色 */
+function ensureDarkBg(hex) {
+  return relativeLuminance(hex) < 0.35 ? hex : mixHex(hex, '#000000', 0.65);
+}
 function esc(str) {
   return String(str ?? '')
     .replace(/&/g, '&amp;')
@@ -570,6 +575,7 @@ function buildGuidelineHTML() {
   const clientName = esc(val('client-name'));
   const clientFullName = esc(val('client-full-name'));
   const heroTextHex = pickReadableText(val('navy-hex'), val('accent-hex'));
+  const darkDemoBg = ensureDarkBg(val('navy-hex'));
   const version = esc(val('version'));
   const year = esc(val('year'));
 
@@ -796,12 +802,14 @@ function buildGuidelineHTML() {
     background: #fff;
   }
   .logo-card img { max-width: 100%; max-height: 80px; }
-  .logo-card .label { margin-top: 12px; font-size: 12px; color: var(--tm-navy); font-weight: 600; }
-  .logo-card .filename { font-family: "SF Mono", Menlo, monospace; font-size: 11px; color: var(--tm-text-muted); }
-  .logo-card.dark { background: var(--tm-navy); }
+  /* 標籤／檔名用固定中性色，不取用品牌色（Brand／Text），
+     避免客戶選用淺色品牌色時，文字在固定白底卡片上被吃掉 */
+  .logo-card .label { margin-top: 12px; font-size: 12px; color: #1f2933; font-weight: 600; }
+  .logo-card .filename { font-family: "SF Mono", Menlo, monospace; font-size: 11px; color: #667085; }
+  .logo-card.dark { background: ${darkDemoBg}; }
   .logo-card.dark img { filter: brightness(0) invert(1); }
   .logo-card.dark .label { color: #fff; }
-  .logo-card.dark .filename { color: var(--tm-accent); }
+  .logo-card.dark .filename { color: rgba(255,255,255,0.65); }
 
   /* ---- Typography demo ---- */
   /* .type-demo 呈現的是文字在「網站上（白底）」的實際樣子，因此維持白底，
