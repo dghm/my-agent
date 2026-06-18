@@ -118,19 +118,59 @@
       <fieldset>
         <legend>案件資訊</legend>
         <label>案件名稱</label>
-        <input type="text" id="f_project" placeholder="企業網站改版">
+        <input type="text" id="f_project" placeholder="查貨系統建置專案">
         <label>客戶名稱</label>
-        <input type="text" id="f_client" placeholder="全穎智聯股份有限公司">
+        <input type="text" id="f_client" placeholder="崴宇國際物流有限公司">
+        <label>專案代碼</label>
+        <input type="text" id="f_project_code" placeholder="DH-01-PJ2">
+        <label>本次請款（期數說明）</label>
+        <input type="text" id="f_installment" placeholder="第 3 期（20% 尾款）">
+      </fieldset>
+
+      <fieldset>
+        <legend>金額與稅務</legend>
         <div class="row2">
           <div>
-            <label>金額（未稅／實收）</label>
-            <input type="number" id="f_amount" placeholder="50000" min="0" step="1">
+            <label>金額（未稅）</label>
+            <input type="number" id="f_amount" placeholder="42000" min="0" step="1">
           </div>
           <div>
-            <label>日期</label>
-            <input type="date" id="f_date">
+            <label>營業稅率（%）</label>
+            <input type="number" id="f_tax_rate" placeholder="5" min="0" step="0.1" value="5">
           </div>
         </div>
+        <label>含稅總額（自動計算）</label>
+        <input type="text" id="f_total_with_tax" readonly>
+      </fieldset>
+
+      <fieldset>
+        <legend>單號與日期</legend>
+        <div class="row2">
+          <div>
+            <label>通知單號</label>
+            <input type="text" id="f_notice_no" placeholder="INV-2605-01">
+          </div>
+          <div>
+            <label>發票號碼</label>
+            <input type="text" id="f_invoice_no" placeholder="ZX 33441450">
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label>開立日期</label>
+            <input type="date" id="f_date">
+          </div>
+          <div>
+            <label>付款期限</label>
+            <input type="date" id="f_due_date">
+          </div>
+        </div>
+        <label>付款條件</label>
+        <input type="text" id="f_payment_terms" placeholder="Net 30" value="Net 30">
+      </fieldset>
+
+      <fieldset>
+        <legend>狀態與備註</legend>
         <div class="row2">
           <div>
             <label>收款狀態</label>
@@ -197,7 +237,8 @@
           <th>日期</th>
           <th>案件名稱</th>
           <th>客戶</th>
-          <th>金額</th>
+          <th>專案代碼／期數</th>
+          <th>金額（含稅）</th>
           <th>收款</th>
           <th>發票</th>
           <th>操作</th>
@@ -261,11 +302,26 @@ function clearForm() {
   document.getElementById('f_id').value = '';
   document.getElementById('f_project').value = '';
   document.getElementById('f_client').value = '';
+  document.getElementById('f_project_code').value = '';
+  document.getElementById('f_installment').value = '';
   document.getElementById('f_amount').value = '';
+  document.getElementById('f_tax_rate').value = '5';
+  document.getElementById('f_total_with_tax').value = '';
+  document.getElementById('f_notice_no').value = '';
+  document.getElementById('f_invoice_no').value = '';
   document.getElementById('f_date').value = '';
+  document.getElementById('f_due_date').value = '';
+  document.getElementById('f_payment_terms').value = 'Net 30';
   document.getElementById('f_payment_status').value = 'unpaid';
   document.getElementById('f_invoice_status').value = 'not_issued';
   document.getElementById('f_note').value = '';
+}
+
+function updateTotalWithTax() {
+  const amount = Number(v('f_amount')) || 0;
+  const taxRate = Number(v('f_tax_rate')) || 0;
+  const total = amount * (1 + taxRate / 100);
+  document.getElementById('f_total_with_tax').value = fmtNT(total);
 }
 
 async function loadRecords() {
@@ -338,7 +394,8 @@ function renderTable() {
       <td>${esc(r.date)}</td>
       <td>${esc(r.project)}</td>
       <td>${esc(r.client)}</td>
-      <td>${fmtNT(r.amount)}</td>
+      <td>${esc(r.projectCode)}${r.projectCode && r.installment ? '／' : ''}${esc(r.installment)}</td>
+      <td>${fmtNT((Number(r.amount) || 0) * (1 + (Number(r.taxRate) || 0) / 100))}</td>
       <td><span class="tag ${r.paymentStatus}">${r.paymentStatus === 'paid' ? '已收款' : '未收款'}</span></td>
       <td><span class="tag ${r.invoiceStatus}">${r.invoiceStatus === 'issued' ? '已開立' : '未開立'}</span></td>
       <td>
@@ -358,11 +415,19 @@ function editRecord(id) {
   document.getElementById('f_id').value = r.id;
   document.getElementById('f_project').value = r.project;
   document.getElementById('f_client').value = r.client;
+  document.getElementById('f_project_code').value = r.projectCode || '';
+  document.getElementById('f_installment').value = r.installment || '';
   document.getElementById('f_amount').value = r.amount;
+  document.getElementById('f_tax_rate').value = r.taxRate != null ? r.taxRate : 5;
+  document.getElementById('f_notice_no').value = r.noticeNo || '';
+  document.getElementById('f_invoice_no').value = r.invoiceNo || '';
   document.getElementById('f_date').value = r.date;
+  document.getElementById('f_due_date').value = r.dueDate || '';
+  document.getElementById('f_payment_terms').value = r.paymentTerms || 'Net 30';
   document.getElementById('f_payment_status').value = r.paymentStatus;
   document.getElementById('f_invoice_status').value = r.invoiceStatus;
   document.getElementById('f_note').value = r.note || '';
+  updateTotalWithTax();
   setStatus(`編輯中：${r.project}`);
 }
 
@@ -374,6 +439,13 @@ function openInvoice(id) {
     project: r.project || '',
     amount: r.amount || '',
     date: r.date || '',
+    projectCode: r.projectCode || '',
+    installment: r.installment || '',
+    taxRate: r.taxRate != null ? r.taxRate : 5,
+    noticeNo: r.noticeNo || '',
+    invoiceNo: r.invoiceNo || '',
+    dueDate: r.dueDate || '',
+    paymentTerms: r.paymentTerms || 'Net 30',
   });
   window.open(`Invoice-Generator.html?${params.toString()}`, '_blank');
 }
@@ -401,8 +473,15 @@ async function saveRecord() {
   const payload = {
     project: v('f_project').trim(),
     client: v('f_client').trim(),
+    projectCode: v('f_project_code').trim(),
+    installment: v('f_installment').trim(),
     amount: Number(v('f_amount')),
+    taxRate: Number(v('f_tax_rate')) || 0,
+    noticeNo: v('f_notice_no').trim(),
+    invoiceNo: v('f_invoice_no').trim(),
     date: v('f_date'),
+    dueDate: v('f_due_date'),
+    paymentTerms: v('f_payment_terms').trim(),
     paymentStatus: v('f_payment_status'),
     invoiceStatus: v('f_invoice_status'),
     note: v('f_note').trim(),
@@ -442,12 +521,20 @@ function exportCsv() {
     setStatus('目前篩選範圍內沒有資料可匯出');
     return;
   }
-  const header = ['日期', '案件名稱', '客戶', '金額', '收款狀態', '發票狀態', '備註'];
+  const header = ['日期', '案件名稱', '客戶', '專案代碼', '期數說明', '金額（未稅）', '稅率(%)', '金額（含稅）', '通知單號', '發票號碼', '付款條件', '付款期限', '收款狀態', '發票狀態', '備註'];
   const rows = filtered.map((r) => [
     r.date,
     r.project,
     r.client,
+    r.projectCode || '',
+    r.installment || '',
     r.amount,
+    r.taxRate != null ? r.taxRate : '',
+    Math.round((Number(r.amount) || 0) * (1 + (Number(r.taxRate) || 0) / 100)),
+    r.noticeNo || '',
+    r.invoiceNo || '',
+    r.paymentTerms || '',
+    r.dueDate || '',
     r.paymentStatus === 'paid' ? '已收款' : '未收款',
     r.invoiceStatus === 'issued' ? '已開立' : '未開立',
     r.note || '',
@@ -465,6 +552,8 @@ function exportCsv() {
   setStatus('已匯出 CSV');
 }
 
+document.getElementById('f_amount').addEventListener('input', updateTotalWithTax);
+document.getElementById('f_tax_rate').addEventListener('input', updateTotalWithTax);
 document.getElementById('save-btn').addEventListener('click', saveRecord);
 document.getElementById('reset-btn').addEventListener('click', () => { clearForm(); setStatus('已清空表單'); });
 document.getElementById('export-btn').addEventListener('click', exportCsv);
