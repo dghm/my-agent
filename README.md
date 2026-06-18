@@ -24,11 +24,20 @@
     - `GET /health`
     - `POST /api/social/generate`
     - `POST /api/sections/generate`
+    - `GET /api/income/list`、`GET /api/income/summary`
+    - `POST /api/income/create`、`POST /api/income/update`、`POST /api/income/delete`
   - 會讀 `.env` 的金鑰，並呼叫 AI / 子腳本處理任務。
+  - 收入登記資料存放於 `data/income.json`（不進版控）。
 
 - `client-brief.html`
   - 客戶網站需求訪談表單工具（可在 Dashboard 內使用）。
   - 功能包含：欄位填寫、草稿保存、Markdown 匯出、Markdown 匯入還原等。
+
+- `income-tracker.html`
+  - 接案收入登記系統前端。
+  - 登記案件名稱、客戶、金額、日期、收款／發票狀態，依年／月篩選彙整，支援匯出 CSV（報稅用）。
+  - 「產生請款單」按鈕會帶資料開啟 `Invoice-Generator.html`（透過 URL 參數預填客戶／案件／金額／日期）。
+  - 資料透過 `tool-api-server.js` 的 `/api/income/*` 讀寫，存於 `data/income.json`。
 
 - `breakdance-section-generator.html`
   - Breakdance Section 版型生成工作台（Wireframe 取向）。
