@@ -24,10 +24,15 @@
     - `GET /health`
     - `POST /api/social/generate`
     - `POST /api/sections/generate`
-    - `GET /api/income/list`、`GET /api/income/summary`
-    - `POST /api/income/create`、`POST /api/income/update`、`POST /api/income/delete`
   - 會讀 `.env` 的金鑰，並呼叫 AI / 子腳本處理任務。
-  - 收入登記資料存放於 `data/income.json`（不進版控）。
+  - 接案收入登記的 API 已搬到 Netlify Functions（見下方），不再由這支 server 提供。
+
+- `netlify/functions/income.js`
+  - 接案收入登記系統的後端 API，以 Netlify Functions（v2，path-based routing）實作。
+  - 路由：`/api/income/list`、`/api/income/summary`、`/api/income/create`、`/api/income/update`、`/api/income/delete`。
+  - 資料存放於 Netlify Blobs（key-value 儲存，跟著網站走、不需要額外資料庫），**不會進入 git 版控**。
+  - 本機測試：執行 `npx netlify dev`，會在 `http://localhost:8888` 同時跑靜態頁面與這支 Function。
+  - 正式環境：推到 GitHub 後 Netlify 會自動部署 Function，跟靜態網站同網域、同 origin。
 
 - `client-brief.html`
   - 客戶網站需求訪談表單工具（可在 Dashboard 內使用）。
@@ -35,9 +40,9 @@
 
 - `income-tracker.html`
   - 接案收入登記系統前端。
-  - 登記案件名稱、客戶、金額、日期、收款／發票狀態，依年／月篩選彙整，支援匯出 CSV（報稅用）。
-  - 「產生請款單」按鈕會帶資料開啟 `Invoice-Generator.html`（透過 URL 參數預填客戶／案件／金額／日期）。
-  - 資料透過 `tool-api-server.js` 的 `/api/income/*` 讀寫，存於 `data/income.json`。
+  - 登記案件名稱、客戶、專案代碼、期數、金額（未稅／含稅）、通知單號、發票號碼、付款條件與期限、收款／發票狀態，依年／月篩選彙整，支援匯出 CSV（報稅用）。
+  - 「產生請款單」按鈕會帶資料開啟 `Invoice-Generator.html`（透過 URL 參數預填）。
+  - 資料透過 `netlify/functions/income.js` 的 `/api/income/*` 讀寫，存於 Netlify Blobs。
 
 - `breakdance-section-generator.html`
   - Breakdance Section 版型生成工作台（Wireframe 取向）。

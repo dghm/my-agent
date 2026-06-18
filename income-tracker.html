@@ -253,7 +253,7 @@
 </div>
 
 <script>
-const API_BASE = "http://localhost:8780";
+const API_BASE = "";
 let records = [];
 
 /* ---- Dark / Day 模式 ---- */
@@ -335,7 +335,7 @@ async function loadRecords() {
     renderTable();
     setStatus('就緒');
   } catch (err) {
-    setStatus(`讀取失敗：${err.message}（請確認 tool-api-server.js 是否已啟動）`);
+    setStatus(`讀取失敗：${err.message}（請確認是用 netlify dev 啟動，或已部署到 Netlify）`);
   }
 }
 
