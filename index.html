@@ -4,10 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DGHM Tools Dashboard</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <style>
   * { box-sizing: border-box; }
   :root {
     --navy: #0D2F6E;
+    --heading: var(--navy);
     --orange: #E5622A;
     --surface-bg: #F4F6F8;
     --surface-panel-bg: #ffffff;
@@ -16,6 +18,7 @@
     --surface-text-muted: #667085;
   }
   :root[data-theme="dark"] {
+    --heading: #6E9CFF;
     --surface-bg: #161b22;
     --surface-panel-bg: #1f2530;
     --surface-border: #323a47;
@@ -30,7 +33,7 @@
   }
   .wrap { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
   .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
-  h1 { font-size: 22px; margin: 0 0 4px; color: var(--navy); }
+  h1 { font-size: 22px; margin: 0 0 4px; color: var(--heading); }
   .sub { font-size: 13px; color: var(--surface-text-muted); margin: 0 0 32px; line-height: 1.6; }
   #theme-toggle {
     flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px;
@@ -43,12 +46,12 @@
     background: var(--surface-panel-bg); border: 1px solid var(--surface-border);
     border-radius: 10px; padding: 18px; transition: border-color .15s, transform .15s;
   }
-  .card:hover { border-color: var(--navy); transform: translateY(-2px); }
+  .card:hover { border-color: var(--heading); transform: translateY(-2px); }
   .card .badge {
     display: inline-block; font-size: 11px; font-weight: 700; color: var(--orange);
     letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;
   }
-  .card h2 { font-size: 15px; margin: 0 0 6px; color: var(--navy); }
+  .card h2 { font-size: 15px; margin: 0 0 6px; color: var(--heading); }
   .card p { font-size: 12px; color: var(--surface-text-muted); margin: 0; line-height: 1.6; }
   .empty-card {
     border: 1px dashed var(--surface-border); border-radius: 10px; padding: 18px;
