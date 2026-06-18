@@ -359,6 +359,21 @@ function rgbStr(hex) {
   const c = hexToRgb(hex);
   return c.r + ', ' + c.g + ', ' + c.b;
 }
+function relativeLuminance(hex) {
+  const c = hexToRgb(hex);
+  const channel = v => {
+    v /= 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * channel(c.r) + 0.7152 * channel(c.g) + 0.0722 * channel(c.b);
+}
+/* Hero 說明文字依背景（Brand 主色）深淺自動挑色：
+   深底時把 Text 色往白提亮，淺底時往黑加深，確保對比恆定可讀 */
+function pickReadableText(bgHex, baseHex) {
+  return relativeLuminance(bgHex) < 0.5
+    ? mixHex(baseHex, '#FFFFFF', 0.6)
+    : mixHex(baseHex, '#000000', 0.6);
+}
 function esc(str) {
   return String(str ?? '')
     .replace(/&/g, '&amp;')
@@ -554,6 +569,7 @@ function listItems(textareaId) {
 function buildGuidelineHTML() {
   const clientName = esc(val('client-name'));
   const clientFullName = esc(val('client-full-name'));
+  const heroTextHex = pickReadableText(val('navy-hex'), val('accent-hex'));
   const version = esc(val('version'));
   const year = esc(val('year'));
 
@@ -594,6 +610,7 @@ function buildGuidelineHTML() {
   const logoFullName = esc(logoFullFileName || val('logo-full'));
   const logoMarkName = esc(logoMarkFileName || val('logo-mark'));
   const logoFullDisplayName = logoFullFileName ? esc(logoFullFileName) : esc(val('logo-full').split('/').pop());
+  const logoMarkDisplayName = logoMarkFileName ? esc(logoMarkFileName) : esc(val('logo-mark').split('/').pop());
 
   return applyCssPrefix(`<!DOCTYPE html>
 <html lang="zh-Hant" data-theme="dark">
@@ -691,7 +708,7 @@ function buildGuidelineHTML() {
   }
   .hero img { height: 48px; margin-bottom: 16px; filter: brightness(0) invert(1); opacity: 0.95; display: block; }
   .hero h1 { margin: 0 0 8px; font-size: 28px; }
-  .hero p { margin: 0; color: var(--tm-accent); font-size: 14px; max-width: 640px; }
+  .hero p { margin: 0; color: ${heroTextHex}; font-size: 14px; max-width: 640px; }
 
   /* ---- Section ---- */
   section { margin-bottom: 48px; }
@@ -774,11 +791,13 @@ function buildGuidelineHTML() {
     border-radius: 10px;
     padding: 24px;
     text-align: center;
-    background: var(--surface-card);
+    /* 固定白底，不隨 Dark／Day 模式變化，
+       搭配下方固定深色文字，確保卡片本身的對比恆定 */
+    background: #fff;
   }
   .logo-card img { max-width: 100%; max-height: 80px; }
-  .logo-card .label { margin-top: 12px; font-size: 12px; color: var(--surface-text); font-weight: 600; }
-  .logo-card .filename { font-family: "SF Mono", Menlo, monospace; font-size: 11px; color: var(--surface-text-muted); }
+  .logo-card .label { margin-top: 12px; font-size: 12px; color: var(--tm-navy); font-weight: 600; }
+  .logo-card .filename { font-family: "SF Mono", Menlo, monospace; font-size: 11px; color: var(--tm-text-muted); }
   .logo-card.dark { background: var(--tm-navy); }
   .logo-card.dark img { filter: brightness(0) invert(1); }
   .logo-card.dark .label { color: #fff; }
@@ -950,7 +969,7 @@ function buildGuidelineHTML() {
 
   <div class="hero">
     <div class="tag">BRAND REFERENCE · 內部參考 · ${version}</div>
-    <img src="${logoFullSrc}" alt="${clientName}">
+    <img src="${logoMarkSrc}" alt="${clientName}">
     <h1>${clientName} 品牌與視覺風格指南</h1>
     <p>${esc(val('hero-desc'))}</p>
   </div>
@@ -998,9 +1017,9 @@ ${derivedSwatches}
         <div class="filename">${logoMarkName}</div>
       </div>
       <div class="logo-card dark">
-        <img src="${logoFullSrc}" alt="Full Logo on dark">
+        <img src="${logoMarkSrc}" alt="Logo Mark on dark">
         <div class="label">深色背景示意（套用反白濾鏡）</div>
-        <div class="filename">${logoFullDisplayName} + invert</div>
+        <div class="filename">${logoMarkDisplayName} + invert</div>
       </div>
     </div>
   </section>
