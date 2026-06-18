@@ -91,11 +91,12 @@
   th { background: var(--navy); color: #fff; padding: 8px 10px; text-align: left; font-size: 12px; }
   td { padding: 8px 10px; border-bottom: 1px solid var(--surface-border); vertical-align: middle; }
   tr:last-child td { border-bottom: none; }
-  .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
   .tag.paid { background: #E6F4EA; color: #1E7B34; }
-  .tag.unpaid { background: #FDECEC; color: #C0392B; }
-  .tag.issued { background: #E8EEFB; color: var(--navy); }
-  .tag.not_issued { background: #F1F1F1; color: var(--surface-text-muted); }
+  .tag.overdue { background: #FDECEC; color: #C0392B; }
+  .tag.invoiced_unpaid { background: #E8EEFB; color: var(--navy); }
+  .tag.pending_invoice { background: #F1F1F1; color: var(--surface-text-muted); }
+  .cell-muted { color: var(--surface-text-muted); }
   .row-actions { display: flex; gap: 6px; }
   .row-actions button { padding: 4px 8px; font-size: 11px; }
   .empty-row td { text-align: center; color: var(--surface-text-muted); padding: 30px 10px; }
@@ -108,7 +109,7 @@
     <div class="form-head">
       <div>
         <h1>接案收入登記</h1>
-        <p class="hint">登記每筆案件收入，可一鍵帶入應收帳款通知產生器，並依月／年彙整報稅用收入。</p>
+        <p class="hint">登記每筆案件的金額、發票號碼／開立日期、預計與實際收款日，讓案件、發票、收款時間能互相對得上，並依月／年彙整報稅用收入。</p>
       </div>
       <button id="theme-toggle" type="button" aria-label="切換 Dark／Day 模式" title="切換深色／淺色模式">🌙</button>
     </div>
@@ -121,33 +122,40 @@
         <input type="text" id="f_project" placeholder="企業網站改版">
         <label>客戶名稱</label>
         <input type="text" id="f_client" placeholder="全穎智聯股份有限公司">
+        <label>應收金額</label>
+        <input type="number" id="f_amount" placeholder="50000" min="0" step="1">
+      </fieldset>
+
+      <fieldset>
+        <legend>發票對應</legend>
         <div class="row2">
           <div>
-            <label>金額（未稅／實收）</label>
-            <input type="number" id="f_amount" placeholder="50000" min="0" step="1">
+            <label>發票號碼</label>
+            <input type="text" id="f_invoice_no" placeholder="AB-12345678">
           </div>
           <div>
-            <label>日期</label>
-            <input type="date" id="f_date">
+            <label>開立日期</label>
+            <input type="date" id="f_invoice_date">
           </div>
         </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>收款時間</legend>
         <div class="row2">
           <div>
-            <label>收款狀態</label>
-            <select id="f_payment_status">
-              <option value="unpaid">未收款</option>
-              <option value="paid">已收款</option>
-            </select>
+            <label>預計收款日</label>
+            <input type="date" id="f_due_date">
           </div>
           <div>
-            <label>發票狀態</label>
-            <select id="f_invoice_status">
-              <option value="not_issued">未開立</option>
-              <option value="issued">已開立</option>
-            </select>
+            <label>實際收款日</label>
+            <input type="date" id="f_paid_date">
           </div>
         </div>
-        <label>備註</label>
+      </fieldset>
+
+      <fieldset>
+        <legend>備註</legend>
         <textarea id="f_note" placeholder="付款方式、合約期間等備註"></textarea>
       </fieldset>
 
@@ -194,17 +202,19 @@
     <table>
       <thead>
         <tr>
-          <th>日期</th>
+          <th>狀態</th>
           <th>案件名稱</th>
           <th>客戶</th>
           <th>金額</th>
-          <th>收款</th>
-          <th>發票</th>
+          <th>發票號碼</th>
+          <th>開立日期</th>
+          <th>預計收款日</th>
+          <th>實際收款日</th>
           <th>操作</th>
         </tr>
       </thead>
       <tbody id="list-tbody">
-        <tr class="empty-row"><td colspan="7">尚無登記紀錄</td></tr>
+        <tr class="empty-row"><td colspan="9">尚無登記紀錄</td></tr>
       </tbody>
     </table>
   </div>
@@ -257,14 +267,36 @@ function v(id) {
   return (document.getElementById(id) || {}).value || '';
 }
 
+const STATUS_LABELS = {
+  pending_invoice: '待開票',
+  invoiced_unpaid: '已開票待收',
+  overdue: '逾期未收',
+  paid: '已收款',
+};
+
+function statusOf(r) {
+  if (r.paidDate) return 'paid';
+  if (r.invoiceDate) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (r.dueDate && r.dueDate < today) return 'overdue';
+    return 'invoiced_unpaid';
+  }
+  return 'pending_invoice';
+}
+
+function referenceDate(r) {
+  return r.paidDate || r.dueDate || r.invoiceDate || (r.createdAt ? r.createdAt.slice(0, 10) : '');
+}
+
 function clearForm() {
   document.getElementById('f_id').value = '';
   document.getElementById('f_project').value = '';
   document.getElementById('f_client').value = '';
   document.getElementById('f_amount').value = '';
-  document.getElementById('f_date').value = '';
-  document.getElementById('f_payment_status').value = 'unpaid';
-  document.getElementById('f_invoice_status').value = 'not_issued';
+  document.getElementById('f_invoice_no').value = '';
+  document.getElementById('f_invoice_date').value = '';
+  document.getElementById('f_due_date').value = '';
+  document.getElementById('f_paid_date').value = '';
   document.getElementById('f_note').value = '';
 }
 
@@ -284,7 +316,7 @@ async function loadRecords() {
 }
 
 function populateFilterOptions() {
-  const years = Array.from(new Set(records.map((r) => (r.date || '').split('-')[0]).filter(Boolean))).sort().reverse();
+  const years = Array.from(new Set(records.map((r) => referenceDate(r).split('-')[0]).filter(Boolean))).sort().reverse();
   const yearSelect = document.getElementById('filter-year');
   const currentYear = yearSelect.value;
   yearSelect.innerHTML = '<option value="">全部</option>' + years.map((y) => `<option value="${y}">${y}</option>`).join('');
@@ -306,8 +338,9 @@ function getFilteredRecords() {
   const year = v('filter-year');
   const month = v('filter-month');
   return records.filter((r) => {
-    if (!r.date) return false;
-    const [y, m] = r.date.split('-');
+    const ref = referenceDate(r);
+    if (!ref) return false;
+    const [y, m] = ref.split('-');
     if (year && y !== year) return false;
     if (month && m !== month) return false;
     return true;
@@ -315,13 +348,13 @@ function getFilteredRecords() {
 }
 
 function renderTable() {
-  const filtered = getFilteredRecords().slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const filtered = getFilteredRecords().slice().sort((a, b) => referenceDate(b).localeCompare(referenceDate(a)));
   const tbody = document.getElementById('list-tbody');
 
   let total = 0, paid = 0;
   filtered.forEach((r) => {
     total += Number(r.amount) || 0;
-    if (r.paymentStatus === 'paid') paid += Number(r.amount) || 0;
+    if (statusOf(r) === 'paid') paid += Number(r.amount) || 0;
   });
   document.getElementById('sum-count').textContent = filtered.length;
   document.getElementById('sum-total').textContent = fmtNT(total);
@@ -329,18 +362,22 @@ function renderTable() {
   document.getElementById('sum-unpaid').textContent = fmtNT(total - paid);
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">尚無登記紀錄</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">尚無登記紀錄</td></tr>';
     return;
   }
 
-  tbody.innerHTML = filtered.map((r) => `
+  tbody.innerHTML = filtered.map((r) => {
+    const status = statusOf(r);
+    return `
     <tr>
-      <td>${esc(r.date)}</td>
+      <td><span class="tag ${status}">${STATUS_LABELS[status]}</span></td>
       <td>${esc(r.project)}</td>
       <td>${esc(r.client)}</td>
       <td>${fmtNT(r.amount)}</td>
-      <td><span class="tag ${r.paymentStatus}">${r.paymentStatus === 'paid' ? '已收款' : '未收款'}</span></td>
-      <td><span class="tag ${r.invoiceStatus}">${r.invoiceStatus === 'issued' ? '已開立' : '未開立'}</span></td>
+      <td>${r.invoiceNo ? esc(r.invoiceNo) : '<span class="cell-muted">—</span>'}</td>
+      <td>${r.invoiceDate ? esc(r.invoiceDate) : '<span class="cell-muted">—</span>'}</td>
+      <td>${r.dueDate ? esc(r.dueDate) : '<span class="cell-muted">—</span>'}</td>
+      <td>${r.paidDate ? esc(r.paidDate) : '<span class="cell-muted">—</span>'}</td>
       <td>
         <div class="row-actions">
           <button type="button" class="secondary" onclick="editRecord('${r.id}')">編輯</button>
@@ -349,7 +386,8 @@ function renderTable() {
         </div>
       </td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function editRecord(id) {
@@ -359,9 +397,10 @@ function editRecord(id) {
   document.getElementById('f_project').value = r.project;
   document.getElementById('f_client').value = r.client;
   document.getElementById('f_amount').value = r.amount;
-  document.getElementById('f_date').value = r.date;
-  document.getElementById('f_payment_status').value = r.paymentStatus;
-  document.getElementById('f_invoice_status').value = r.invoiceStatus;
+  document.getElementById('f_invoice_no').value = r.invoiceNo || '';
+  document.getElementById('f_invoice_date').value = r.invoiceDate || '';
+  document.getElementById('f_due_date').value = r.dueDate || '';
+  document.getElementById('f_paid_date').value = r.paidDate || '';
   document.getElementById('f_note').value = r.note || '';
   setStatus(`編輯中：${r.project}`);
 }
@@ -373,9 +412,11 @@ function openInvoice(id) {
     company: r.client || '',
     project: r.project || '',
     amount: r.amount || '',
-    date: r.date || '',
+    date: r.invoiceDate || r.dueDate || '',
+    invoiceNo: r.invoiceNo || '',
   });
   window.open(`Invoice-Generator.html?${params.toString()}`, '_blank');
+  setStatus('已開啟請款單產生器，開立後請回來填入發票號碼／開立日期，讓案件與發票對得上');
 }
 
 async function deleteRecord(id) {
@@ -402,14 +443,15 @@ async function saveRecord() {
     project: v('f_project').trim(),
     client: v('f_client').trim(),
     amount: Number(v('f_amount')),
-    date: v('f_date'),
-    paymentStatus: v('f_payment_status'),
-    invoiceStatus: v('f_invoice_status'),
+    invoiceNo: v('f_invoice_no').trim(),
+    invoiceDate: v('f_invoice_date'),
+    dueDate: v('f_due_date'),
+    paidDate: v('f_paid_date'),
     note: v('f_note').trim(),
   };
 
-  if (!payload.project || !payload.client || !payload.date || !payload.amount) {
-    setStatus('請完整填寫案件名稱、客戶、日期與金額');
+  if (!payload.project || !payload.client || !payload.amount) {
+    setStatus('請完整填寫案件名稱、客戶與金額');
     return;
   }
 
@@ -437,19 +479,21 @@ async function saveRecord() {
 }
 
 function exportCsv() {
-  const filtered = getFilteredRecords().slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const filtered = getFilteredRecords().slice().sort((a, b) => referenceDate(a).localeCompare(referenceDate(b)));
   if (filtered.length === 0) {
     setStatus('目前篩選範圍內沒有資料可匯出');
     return;
   }
-  const header = ['日期', '案件名稱', '客戶', '金額', '收款狀態', '發票狀態', '備註'];
+  const header = ['案件名稱', '客戶', '金額', '發票號碼', '開立日期', '預計收款日', '實際收款日', '狀態', '備註'];
   const rows = filtered.map((r) => [
-    r.date,
     r.project,
     r.client,
     r.amount,
-    r.paymentStatus === 'paid' ? '已收款' : '未收款',
-    r.invoiceStatus === 'issued' ? '已開立' : '未開立',
+    r.invoiceNo || '',
+    r.invoiceDate || '',
+    r.dueDate || '',
+    r.paidDate || '',
+    STATUS_LABELS[statusOf(r)],
     r.note || '',
   ]);
   const csv = [header, ...rows]

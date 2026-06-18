@@ -640,11 +640,13 @@ refreshOutput();
   var project = params.get('project');
   var amount = params.get('amount');
   var date = params.get('date');
-  if (!company && !project && !amount && !date) return;
+  var invoiceNo = params.get('invoiceNo');
+  if (!company && !project && !amount && !date && !invoiceNo) return;
 
   if (company) document.getElementById('f_company_name').value = company;
   if (project) document.getElementById('f_project_name').value = project;
   if (date) document.getElementById('f_issue_date').value = date;
+  if (invoiceNo) document.getElementById('f_inv_no').value = invoiceNo;
   if (amount) {
     var firstRow = document.querySelector('#items-tbody tr');
     if (firstRow) {

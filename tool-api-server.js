@@ -38,6 +38,20 @@ function writeIncomeRecords(records) {
   fs.writeFileSync(INCOME_FILE, JSON.stringify(records, null, 2), 'utf8');
 }
 
+function referenceDate(r) {
+  return r.paidDate || r.dueDate || r.invoiceDate || (r.createdAt ? r.createdAt.slice(0, 10) : '');
+}
+
+function statusOf(r) {
+  if (r.paidDate) return 'paid';
+  if (r.invoiceDate) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (r.dueDate && r.dueDate < today) return 'overdue';
+    return 'invoiced_unpaid';
+  }
+  return 'pending_invoice';
+}
+
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -367,7 +381,7 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'GET' && req.url === '/api/income/list') {
     try {
-      const records = readIncomeRecords();
+      const records = readIncomeRecords().map((r) => ({ ...r, status: statusOf(r) }));
       sendJson(res, 200, { ok: true, records });
     } catch (err) {
       sendJson(res, 500, {
@@ -383,17 +397,20 @@ const server = http.createServer(async (req, res) => {
       const reqUrl = new URL(req.url, `http://localhost:${PORT}`);
       const year = reqUrl.searchParams.get('year');
       const month = reqUrl.searchParams.get('month');
-      const records = readIncomeRecords().filter((r) => {
-        if (!r.date) return false;
-        const [y, m] = r.date.split('-');
-        if (year && y !== String(year)) return false;
-        if (month && m !== String(month).padStart(2, '0')) return false;
-        return true;
-      });
+      const records = readIncomeRecords()
+        .map((r) => ({ ...r, status: statusOf(r) }))
+        .filter((r) => {
+          const ref = referenceDate(r);
+          if (!ref) return false;
+          const [y, m] = ref.split('-');
+          if (year && y !== String(year)) return false;
+          if (month && m !== String(month).padStart(2, '0')) return false;
+          return true;
+        });
 
       const total = records.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
       const paid = records
-        .filter((r) => r.paymentStatus === 'paid')
+        .filter((r) => r.status === 'paid')
         .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
       const unpaid = total - paid;
 
@@ -422,12 +439,11 @@ const server = http.createServer(async (req, res) => {
         const project = String(parsed.project || '').trim();
         const client = String(parsed.client || '').trim();
         const amount = Number(parsed.amount);
-        const date = String(parsed.date || '').trim();
 
-        if (!project || !client || !date || !Number.isFinite(amount) || amount <= 0) {
+        if (!project || !client || !Number.isFinite(amount) || amount <= 0) {
           sendJson(res, 400, {
             ok: false,
-            error: '請完整填寫案件名稱、客戶、日期與有效金額',
+            error: '請完整填寫案件名稱、客戶與有效金額',
           });
           return;
         }
@@ -437,9 +453,10 @@ const server = http.createServer(async (req, res) => {
           project,
           client,
           amount,
-          date,
-          paymentStatus: parsed.paymentStatus === 'paid' ? 'paid' : 'unpaid',
-          invoiceStatus: parsed.invoiceStatus === 'issued' ? 'issued' : 'not_issued',
+          invoiceNo: String(parsed.invoiceNo || '').trim(),
+          invoiceDate: String(parsed.invoiceDate || '').trim(),
+          dueDate: String(parsed.dueDate || '').trim(),
+          paidDate: String(parsed.paidDate || '').trim(),
           note: String(parsed.note || '').trim(),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -448,7 +465,7 @@ const server = http.createServer(async (req, res) => {
         const records = readIncomeRecords();
         records.push(record);
         writeIncomeRecords(records);
-        sendJson(res, 200, { ok: true, record });
+        sendJson(res, 200, { ok: true, record: { ...record, status: statusOf(record) } });
       })
       .catch((err) => {
         sendJson(res, 400, { ok: false, error: '請求格式錯誤：' + err.message });
@@ -478,22 +495,17 @@ const server = http.createServer(async (req, res) => {
           project: parsed.project !== undefined ? String(parsed.project).trim() : existing.project,
           client: parsed.client !== undefined ? String(parsed.client).trim() : existing.client,
           amount: parsed.amount !== undefined ? Number(parsed.amount) : existing.amount,
-          date: parsed.date !== undefined ? String(parsed.date).trim() : existing.date,
-          paymentStatus:
-            parsed.paymentStatus !== undefined
-              ? (parsed.paymentStatus === 'paid' ? 'paid' : 'unpaid')
-              : existing.paymentStatus,
-          invoiceStatus:
-            parsed.invoiceStatus !== undefined
-              ? (parsed.invoiceStatus === 'issued' ? 'issued' : 'not_issued')
-              : existing.invoiceStatus,
+          invoiceNo: parsed.invoiceNo !== undefined ? String(parsed.invoiceNo).trim() : existing.invoiceNo,
+          invoiceDate: parsed.invoiceDate !== undefined ? String(parsed.invoiceDate).trim() : existing.invoiceDate,
+          dueDate: parsed.dueDate !== undefined ? String(parsed.dueDate).trim() : existing.dueDate,
+          paidDate: parsed.paidDate !== undefined ? String(parsed.paidDate).trim() : existing.paidDate,
           note: parsed.note !== undefined ? String(parsed.note).trim() : existing.note,
           updatedAt: new Date().toISOString(),
         };
 
         records[index] = updated;
         writeIncomeRecords(records);
-        sendJson(res, 200, { ok: true, record: updated });
+        sendJson(res, 200, { ok: true, record: { ...updated, status: statusOf(updated) } });
       })
       .catch((err) => {
         sendJson(res, 400, { ok: false, error: '請求格式錯誤：' + err.message });
