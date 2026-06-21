@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DGHM 週工作排程規劃</title>
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --navy: #0D2F6E;
+    --orange: #E5622A;
+    --surface-bg: #F4F6F8;
+    --surface-panel-bg: #ffffff;
+    --surface-border: #E1E5EA;
+    --surface-text: #1f2933;
+    --surface-text-muted: #667085;
+    --surface-input-bg: #ffffff;
+    --surface-input-border: #D0D5DD;
+  }
+  body {
+    font-family: -apple-system, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    margin: 0;
+    background: var(--surface-bg);
+    color: var(--surface-text);
+  }
+  .app { display: flex; min-height: 100vh; }
+  .form-panel {
+    width: 420px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    padding: 20px;
+    background: var(--surface-panel-bg);
+    border-right: 1px solid var(--surface-border);
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; color: var(--navy); }
+  .hint { font-size: 12px; color: var(--surface-text-muted); margin: 0 0 16px; line-height: 1.6; }
+  fieldset { border: 1px solid var(--surface-border); border-radius: 8px; margin-bottom: 16px; padding: 12px 14px; }
+  legend { font-size: 12px; font-weight: 700; color: var(--navy); padding: 0 4px; }
+  label { display: block; font-size: 12px; color: var(--surface-text-muted); margin: 10px 0 4px; }
+  input[type=text], input[type=date], input[type=number] {
+    width: 100%; padding: 6px 8px; font-size: 13px;
+    border: 1px solid var(--surface-input-border); border-radius: 6px; font-family: inherit;
+    background: var(--surface-input-bg); color: var(--surface-text);
+  }
+  .row3 { display: grid; grid-template-columns: 90px 1fr 70px 28px; gap: 6px; align-items: end; margin-bottom: 6px; }
+  .row3 label { margin: 0 0 2px; }
+  button {
+    cursor: pointer; border: 1px solid var(--navy); background: var(--navy); color: #fff;
+    border-radius: 6px; padding: 8px 12px; font-size: 13px;
+  }
+  button.secondary { background: #fff; color: var(--navy); }
+  button.small { padding: 4px 8px; font-size: 12px; }
+  button.danger { border-color: #c0392b; background: #fff; color: #c0392b; }
+  button.full { width: 100%; margin-top: 8px; }
+  .pct-total { font-size: 12px; margin-top: 4px; }
+  .pct-total.ok { color: #1a7f37; }
+  .pct-total.bad { color: #c0392b; }
+  .main-panel { flex: 1; overflow-y: auto; padding: 24px; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: 20px; background: var(--surface-panel-bg); }
+  th, td { border: 1px solid var(--surface-border); padding: 8px; font-size: 13px; text-align: left; vertical-align: top; }
+  th { background: var(--navy); color: #fff; font-size: 12px; }
+  td.slot-label { font-size: 11px; color: var(--surface-text-muted); white-space: nowrap; }
+  textarea#output {
+    width: 100%; min-height: 280px; font-family: ui-monospace, monospace; font-size: 13px;
+    padding: 10px; border: 1px solid var(--surface-input-border); border-radius: 6px;
+    background: var(--surface-input-bg); color: var(--surface-text);
+  }
+  .actions { display: flex; gap: 8px; margin: 10px 0; }
+  .status { font-size: 12px; color: var(--surface-text-muted); margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="form-panel">
+    <h1>DGHM 週工作排程規劃</h1>
+    <p class="hint">填入本週客戶專案與內部工作的時間佔比，自動產生符合排程習慣的週表，並輸出文字可貼到 Claude chat 請它建立 Google Calendar 事件。</p>
+
+    <label>週次起始日（週一）</label>
+    <input type="date" id="week-start">
+
+    <fieldset>
+      <legend>客戶專案（主工作 08:30–11:30 / 13:00–15:30，共 27.5h）</legend>
+      <div id="client-rows"></div>
+      <button type="button" class="secondary small" id="add-client-row">+ 新增專案</button>
+      <div class="pct-total" id="client-pct-total"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>DGHM 內部工作（固定區間 15:30–17:00，共 7.5h）</legend>
+      <div id="dghm-rows"></div>
+      <button type="button" class="secondary small" id="add-dghm-row">+ 新增項目</button>
+      <div class="pct-total" id="dghm-pct-total"></div>
+    </fieldset>
+
+    <button type="button" class="full" id="generate-btn">產生本週排程</button>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="main-panel">
+    <h2 style="margin-top:0;">本週排程預覽</h2>
+    <table id="preview-table">
+      <thead>
+        <tr><th>時段</th><th>週一</th><th>週二</th><th>週三</th><th>週四</th><th>週五</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <h2>輸出文字（貼到 Claude chat 請它建立 Calendar 事件）</h2>
+    <textarea id="output" readonly placeholder="按左側「產生本週排程」後，這裡會出現可複製的排程文字。"></textarea>
+    <div class="actions">
+      <button type="button" class="secondary" id="copy-btn">複製文字</button>
+      <button type="button" class="secondary" id="download-btn">下載 .md</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CLIENT_CODES = ['hs128','TailorMed','FP-Deco','SenWay','MeYi','Nangyuan','DGHM'];
+const DAYS = ['週一','週二','週三','週四','週五'];
+const SLOTS = [
+  { key: 'A', label: '08:30–11:30', hours: 3 },
+  { key: 'B', label: '13:00–15:30', hours: 2.5 },
+  { key: 'Fixed', label: '15:30–17:00', hours: 1.5 },
+];
+
+function makeClientRow(data) {
+  const row = document.createElement('div');
+  row.className = 'row3';
+  row.innerHTML = `
+    <div><label>代碼</label><input type="text" class="code" value="${data?.code || ''}" placeholder="hs128"></div>
+    <div><label>工作項目</label><input type="text" class="desc" value="${data?.desc || ''}" placeholder="描述"></div>
+    <div><label>%</label><input type="number" class="pct" min="0" max="100" value="${data?.pct ?? ''}"></div>
+    <div><button type="button" class="danger small remove-row" style="margin-top:18px;">×</button></div>
+  `;
+  row.querySelector('.remove-row').addEventListener('click', () => {
+    row.remove();
+    updatePctTotal('client');
+  });
+  row.querySelectorAll('input').forEach((i) => i.addEventListener('input', () => updatePctTotal('client')));
+  return row;
+}
+
+function makeDghmRow(data) {
+  const row = document.createElement('div');
+  row.className = 'row3';
+  row.style.gridTemplateColumns = '1fr 70px 28px';
+  row.innerHTML = `
+    <div><label>工作項目</label><input type="text" class="desc" value="${data?.desc || ''}" placeholder="描述"></div>
+    <div><label>%</label><input type="number" class="pct" min="0" max="100" value="${data?.pct ?? ''}"></div>
+    <div><button type="button" class="danger small remove-row" style="margin-top:18px;">×</button></div>
+  `;
+  row.querySelector('.remove-row').addEventListener('click', () => {
+    row.remove();
+    updatePctTotal('dghm');
+  });
+  row.querySelectorAll('input').forEach((i) => i.addEventListener('input', () => updatePctTotal('dghm')));
+  return row;
+}
+
+function updatePctTotal(kind) {
+  const container = document.getElementById(kind === 'client' ? 'client-rows' : 'dghm-rows');
+  const total = [...container.querySelectorAll('.pct')].reduce((sum, el) => sum + (Number(el.value) || 0), 0);
+  const el = document.getElementById(kind === 'client' ? 'client-pct-total' : 'dghm-pct-total');
+  el.textContent = `總計：${total}%`;
+  el.className = 'pct-total ' + (total === 100 ? 'ok' : 'bad');
+}
+
+document.getElementById('add-client-row').addEventListener('click', () => {
+  document.getElementById('client-rows').appendChild(makeClientRow());
+});
+document.getElementById('add-dghm-row').addEventListener('click', () => {
+  document.getElementById('dghm-rows').appendChild(makeDghmRow());
+});
+
+// 預設範例列，方便第一次使用
+document.getElementById('client-rows').appendChild(makeClientRow({ code: 'hs128', desc: '電商網站上線前測試', pct: 30 }));
+document.getElementById('client-rows').appendChild(makeClientRow({ code: 'TailorMed', desc: 'Interface User Guideline 整理', pct: 20 }));
+document.getElementById('client-rows').appendChild(makeClientRow({ code: '行政事務', desc: '行政事務保留', pct: 20 }));
+document.getElementById('dghm-rows').appendChild(makeDghmRow({ desc: '工具開發 ui-tool', pct: 50 }));
+document.getElementById('dghm-rows').appendChild(makeDghmRow({ desc: '公司名片圖稿設計', pct: 30 }));
+document.getElementById('dghm-rows').appendChild(makeDghmRow({ desc: '秋節/聖誕賀卡設計', pct: 20 }));
+updatePctTotal('client');
+updatePctTotal('dghm');
+
+// 預設週次起始日：下週一
+(function setDefaultWeekStart() {
+  const today = new Date();
+  const day = today.getDay();
+  const diffToNextMon = (8 - day) % 7 || 7;
+  const nextMon = new Date(today);
+  nextMon.setDate(today.getDate() + diffToNextMon);
+  document.getElementById('week-start').value = nextMon.toISOString().slice(0, 10);
+})();
+
+function largestRemainderAllocate(items, total) {
+  const raw = items.map((it) => (it.pct / 100) * total);
+  const floors = raw.map(Math.floor);
+  let assigned = floors.reduce((a, b) => a + b, 0);
+  let remainder = total - assigned;
+  const order = raw
+    .map((r, i) => ({ i, frac: r - floors[i] }))
+    .sort((a, b) => b.frac - a.frac);
+  for (let k = 0; k < remainder && k < order.length; k++) floors[order[k].i]++;
+  return floors;
+}
+
+function assignSlots(items, slotList) {
+  // items: [{label, pct}], slotList: array of {day, type} in priority order
+  const quota = largestRemainderAllocate(items, slotList.length);
+  const remaining = items.map((it, i) => ({ ...it, left: quota[i] }));
+  const usedToday = {};
+  const result = [];
+  for (const slot of slotList) {
+    usedToday[slot.day] = usedToday[slot.day] || new Set();
+    const candidates = remaining
+      .filter((it) => it.left > 0 && !usedToday[slot.day].has(it.label))
+      .sort((a, b) => b.left - a.left);
+    let pick = candidates[0];
+    if (!pick) {
+      // 找不到不重複的候選，退而求其次選剩餘最多者
+      pick = remaining.filter((it) => it.left > 0).sort((a, b) => b.left - a.left)[0];
+    }
+    if (pick) {
+      pick.left--;
+      usedToday[slot.day].add(pick.label);
+      result.push({ ...slot, label: pick.label });
+    } else {
+      result.push({ ...slot, label: null });
+    }
+  }
+  return result;
+}
+
+function formatDate(weekStart, dayIndex) {
+  const d = new Date(weekStart + 'T00:00:00');
+  d.setDate(d.getDate() + dayIndex);
+  return d.toISOString().slice(0, 10);
+}
+
+document.getElementById('generate-btn').addEventListener('click', () => {
+  const weekStart = document.getElementById('week-start').value;
+  if (!weekStart) {
+    document.getElementById('status').textContent = '請先選擇週次起始日';
+    return;
+  }
+
+  const clientItems = [...document.getElementById('client-rows').children].map((row) => ({
+    code: row.querySelector('.code').value.trim(),
+    desc: row.querySelector('.desc').value.trim(),
+    pct: Number(row.querySelector('.pct').value) || 0,
+  })).filter((it) => it.desc && it.pct > 0);
+
+  const dghmItems = [...document.getElementById('dghm-rows').children].map((row) => ({
+    desc: row.querySelector('.desc').value.trim(),
+    pct: Number(row.querySelector('.pct').value) || 0,
+  })).filter((it) => it.desc && it.pct > 0);
+
+  if (!clientItems.length || !dghmItems.length) {
+    document.getElementById('status').textContent = '請至少各填一筆客戶專案與 DGHM 內部工作';
+    return;
+  }
+
+  // 固定行政事務在週五 13:00-15:30
+  const adminIdx = clientItems.findIndex((it) => it.desc.includes('行政事務') || it.code.includes('行政事務'));
+  let adminItem = null;
+  let mainItems = clientItems;
+  if (adminIdx !== -1) {
+    adminItem = clientItems[adminIdx];
+    mainItems = clientItems.filter((_, i) => i !== adminIdx);
+  }
+
+  const mainSlotList = [];
+  DAYS.forEach((day) => {
+    mainSlotList.push({ day, type: 'A' });
+    if (!(day === '週五' && adminItem)) mainSlotList.push({ day, type: 'B' });
+  });
+
+  const mainLabeled = mainItems.map((it) => ({ ...it, label: `【${it.code}】${it.desc}` }));
+  const mainAssignment = mainItems.length ? assignSlots(mainLabeled, mainSlotList) : [];
+
+  if (adminItem) {
+    mainAssignment.push({ day: '週五', type: 'B', label: `【${adminItem.code}】${adminItem.desc}` });
+  }
+
+  const fixedSlotList = DAYS.map((day) => ({ day, type: 'Fixed' }));
+  const dghmLabeled = dghmItems.map((it) => ({ ...it, label: `【DGHM】${it.desc}` }));
+  const fixedAssignment = assignSlots(dghmLabeled, fixedSlotList);
+
+  const all = [...mainAssignment, ...fixedAssignment];
+  const grid = {};
+  DAYS.forEach((day) => { grid[day] = {}; });
+  all.forEach((a) => { grid[a.day][a.type] = a.label; });
+
+  // 預覽表格
+  const tbody = document.querySelector('#preview-table tbody');
+  tbody.innerHTML = '';
+  SLOTS.forEach((slot) => {
+    const tr = document.createElement('tr');
+    let html = `<td class="slot-label">${slot.label}</td>`;
+    DAYS.forEach((day) => {
+      html += `<td>${grid[day][slot.key] || ''}</td>`;
+    });
+    tr.innerHTML = html;
+    tbody.appendChild(tr);
+  });
+
+  // 輸出文字
+  const lines = [];
+  lines.push(`週次：${formatDate(weekStart, 0)} ~ ${formatDate(weekStart, 4)}（時區 Asia/Taipei，不發送通知）`);
+  lines.push('');
+  DAYS.forEach((day, idx) => {
+    lines.push(`${day} ${formatDate(weekStart, idx)}`);
+    SLOTS.forEach((slot) => {
+      const label = grid[day][slot.key];
+      if (label) lines.push(`${slot.label}  ${label}`);
+    });
+    lines.push('');
+  });
+
+  document.getElementById('output').value = lines.join('\n').trim();
+  document.getElementById('status').textContent = '已產生排程，可複製貼到 Claude chat 請它建立 Calendar 事件。';
+});
+
+document.getElementById('copy-btn').addEventListener('click', async () => {
+  const text = document.getElementById('output').value;
+  if (!text) return;
+  await navigator.clipboard.writeText(text);
+  document.getElementById('status').textContent = '已複製到剪貼簿';
+});
+
+document.getElementById('download-btn').addEventListener('click', () => {
+  const text = document.getElementById('output').value;
+  if (!text) return;
+  const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `work-schedule-${document.getElementById('week-start').value || 'week'}.md`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+</script>
+</body>
+</html>
