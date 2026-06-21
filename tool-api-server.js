@@ -10,32 +10,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PORT = Number(process.env.SOCIAL_UI_API_PORT || 8780);
 const TMP_DIR = path.join(__dirname, '.tmp-social-output');
-const DATA_DIR = path.join(__dirname, 'data');
-const INCOME_FILE = path.join(DATA_DIR, 'income.json');
 const anthropicClient = process.env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   : null;
 
 if (!fs.existsSync(TMP_DIR)) {
   fs.mkdirSync(TMP_DIR, { recursive: true });
-}
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-function readIncomeRecords() {
-  if (!fs.existsSync(INCOME_FILE)) {
-    return [];
-  }
-  const raw = fs.readFileSync(INCOME_FILE, 'utf8').trim();
-  if (!raw) {
-    return [];
-  }
-  return JSON.parse(raw);
-}
-
-function writeIncomeRecords(records) {
-  fs.writeFileSync(INCOME_FILE, JSON.stringify(records, null, 2), 'utf8');
 }
 
 function readJsonBody(req) {
@@ -365,167 +345,6 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === 'GET' && req.url === '/api/income/list') {
-    try {
-      const records = readIncomeRecords();
-      sendJson(res, 200, { ok: true, records });
-    } catch (err) {
-      sendJson(res, 500, {
-        ok: false,
-        error: err instanceof Error ? err.message : '未知錯誤',
-      });
-    }
-    return;
-  }
-
-  if (req.method === 'GET' && req.url.startsWith('/api/income/summary')) {
-    try {
-      const reqUrl = new URL(req.url, `http://localhost:${PORT}`);
-      const year = reqUrl.searchParams.get('year');
-      const month = reqUrl.searchParams.get('month');
-      const records = readIncomeRecords().filter((r) => {
-        if (!r.date) return false;
-        const [y, m] = r.date.split('-');
-        if (year && y !== String(year)) return false;
-        if (month && m !== String(month).padStart(2, '0')) return false;
-        return true;
-      });
-
-      const total = records.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
-      const paid = records
-        .filter((r) => r.paymentStatus === 'paid')
-        .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
-      const unpaid = total - paid;
-
-      sendJson(res, 200, {
-        ok: true,
-        year: year || null,
-        month: month || null,
-        count: records.length,
-        total,
-        paid,
-        unpaid,
-        records,
-      });
-    } catch (err) {
-      sendJson(res, 500, {
-        ok: false,
-        error: err instanceof Error ? err.message : '未知錯誤',
-      });
-    }
-    return;
-  }
-
-  if (req.method === 'POST' && req.url === '/api/income/create') {
-    readJsonBody(req)
-      .then((parsed) => {
-        const project = String(parsed.project || '').trim();
-        const client = String(parsed.client || '').trim();
-        const amount = Number(parsed.amount);
-        const date = String(parsed.date || '').trim();
-
-        if (!project || !client || !date || !Number.isFinite(amount) || amount <= 0) {
-          sendJson(res, 400, {
-            ok: false,
-            error: '請完整填寫案件名稱、客戶、日期與有效金額',
-          });
-          return;
-        }
-
-        const record = {
-          id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
-          project,
-          client,
-          amount,
-          date,
-          paymentStatus: parsed.paymentStatus === 'paid' ? 'paid' : 'unpaid',
-          invoiceStatus: parsed.invoiceStatus === 'issued' ? 'issued' : 'not_issued',
-          note: String(parsed.note || '').trim(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-
-        const records = readIncomeRecords();
-        records.push(record);
-        writeIncomeRecords(records);
-        sendJson(res, 200, { ok: true, record });
-      })
-      .catch((err) => {
-        sendJson(res, 400, { ok: false, error: '請求格式錯誤：' + err.message });
-      });
-    return;
-  }
-
-  if (req.method === 'POST' && req.url === '/api/income/update') {
-    readJsonBody(req)
-      .then((parsed) => {
-        const id = String(parsed.id || '').trim();
-        if (!id) {
-          sendJson(res, 400, { ok: false, error: '請提供 id' });
-          return;
-        }
-
-        const records = readIncomeRecords();
-        const index = records.findIndex((r) => r.id === id);
-        if (index === -1) {
-          sendJson(res, 404, { ok: false, error: '找不到對應的登記紀錄' });
-          return;
-        }
-
-        const existing = records[index];
-        const updated = {
-          ...existing,
-          project: parsed.project !== undefined ? String(parsed.project).trim() : existing.project,
-          client: parsed.client !== undefined ? String(parsed.client).trim() : existing.client,
-          amount: parsed.amount !== undefined ? Number(parsed.amount) : existing.amount,
-          date: parsed.date !== undefined ? String(parsed.date).trim() : existing.date,
-          paymentStatus:
-            parsed.paymentStatus !== undefined
-              ? (parsed.paymentStatus === 'paid' ? 'paid' : 'unpaid')
-              : existing.paymentStatus,
-          invoiceStatus:
-            parsed.invoiceStatus !== undefined
-              ? (parsed.invoiceStatus === 'issued' ? 'issued' : 'not_issued')
-              : existing.invoiceStatus,
-          note: parsed.note !== undefined ? String(parsed.note).trim() : existing.note,
-          updatedAt: new Date().toISOString(),
-        };
-
-        records[index] = updated;
-        writeIncomeRecords(records);
-        sendJson(res, 200, { ok: true, record: updated });
-      })
-      .catch((err) => {
-        sendJson(res, 400, { ok: false, error: '請求格式錯誤：' + err.message });
-      });
-    return;
-  }
-
-  if (req.method === 'POST' && req.url === '/api/income/delete') {
-    readJsonBody(req)
-      .then((parsed) => {
-        const id = String(parsed.id || '').trim();
-        if (!id) {
-          sendJson(res, 400, { ok: false, error: '請提供 id' });
-          return;
-        }
-
-        const records = readIncomeRecords();
-        const next = records.filter((r) => r.id !== id);
-        if (next.length === records.length) {
-          sendJson(res, 404, { ok: false, error: '找不到對應的登記紀錄' });
-          return;
-        }
-
-        writeIncomeRecords(next);
-        sendJson(res, 200, { ok: true });
-      })
-      .catch((err) => {
-        sendJson(res, 400, { ok: false, error: '請求格式錯誤：' + err.message });
-      });
-    return;
-  }
-
   sendJson(res, 404, { ok: false, error: 'Not Found' });
 });
 
@@ -533,9 +352,5 @@ server.listen(PORT, () => {
   console.log(`✅ tool-api-server running at http://localhost:${PORT}`);
   console.log('   POST /api/social/generate');
   console.log('   POST /api/sections/generate');
-  console.log('   GET  /api/income/list');
-  console.log('   GET  /api/income/summary');
-  console.log('   POST /api/income/create');
-  console.log('   POST /api/income/update');
-  console.log('   POST /api/income/delete');
+  console.log('（接案收入登記 API 已改由 netlify/functions/income.js 提供，請用 netlify dev 啟動）');
 });
