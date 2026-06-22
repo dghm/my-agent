@@ -38,6 +38,7 @@
   - 登記案件名稱、客戶、金額、發票號碼／開立日期、預計收款日、實際收款日，狀態（待開票／已開票待收／逾期未收／已收款）由日期欄位自動判斷，不需手動勾選。
   - 依年／月篩選彙整，支援匯出 CSV（報稅用）。
   - 「產生請款單」按鈕會帶資料開啟 `Invoice-Generator.html`（透過 URL 參數預填客戶／案件／金額／日期／發票號碼）。
+  - 「匯入請款單 JSON」按鈕可讀取 `Invoice-Generator.html` 匯出的請款單 JSON，自動帶入案件、客戶、金額（項目加總）、發票號碼、開立日期、預計收款日，確認後按「儲存登記」即完成登記。
   - 資料透過 `tool-api-server.js` 的 `/api/income/*` 讀寫，存於 `data/income.json`。
 
 - `breakdance-section-generator.html`

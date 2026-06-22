@@ -69,6 +69,7 @@
   button.secondary { background: #fff; color: var(--navy); }
   :root[data-theme="dark"] button.secondary { background: var(--surface-input-bg); color: var(--surface-text); }
   button.full { width: 100%; margin-top: 8px; }
+  #import-btn { margin-bottom: 16px; }
   button:disabled { opacity: .5; cursor: not-allowed; }
   .status { margin-top: 8px; font-size: 12px; color: var(--surface-text-muted); min-height: 18px; }
 
@@ -113,6 +114,9 @@
       </div>
       <button id="theme-toggle" type="button" aria-label="切換 Dark／Day 模式" title="切換深色／淺色模式">🌙</button>
     </div>
+
+    <input type="file" id="import-file" accept=".json,application/json" style="display:none">
+    <button type="button" class="full secondary" id="import-btn">匯入請款單 JSON</button>
 
     <form id="form">
       <input type="hidden" id="f_id">
@@ -508,6 +512,36 @@ function exportCsv() {
   a.click();
   setStatus('已匯出 CSV');
 }
+
+function importInvoiceJson(json) {
+  const f = json.fields || {};
+  const items = Array.isArray(json.items) ? json.items : [];
+  const total = items.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
+  clearForm();
+  document.getElementById('f_project').value = f.f_project_name || '';
+  document.getElementById('f_client').value = f.f_company_name || '';
+  document.getElementById('f_amount').value = total || '';
+  document.getElementById('f_invoice_no').value = f.f_inv_no || '';
+  document.getElementById('f_invoice_date').value = f.f_issue_date || '';
+  document.getElementById('f_due_date').value = f.f_due_date || '';
+  document.getElementById('f_note').value = f.f_inv_number ? `統一發票號碼：${f.f_inv_number}` : '';
+}
+
+document.getElementById('import-btn').addEventListener('click', () => {
+  document.getElementById('import-file').click();
+});
+document.getElementById('import-file').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const json = JSON.parse(await file.text());
+    importInvoiceJson(json);
+    setStatus('已匯入請款單資料，請確認金額與日期後按「儲存登記」');
+  } catch (err) {
+    setStatus(`匯入失敗：${err.message}`);
+  }
+  e.target.value = '';
+});
 
 document.getElementById('save-btn').addEventListener('click', saveRecord);
 document.getElementById('reset-btn').addEventListener('click', () => { clearForm(); setStatus('已清空表單'); });
