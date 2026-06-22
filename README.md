@@ -42,7 +42,9 @@
   - 接案收入登記系統前端。
   - 登記案件名稱、客戶、專案代碼、期數、金額（未稅／含稅）、通知單號、發票號碼、付款條件與期限、收款／發票狀態，依年／月篩選彙整，支援匯出 CSV（報稅用）。
   - 「產生請款單」按鈕會帶資料開啟 `Invoice-Generator.html`（透過 URL 參數預填）。
+  - 「匯入請款單 JSON」按鈕可讀取 `Invoice-Generator.html` 匯出的請款單 JSON，自動帶入案件、客戶、專案代碼、期數說明、金額（項目加總）、通知單號、發票號碼、開立日期、付款期限、付款條件，確認金額與狀態後按「儲存登記」即完成登記。
   - 資料透過 `netlify/functions/income.js` 的 `/api/income/*` 讀寫，存於 Netlify Blobs。
+  - 儲存登記後可在「附件」區上傳請款單／發票掃描檔（單檔上限 10MB），附件附加於該筆收入登記紀錄，可點擊檢視或刪除，存於獨立的 Netlify Blobs store（`income-attachments`）。
 
 - `breakdance-section-generator.html`
   - Breakdance Section 版型生成工作台（Wireframe 取向）。

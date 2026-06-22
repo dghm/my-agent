@@ -140,6 +140,93 @@ export default async (req, context) => {
       return json(200, { ok: true, record: updated });
     }
 
+    if (req.method === 'POST' && action === 'attachment-upload') {
+      const form = await req.formData();
+      const recordId = String(form.get('recordId') || '').trim();
+      const file = form.get('file');
+
+      if (!recordId) return json(400, { ok: false, error: '請提供 recordId' });
+      if (!file || typeof file.arrayBuffer !== 'function' || !file.size) {
+        return json(400, { ok: false, error: '請選擇要上傳的檔案' });
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        return json(400, { ok: false, error: '檔案大小超過 10MB 限制' });
+      }
+
+      const records = await readRecords(store);
+      const index = records.findIndex((r) => r.id === recordId);
+      if (index === -1) return json(404, { ok: false, error: '找不到對應的登記紀錄' });
+
+      const attachmentId = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+      const filename = String(file.name || '附件');
+      const mimeType = file.type || 'application/octet-stream';
+      const attachmentsStore = getStore('income-attachments');
+      await attachmentsStore.set(`${recordId}/${attachmentId}`, await file.arrayBuffer(), {
+        metadata: { filename, mimeType },
+      });
+
+      const attachment = {
+        id: attachmentId,
+        filename,
+        mimeType,
+        size: file.size,
+        uploadedAt: new Date().toISOString(),
+      };
+      const record = records[index];
+      record.attachments = Array.isArray(record.attachments) ? record.attachments : [];
+      record.attachments.push(attachment);
+      record.updatedAt = new Date().toISOString();
+      await writeRecords(store, records);
+
+      return json(200, { ok: true, record, attachment });
+    }
+
+    if (req.method === 'GET' && action === 'attachment') {
+      const url = new URL(req.url);
+      const recordId = String(url.searchParams.get('recordId') || '').trim();
+      const id = String(url.searchParams.get('id') || '').trim();
+      if (!recordId || !id) return json(400, { ok: false, error: '請提供 recordId 與 id' });
+
+      const attachmentsStore = getStore('income-attachments');
+      const key = `${recordId}/${id}`;
+      const data = await attachmentsStore.get(key, { type: 'arrayBuffer' });
+      if (!data) return json(404, { ok: false, error: '找不到附件' });
+
+      const meta = await attachmentsStore.getMetadata(key);
+      const filename = meta?.metadata?.filename || 'attachment';
+      const mimeType = meta?.metadata?.mimeType || 'application/octet-stream';
+
+      return new Response(data, {
+        status: 200,
+        headers: {
+          'Content-Type': mimeType,
+          'Content-Disposition': `inline; filename="${encodeURIComponent(filename)}"`,
+          ...CORS_HEADERS,
+        },
+      });
+    }
+
+    if (req.method === 'POST' && action === 'attachment-delete') {
+      const parsed = await req.json();
+      const recordId = String(parsed.recordId || '').trim();
+      const id = String(parsed.id || '').trim();
+      if (!recordId || !id) return json(400, { ok: false, error: '請提供 recordId 與 id' });
+
+      const records = await readRecords(store);
+      const index = records.findIndex((r) => r.id === recordId);
+      if (index === -1) return json(404, { ok: false, error: '找不到對應的登記紀錄' });
+
+      const record = records[index];
+      record.attachments = (record.attachments || []).filter((a) => a.id !== id);
+      record.updatedAt = new Date().toISOString();
+      await writeRecords(store, records);
+
+      const attachmentsStore = getStore('income-attachments');
+      await attachmentsStore.delete(`${recordId}/${id}`);
+
+      return json(200, { ok: true, record });
+    }
+
     if (req.method === 'POST' && action === 'delete') {
       const parsed = await req.json();
       const id = String(parsed.id || '').trim();
