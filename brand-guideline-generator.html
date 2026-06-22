@@ -249,6 +249,10 @@
         <label>字體 font-family</label>
         <input type="text" id="font-stack" value='"Noto Sans", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", -apple-system, "Segoe UI", Roboto, sans-serif'>
 
+        <label>Google Fonts 載入網址（選填）</label>
+        <input type="text" id="font-import-url" placeholder="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap">
+        <p class="hint" style="margin:4px 0 0;">若上方字體名稱不是系統內建字型（如 Montserrat、Inter 等 Google Fonts），需填入對應的 Google Fonts 連結，否則瀏覽器找不到字型檔案，畫面會自動 fallback 成其他字體，視覺上看不出差異。</p>
+
         <label>H1 示範文字</label>
         <input type="text" id="h1-demo" value="Product Name CRM Interface User Guide">
 
@@ -646,6 +650,7 @@ function buildGuidelineHTML() {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${clientName} — 品牌色彩指南（內部參考）</title>
+${val('font-import-url').trim() ? `<link rel="stylesheet" href="${esc(val('font-import-url').trim())}">` : ''}
 <link rel="stylesheet" href="tokens.css">
 <style>
   * { box-sizing: border-box; }
