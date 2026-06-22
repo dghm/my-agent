@@ -69,6 +69,7 @@
   button.secondary { background: #fff; color: var(--navy); }
   :root[data-theme="dark"] button.secondary { background: var(--surface-input-bg); color: var(--surface-text); }
   button.full { width: 100%; margin-top: 8px; }
+  #import-btn { margin-bottom: 16px; }
   button:disabled { opacity: .5; cursor: not-allowed; }
   .status { margin-top: 8px; font-size: 12px; color: var(--surface-text-muted); min-height: 18px; }
 
@@ -112,6 +113,9 @@
       </div>
       <button id="theme-toggle" type="button" aria-label="切換 Dark／Day 模式" title="切換深色／淺色模式">🌙</button>
     </div>
+
+    <input type="file" id="import-file" accept=".json,application/json" style="display:none">
+    <button type="button" class="full secondary" id="import-btn">匯入請款單 JSON</button>
 
     <form id="form">
       <input type="hidden" id="f_id">
@@ -551,6 +555,40 @@ function exportCsv() {
   a.click();
   setStatus('已匯出 CSV');
 }
+
+function importInvoiceJson(json) {
+  const f = json.fields || {};
+  const items = Array.isArray(json.items) ? json.items : [];
+  const total = items.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
+  clearForm();
+  document.getElementById('f_project').value = f.f_project_name || '';
+  document.getElementById('f_client').value = f.f_company_name || '';
+  document.getElementById('f_project_code').value = f.f_proj_code || '';
+  document.getElementById('f_installment').value = items.length === 1 ? (items[0].desc || '') : '';
+  document.getElementById('f_amount').value = total || '';
+  document.getElementById('f_notice_no').value = f.f_inv_no || '';
+  document.getElementById('f_invoice_no').value = f.f_inv_number || '';
+  document.getElementById('f_date').value = f.f_issue_date || '';
+  document.getElementById('f_due_date').value = f.f_due_date || '';
+  document.getElementById('f_payment_terms').value = f.f_payment_terms || 'Net 30';
+  updateTotalWithTax();
+}
+
+document.getElementById('import-btn').addEventListener('click', () => {
+  document.getElementById('import-file').click();
+});
+document.getElementById('import-file').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const json = JSON.parse(await file.text());
+    importInvoiceJson(json);
+    setStatus('已匯入請款單資料，請確認金額、稅率與收款／發票狀態後按「儲存登記」');
+  } catch (err) {
+    setStatus(`匯入失敗：${err.message}`);
+  }
+  e.target.value = '';
+});
 
 document.getElementById('f_amount').addEventListener('input', updateTotalWithTax);
 document.getElementById('f_tax_rate').addEventListener('input', updateTotalWithTax);
