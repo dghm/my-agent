@@ -20,6 +20,7 @@
     --surface-tab-text: #475467;
   }
   :root[data-theme="dark"] {
+    --navy: #6FA0F2;
     --surface-bg: #161b22;
     --surface-panel-bg: #1f2530;
     --surface-border: #323a47;
@@ -50,6 +51,11 @@
   .form-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
   .draft-actions { display: flex; gap: 8px; margin: 0 0 16px; flex-wrap: wrap; }
   .draft-actions button { font-size: 12px; padding: 6px 10px; }
+  .home-link {
+    display: inline-block; font-size: 12px; color: var(--surface-text-muted);
+    text-decoration: none; margin-bottom: 8px;
+  }
+  .home-link:hover { color: var(--navy); text-decoration: underline; }
   h1 { font-size: 18px; margin: 0 0 4px; color: var(--navy); }
   .hint { font-size: 12px; color: var(--surface-text-muted); margin: 0 0 16px; line-height: 1.6; }
   #theme-toggle {
@@ -61,7 +67,7 @@
   legend { font-size: 12px; font-weight: 700; color: var(--navy); padding: 0 4px; }
   label { display: block; font-size: 12px; color: var(--surface-text-muted); margin: 10px 0 4px; }
   label:first-of-type { margin-top: 4px; }
-  input[type=text], input[type=date], input[type=number], textarea {
+  input[type=text], input[type=date], input[type=number], textarea, select {
     width: 100%; padding: 6px 8px; font-size: 13px;
     border: 1px solid var(--surface-input-border); border-radius: 6px; font-family: inherit;
     background: var(--surface-input-bg); color: var(--surface-text);
@@ -178,6 +184,7 @@
   .inv-totals-table .sub-row td { color: var(--gray); font-size: 0.8rem; }
   .inv-totals-table .total-row td { background: var(--navy); color: #fff; font-weight: 700; padding: 5px 10px; }
   .inv-totals-table .total-row td:last-child { font-size: 1.2rem; }
+  .inv-total-hint { text-align: right; margin-top: 4px; font-size: 0.85rem; font-weight: 700; color: var(--navy); }
   .inv-terms-ol { margin: 5px 0 0; padding-left: 16px; font-size: 0.68rem; color: var(--gray); line-height: 1.7; }
   .inv-terms-ol li { margin-bottom: 1px; }
   .page-footer { position: absolute; bottom: 0; left: 0; right: 0; background: var(--navy); color: rgba(255,255,255,0.6); padding: 8px 14mm; font-size: 0.72rem; display: flex; justify-content: space-between; align-items: center; }
@@ -247,7 +254,9 @@ __ITEMS_TBODY__
         </tbody>
       </table>
     </div>
+__TOTAL_HINT__
   </div>
+<!--REMIT_TERMS_START-->
   <div class="inv-section">
     <div class="inv-section-title" style="margin-bottom:6px;">匯款資訊</div>
     <div style="padding:10px 12px;background:var(--bg);border-left:3px solid var(--navy);border-radius:0 6px 6px 0;font-size:0.78rem;color:var(--ink);line-height:1.8;">
@@ -261,6 +270,7 @@ __ITEMS_TBODY__
 __TERMS_LI__
     </ol>
   </div>
+<!--REMIT_TERMS_END-->
   <div class="page-footer">
     <span>{Company Name} × <strong>萬能數維有限公司</strong></span>
     <span>{INV No.} &nbsp;·&nbsp; 本文件由萬能數維有限公司出具，未經授權不得轉作其他用途</span>
@@ -271,6 +281,7 @@ __TERMS_LI__
     <span class="mini-doc-id">{INV No.}</span>
     <span class="mini-page-num">第 {Page No.} 頁，共 {Page Total} 頁</span>
   </div>
+<!--REMIT_TERMS_PAGE2_INSERT-->
   <div class="page-footer">
     <span>{Company Name} × <strong>萬能數維有限公司</strong></span>
     <span>{INV No.} &nbsp;·&nbsp; 本文件由萬能數維有限公司出具，未經授權不得轉作其他用途</span>
@@ -286,6 +297,7 @@ __TERMS_LI__
   <div class="form-panel">
     <div class="form-head">
       <div>
+        <a href="index.html" class="home-link">← 返回首頁</a>
         <h1>應收帳款通知產生器</h1>
         <p class="hint">填寫請款資訊，右側會即時產生 A4 列印用的應收帳款通知 HTML，可直接預覽、複製或下載。</p>
       </div>
@@ -388,6 +400,9 @@ __TERMS_LI__
             </tbody>
           </table>
         </div>
+
+        <label>總額下方提示文字（選填，例：NT$ 66,518(1/2)）</label>
+        <input type="text" id="f_total_hint">
       </fieldset>
 
       <fieldset>
@@ -398,6 +413,12 @@ __TERMS_LI__
 
       <fieldset>
         <legend>06 — 分頁設定</legend>
+        <label>匯款資訊與條款說明顯示位置</label>
+        <select id="f_remit_terms_page">
+          <option value="page1">與請款項目明細同頁（預設）</option>
+          <option value="page2">另起第 2 頁（項目較多、第 1 頁容易塞不下時使用）</option>
+        </select>
+
         <div class="row2">
           <div>
             <label>當前頁碼 Page No.</label>
@@ -594,6 +615,19 @@ function buildDoc() {
   tpl = tpl.replace('__ITEMS_TBODY__', items.tbodyHtml);
   tpl = tpl.replace('__TERMS_LI__', buildTermsLi());
 
+  var totalHint = v('f_total_hint').trim();
+  tpl = tpl.replace('__TOTAL_HINT__', totalHint ? '<div class="inv-total-hint">' + xmlEsc(totalHint) + '</div>' : '');
+
+  if (v('f_remit_terms_page') === 'page2') {
+    var remitTermsMatch = tpl.match(/<!--REMIT_TERMS_START-->([\s\S]*?)<!--REMIT_TERMS_END-->/);
+    var remitTermsBlock = remitTermsMatch ? remitTermsMatch[1] : '';
+    tpl = tpl.replace(/<!--REMIT_TERMS_START-->[\s\S]*?<!--REMIT_TERMS_END-->/, '');
+    tpl = tpl.replace('<!--REMIT_TERMS_PAGE2_INSERT-->', remitTermsBlock);
+  } else {
+    tpl = tpl.replace('<!--REMIT_TERMS_START-->', '').replace('<!--REMIT_TERMS_END-->', '');
+    tpl = tpl.replace('<!--REMIT_TERMS_PAGE2_INSERT-->', '');
+  }
+
   document.getElementById('tpl-subtotal').textContent = items.subtotal;
   document.getElementById('tpl-tax').textContent = items.tax5;
   document.getElementById('tpl-total').textContent = items.totalInc;
@@ -668,13 +702,26 @@ document.getElementById('copy-btn').addEventListener('click', function () {
 document.querySelector('.form-panel').addEventListener('input', refreshOutput);
 
 /* ============================================================
+   離開頁面前提醒（避免未存檔資料遺失）
+   ============================================================ */
+var _isDirty = false;
+document.querySelector('.form-panel').addEventListener('input', function () { _isDirty = true; });
+document.getElementById('items-tbody').addEventListener('click', function () { _isDirty = true; });
+document.getElementById('terms-list').addEventListener('click', function () { _isDirty = true; });
+window.addEventListener('beforeunload', function (e) {
+  if (!_isDirty) return;
+  e.preventDefault();
+  e.returnValue = '';
+});
+
+/* ============================================================
    草稿存讀（下載 JSON / 載入 JSON）
    ============================================================ */
 var FIELD_IDS = [
   'f_company_name', 'f_project_name', 'f_inv_no', 'f_proj_code',
   'f_payment_terms', 'f_issue_date', 'f_due_date', 'f_inv_number',
   'f_address', 'f_vat', 'f_contact', 'f_phone', 'f_email',
-  'f_page_no', 'f_page_total'
+  'f_total_hint', 'f_remit_terms_page', 'f_page_no', 'f_page_total'
 ];
 
 function collectDraft() {
