@@ -8,6 +8,7 @@
   * { box-sizing: border-box; }
   :root {
     --navy: #0D2F6E;
+    --navy-text: var(--navy);
     --orange: #E5622A;
     --surface-bg: #F4F6F8;
     --surface-panel-bg: #ffffff;
@@ -25,6 +26,7 @@
     --surface-text-muted: #9aa4b2;
     --surface-input-bg: #2a313d;
     --surface-input-border: #3d4654;
+    --navy-text: #7FA8E8;
   }
   body {
     font-family: -apple-system, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
@@ -43,7 +45,7 @@
     border-right: 1px solid var(--surface-border);
   }
   .form-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-  h1 { font-size: 18px; margin: 0 0 4px; color: var(--navy); }
+  h1 { font-size: 18px; margin: 0 0 4px; color: var(--navy-text); }
   .hint { font-size: 12px; color: var(--surface-text-muted); margin: 0 0 16px; line-height: 1.6; }
   #theme-toggle {
     flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px;
@@ -51,7 +53,7 @@
     font-size: 16px; cursor: pointer; line-height: 1; padding: 0; color: var(--surface-text);
   }
   fieldset { border: 1px solid var(--surface-border); border-radius: 8px; margin-bottom: 16px; padding: 12px 14px; }
-  legend { font-size: 12px; font-weight: 700; color: var(--navy); padding: 0 4px; }
+  legend { font-size: 12px; font-weight: 700; color: var(--navy-text); padding: 0 4px; }
   label { display: block; font-size: 12px; color: var(--surface-text-muted); margin: 10px 0 4px; }
   label:first-of-type { margin-top: 4px; }
   input[type=text], input[type=date], input[type=number], select, textarea {
@@ -66,7 +68,7 @@
     cursor: pointer; border: 1px solid var(--navy); background: var(--navy); color: #fff;
     border-radius: 6px; padding: 8px 12px; font-size: 13px;
   }
-  button.secondary { background: #fff; color: var(--navy); }
+  button.secondary { background: #fff; color: var(--navy-text); }
   :root[data-theme="dark"] button.secondary { background: var(--surface-input-bg); color: var(--surface-text); }
   button.full { width: 100%; margin-top: 8px; }
   button:disabled { opacity: .5; cursor: not-allowed; }
@@ -84,7 +86,7 @@
     border-radius: 10px; padding: 14px 16px;
   }
   .card .label { font-size: 12px; color: var(--surface-text-muted); margin-bottom: 6px; }
-  .card .value { font-size: 20px; font-weight: 700; color: var(--navy); }
+  .card .value { font-size: 20px; font-weight: 700; color: var(--navy-text); }
   .card.unpaid .value { color: var(--orange); }
 
   table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--surface-panel-bg); border-radius: 10px; overflow: hidden; }
@@ -110,7 +112,10 @@
         <h1>接案收入登記</h1>
         <p class="hint">登記每筆案件收入，可一鍵帶入應收帳款通知產生器，並依月／年彙整報稅用收入。</p>
       </div>
-      <button id="theme-toggle" type="button" aria-label="切換 Dark／Day 模式" title="切換深色／淺色模式">🌙</button>
+      <div style="display:flex; gap:8px; align-items:center; flex-shrink:0;">
+        <a href="index.html" style="color:inherit;font-size:13px;text-decoration:underline;">← 回首頁</a>
+        <button id="theme-toggle" type="button" aria-label="切換 Dark／Day 模式" title="切換深色／淺色模式">🌙</button>
+      </div>
     </div>
 
     <form id="form">

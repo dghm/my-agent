@@ -8,6 +8,7 @@
   * { box-sizing: border-box; }
   :root {
     --navy: #0D2F6E;
+    --navy-text: var(--navy);
     --orange: #E5622A;
     --surface-bg: #F4F6F8;
     --surface-panel-bg: #ffffff;
@@ -29,6 +30,7 @@
     --surface-input-border: #3d4654;
     --surface-tab-bg: #2a313d;
     --surface-tab-text: #c4cbd6;
+    --navy-text: #7FA8E8;
   }
   body {
     font-family: -apple-system, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
@@ -48,7 +50,7 @@
     border-right: 1px solid var(--surface-border);
   }
   .form-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-  h1 { font-size: 18px; margin: 0 0 4px; color: var(--navy); }
+  h1 { font-size: 18px; margin: 0 0 4px; color: var(--navy-text); }
   .hint { font-size: 12px; color: var(--surface-text-muted); margin: 0 0 16px; line-height: 1.6; }
   #theme-toggle {
     flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px;
@@ -56,7 +58,7 @@
     font-size: 16px; cursor: pointer; line-height: 1; padding: 0;
   }
   fieldset { border: 1px solid var(--surface-border); border-radius: 8px; margin-bottom: 16px; padding: 12px 14px; }
-  legend { font-size: 12px; font-weight: 700; color: var(--navy); padding: 0 4px; }
+  legend { font-size: 12px; font-weight: 700; color: var(--navy-text); padding: 0 4px; }
   label { display: block; font-size: 12px; color: var(--surface-text-muted); margin: 10px 0 4px; }
   label:first-of-type { margin-top: 4px; }
   input[type=text], input[type=date], input[type=number], textarea {
@@ -76,7 +78,7 @@
     padding: 4px 6px; font-family: inherit; font-size: 12px;
     background: var(--surface-input-bg); color: var(--surface-text);
   }
-  .items-table td.td-num { width: 28px; text-align: center; font-weight: 700; color: var(--navy); }
+  .items-table td.td-num { width: 28px; text-align: center; font-weight: 700; color: var(--navy-text); }
   .items-table td.td-price input { text-align: right; }
   .items-table td.td-del { text-align: center; width: 28px; }
   .btn-del { background: none; border: none; color: #ccc; cursor: pointer; font-size: 1rem; padding: 2px 4px; }
@@ -86,7 +88,7 @@
     background: none; border: 1px dashed var(--surface-input-border); color: var(--surface-text-muted);
     border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer;
   }
-  .btn-add:hover { border-color: var(--navy); color: var(--navy); }
+  .btn-add:hover { border-color: var(--navy-text); color: var(--navy-text); }
   .totals-preview { margin-top: 6px; }
   .totals-preview table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
   .totals-preview td { padding: 4px 8px; }
@@ -100,8 +102,8 @@
     cursor: pointer; border: 1px solid var(--navy); background: var(--navy); color: #fff;
     padding: 6px 12px; border-radius: 6px; font-size: 12px;
   }
-  button.secondary { background: var(--surface-input-bg); color: var(--navy); border-color: var(--surface-border); }
-  button.secondary:hover { border-color: var(--navy); }
+  button.secondary { background: var(--surface-input-bg); color: var(--navy-text); border-color: var(--surface-border); }
+  button.secondary:hover { border-color: var(--navy-text); }
 
   /* ---- Output panel ---- */
   .output-panel { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow: hidden; }
@@ -284,7 +286,10 @@ __ITEMS_TBODY__
         <h1>應收帳款通知產生器</h1>
         <p class="hint">填寫請款資訊，右側會即時產生 A4 列印用的應收帳款通知 HTML，可直接預覽、複製或下載。</p>
       </div>
-      <button id="theme-toggle" type="button" aria-label="切換 Dark／Day 模式" title="切換深色／淺色模式">🌙</button>
+      <div style="display:flex; gap:8px; align-items:center; flex-shrink:0;">
+        <a href="index.html" style="color:inherit;font-size:13px;text-decoration:underline;">← 回首頁</a>
+        <button id="theme-toggle" type="button" aria-label="切換 Dark／Day 模式" title="切換深色／淺色模式">🌙</button>
+      </div>
     </div>
 
     <form id="form">
