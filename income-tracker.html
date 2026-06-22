@@ -8,6 +8,7 @@
   * { box-sizing: border-box; }
   :root {
     --navy: #0D2F6E;
+    --heading: var(--navy);
     --orange: #E5622A;
     --surface-bg: #F4F6F8;
     --surface-panel-bg: #ffffff;
@@ -18,6 +19,7 @@
     --surface-input-border: #D0D5DD;
   }
   :root[data-theme="dark"] {
+    --heading: #6E9CFF;
     --surface-bg: #161b22;
     --surface-panel-bg: #1f2530;
     --surface-border: #323a47;
@@ -43,7 +45,7 @@
     border-right: 1px solid var(--surface-border);
   }
   .form-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-  h1 { font-size: 18px; margin: 0 0 4px; color: var(--navy); }
+  h1 { font-size: 18px; margin: 0 0 4px; color: var(--heading); }
   .hint { font-size: 12px; color: var(--surface-text-muted); margin: 0 0 16px; line-height: 1.6; }
   #theme-toggle {
     flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px;
@@ -51,7 +53,7 @@
     font-size: 16px; cursor: pointer; line-height: 1; padding: 0; color: var(--surface-text);
   }
   fieldset { border: 1px solid var(--surface-border); border-radius: 8px; margin-bottom: 16px; padding: 12px 14px; }
-  legend { font-size: 12px; font-weight: 700; color: var(--navy); padding: 0 4px; }
+  legend { font-size: 12px; font-weight: 700; color: var(--heading); padding: 0 4px; }
   label { display: block; font-size: 12px; color: var(--surface-text-muted); margin: 10px 0 4px; }
   label:first-of-type { margin-top: 4px; }
   input[type=text], input[type=date], input[type=number], select, textarea {
@@ -66,8 +68,8 @@
     cursor: pointer; border: 1px solid var(--navy); background: var(--navy); color: #fff;
     border-radius: 6px; padding: 8px 12px; font-size: 13px;
   }
-  button.secondary { background: #fff; color: var(--navy); }
-  :root[data-theme="dark"] button.secondary { background: var(--surface-input-bg); color: var(--surface-text); }
+  button.secondary { background: #fff; color: var(--heading); border-color: var(--heading); }
+  :root[data-theme="dark"] button.secondary { background: var(--surface-input-bg); color: var(--surface-text); border-color: var(--surface-input-border); }
   button.full { width: 100%; margin-top: 8px; }
   #import-btn { margin-bottom: 16px; }
   button:disabled { opacity: .5; cursor: not-allowed; }
@@ -85,7 +87,7 @@
     border-radius: 10px; padding: 14px 16px;
   }
   .card .label { font-size: 12px; color: var(--surface-text-muted); margin-bottom: 6px; }
-  .card .value { font-size: 20px; font-weight: 700; color: var(--navy); }
+  .card .value { font-size: 20px; font-weight: 700; color: var(--heading); }
   .card.unpaid .value { color: var(--orange); }
 
   table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--surface-panel-bg); border-radius: 10px; overflow: hidden; }
@@ -105,7 +107,7 @@
     display: flex; align-items: center; justify-content: space-between; gap: 6px;
     padding: 6px 8px; border: 1px solid var(--surface-border); border-radius: 6px; margin-bottom: 6px; font-size: 12px;
   }
-  .attachment-item a { color: var(--navy); text-decoration: none; word-break: break-all; }
+  .attachment-item a { color: var(--heading); text-decoration: none; word-break: break-all; }
   .attachment-item button { padding: 2px 6px; font-size: 11px; flex-shrink: 0; }
 </style>
 </head>
