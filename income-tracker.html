@@ -100,6 +100,13 @@
   .row-actions { display: flex; gap: 6px; }
   .row-actions button { padding: 4px 8px; font-size: 11px; }
   .empty-row td { text-align: center; color: var(--surface-text-muted); padding: 30px 10px; }
+  .attachment-empty { font-size: 12px; color: var(--surface-text-muted); margin-bottom: 8px; }
+  .attachment-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    padding: 6px 8px; border: 1px solid var(--surface-border); border-radius: 6px; margin-bottom: 6px; font-size: 12px;
+  }
+  .attachment-item a { color: var(--navy); text-decoration: none; word-break: break-all; }
+  .attachment-item button { padding: 2px 6px; font-size: 11px; flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -193,6 +200,13 @@
         </div>
         <label>備註</label>
         <textarea id="f_note" placeholder="付款方式、合約期間等備註"></textarea>
+      </fieldset>
+
+      <fieldset>
+        <legend>附件（請款單／發票掃描檔）</legend>
+        <div id="attachment-list"></div>
+        <input type="file" id="f_attachment_file">
+        <button type="button" class="full secondary" id="upload-attachment-btn" disabled>上傳附件</button>
       </fieldset>
 
       <button type="button" class="full" id="save-btn">儲存登記</button>
@@ -319,6 +333,7 @@ function clearForm() {
   document.getElementById('f_payment_status').value = 'unpaid';
   document.getElementById('f_invoice_status').value = 'not_issued';
   document.getElementById('f_note').value = '';
+  renderAttachments(null);
 }
 
 function updateTotalWithTax() {
@@ -404,7 +419,7 @@ function renderTable() {
       <td><span class="tag ${r.invoiceStatus}">${r.invoiceStatus === 'issued' ? '已開立' : '未開立'}</span></td>
       <td>
         <div class="row-actions">
-          <button type="button" class="secondary" onclick="editRecord('${r.id}')">編輯</button>
+          <button type="button" class="secondary" onclick="editRecord('${r.id}')">編輯${r.attachments && r.attachments.length ? ` 📎${r.attachments.length}` : ''}</button>
           <button type="button" class="secondary" onclick="openInvoice('${r.id}')">產生請款單</button>
           <button type="button" class="secondary" onclick="deleteRecord('${r.id}')">刪除</button>
         </div>
@@ -432,7 +447,93 @@ function editRecord(id) {
   document.getElementById('f_invoice_status').value = r.invoiceStatus;
   document.getElementById('f_note').value = r.note || '';
   updateTotalWithTax();
+  renderAttachments(r);
   setStatus(`編輯中：${r.project}`);
+}
+
+function renderAttachments(record) {
+  const listEl = document.getElementById('attachment-list');
+  const uploadBtn = document.getElementById('upload-attachment-btn');
+
+  if (!record || !record.id) {
+    listEl.innerHTML = '<p class="attachment-empty">請先儲存登記後才能上傳附件</p>';
+    uploadBtn.disabled = true;
+    return;
+  }
+
+  uploadBtn.disabled = false;
+  const attachments = Array.isArray(record.attachments) ? record.attachments : [];
+  if (attachments.length === 0) {
+    listEl.innerHTML = '<p class="attachment-empty">尚無附件</p>';
+    return;
+  }
+
+  listEl.innerHTML = attachments.map((a) => `
+    <div class="attachment-item">
+      <a href="${API_BASE}/api/income/attachment?recordId=${encodeURIComponent(record.id)}&id=${encodeURIComponent(a.id)}" target="_blank">${esc(a.filename)}</a>
+      <button type="button" class="secondary" onclick="deleteAttachment('${record.id}', '${a.id}')">刪除</button>
+    </div>
+  `).join('');
+}
+
+async function uploadAttachment() {
+  const id = v('f_id');
+  if (!id) {
+    setStatus('請先儲存登記後才能上傳附件');
+    return;
+  }
+  const fileInput = document.getElementById('f_attachment_file');
+  const file = fileInput.files[0];
+  if (!file) {
+    setStatus('請選擇要上傳的檔案');
+    return;
+  }
+
+  const uploadBtn = document.getElementById('upload-attachment-btn');
+  uploadBtn.disabled = true;
+  setStatus('上傳中...');
+  try {
+    const formData = new FormData();
+    formData.append('recordId', id);
+    formData.append('file', file);
+    const res = await fetch(`${API_BASE}/api/income/attachment-upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || '上傳失敗');
+
+    const index = records.findIndex((r) => r.id === id);
+    if (index !== -1) records[index] = data.record;
+    fileInput.value = '';
+    renderAttachments(data.record);
+    setStatus('已上傳附件');
+  } catch (err) {
+    setStatus(`上傳失敗：${err.message}`);
+  } finally {
+    uploadBtn.disabled = false;
+  }
+}
+
+async function deleteAttachment(recordId, attachmentId) {
+  if (!confirm('確定要刪除這個附件嗎？')) return;
+  setStatus('刪除附件中...');
+  try {
+    const res = await fetch(`${API_BASE}/api/income/attachment-delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recordId, id: attachmentId }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || '刪除失敗');
+
+    const index = records.findIndex((r) => r.id === recordId);
+    if (index !== -1) records[index] = data.record;
+    if (v('f_id') === recordId) renderAttachments(data.record);
+    setStatus('已刪除附件');
+  } catch (err) {
+    setStatus(`刪除失敗：${err.message}`);
+  }
 }
 
 function openInvoice(id) {
@@ -593,6 +694,7 @@ document.getElementById('import-file').addEventListener('change', async (e) => {
 document.getElementById('f_amount').addEventListener('input', updateTotalWithTax);
 document.getElementById('f_tax_rate').addEventListener('input', updateTotalWithTax);
 document.getElementById('save-btn').addEventListener('click', saveRecord);
+document.getElementById('upload-attachment-btn').addEventListener('click', uploadAttachment);
 document.getElementById('reset-btn').addEventListener('click', () => { clearForm(); setStatus('已清空表單'); });
 document.getElementById('export-btn').addEventListener('click', exportCsv);
 document.getElementById('filter-year').addEventListener('change', renderTable);
