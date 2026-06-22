@@ -48,6 +48,8 @@
     border-right: 1px solid var(--surface-border);
   }
   .form-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .draft-actions { display: flex; gap: 8px; margin: 0 0 16px; flex-wrap: wrap; }
+  .draft-actions button { font-size: 12px; padding: 6px 10px; }
   h1 { font-size: 18px; margin: 0 0 4px; color: var(--navy); }
   .hint { font-size: 12px; color: var(--surface-text-muted); margin: 0 0 16px; line-height: 1.6; }
   #theme-toggle {
@@ -87,6 +89,10 @@
     border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer;
   }
   .btn-add:hover { border-color: var(--navy); color: var(--navy); }
+  .term-row { display: flex; gap: 6px; align-items: flex-start; margin-bottom: 8px; }
+  .term-row label { display: none; }
+  .term-row textarea { flex: 1; }
+  .term-row .btn-del { flex-shrink: 0; margin-top: 2px; }
   .totals-preview { margin-top: 6px; }
   .totals-preview table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
   .totals-preview td { padding: 4px 8px; }
@@ -252,8 +258,7 @@ __ITEMS_TBODY__
     </div>
     <div class="inv-section-title" style="margin-top:20px;">條款與說明</div>
     <ol class="inv-terms-ol">
-      <li>{Term 1}</li>
-      <li>{Term 2}</li>
+__TERMS_LI__
     </ol>
   </div>
   <div class="page-footer">
@@ -287,15 +292,21 @@ __ITEMS_TBODY__
       <button id="theme-toggle" type="button" aria-label="切換 Dark／Day 模式" title="切換深色／淺色模式">🌙</button>
     </div>
 
+    <div class="draft-actions">
+      <button type="button" class="secondary" id="save-draft-btn">💾 下載草稿 JSON</button>
+      <button type="button" class="secondary" id="load-draft-btn">📂 載入草稿 JSON</button>
+      <input type="file" id="load-draft-input" accept="application/json" style="display:none">
+    </div>
+
     <form id="form">
 
       <fieldset>
         <legend>01 — 文件識別</legend>
         <label>公司名稱 Company Name</label>
-        <input type="text" id="f_company_name" placeholder="全穎智聯股份有限公司">
+        <input type="text" id="f_company_name">
 
         <label>專案名稱 Project Name</label>
-        <input type="text" id="f_project_name" placeholder="網站伺服器空間租用 1 年期">
+        <input type="text" id="f_project_name">
       </fieldset>
 
       <fieldset>
@@ -303,16 +314,16 @@ __ITEMS_TBODY__
         <div class="row2">
           <div>
             <label>通知單號 INV No.</label>
-            <input type="text" id="f_inv_no" placeholder="INV-2605-05">
+            <input type="text" id="f_inv_no">
           </div>
           <div>
             <label>專案代碼 DH-XX-PJX</label>
-            <input type="text" id="f_proj_code" placeholder="DH-08-PJ1">
+            <input type="text" id="f_proj_code">
           </div>
         </div>
 
         <label>付款條件 Payment Terms</label>
-        <input type="text" id="f_payment_terms" placeholder="Net 30">
+        <input type="text" id="f_payment_terms">
 
         <div class="row2">
           <div>
@@ -326,30 +337,30 @@ __ITEMS_TBODY__
         </div>
 
         <label>發票號碼 Invoice Number</label>
-        <input type="text" id="f_inv_number" placeholder="AB 12345678">
+        <input type="text" id="f_inv_number">
       </fieldset>
 
       <fieldset>
         <legend>03 — 請款對象</legend>
         <label>地址 Company Address</label>
-        <input type="text" id="f_address" placeholder="新北市土城區莊園街 151 號 2 樓 B09 室">
+        <input type="text" id="f_address">
 
         <label>統一編號 VAT No.</label>
-        <input type="text" id="f_vat" placeholder="90832639">
+        <input type="text" id="f_vat">
 
         <div class="row2">
           <div>
             <label>聯絡人 Company Contact</label>
-            <input type="text" id="f_contact" placeholder="許家豪">
+            <input type="text" id="f_contact">
           </div>
           <div>
             <label>電話 Company Phone</label>
-            <input type="text" id="f_phone" placeholder="02-1234-5678">
+            <input type="text" id="f_phone">
           </div>
         </div>
 
         <label>Email Company Email</label>
-        <input type="text" id="f_email" placeholder="info@example.com">
+        <input type="text" id="f_email">
       </fieldset>
 
       <fieldset>
@@ -381,11 +392,8 @@ __ITEMS_TBODY__
 
       <fieldset>
         <legend>05 — 條款說明</legend>
-        <label>第 1 條 Term 1</label>
-        <textarea id="f_term1" rows="3" placeholder="本文件為…正式請款憑證。"></textarea>
-
-        <label>第 2 條 Term 2</label>
-        <textarea id="f_term2" rows="3" placeholder="匯款後請提供末五碼與匯款時間…"></textarea>
+        <div id="terms-list"></div>
+        <button type="button" class="btn-add" onclick="addTerm()">＋ 新增條款</button>
       </fieldset>
 
       <fieldset>
@@ -481,9 +489,9 @@ function addItem(name, desc, price) {
   tr.id = id;
   tr.innerHTML =
     '<td class="td-num"></td>' +
-    '<td><input placeholder="項目名稱" value="' + esc(name||'') + '" oninput="refreshOutput()"></td>' +
-    '<td><input placeholder="說明（期間、規格等）" value="' + esc(desc||'') + '" oninput="refreshOutput()"></td>' +
-    '<td class="td-price"><input type="number" placeholder="0" min="0" step="1" value="' + (price||'') + '" oninput="refreshOutput()" style="text-align:right"></td>' +
+    '<td><input value="' + esc(name||'') + '" oninput="refreshOutput()"></td>' +
+    '<td><input value="' + esc(desc||'') + '" oninput="refreshOutput()"></td>' +
+    '<td class="td-price"><input type="number" min="0" step="1" value="' + (price||'') + '" oninput="refreshOutput()" style="text-align:right"></td>' +
     '<td class="td-del"><button type="button" class="btn-del" onclick="removeItem(\'' + id + '\')">✕</button></td>';
   tbody.appendChild(tr);
   renumber();
@@ -506,6 +514,41 @@ function renumber() {
   for (var i = 0; i < rows.length; i++) {
     rows[i].querySelector('.td-num').textContent = i + 1;
   }
+}
+
+/* ============================================================
+   條款說明（動態新增／刪除）
+   ============================================================ */
+let _termUid = 0;
+
+function addTerm(text) {
+  _termUid++;
+  const id = 'term' + _termUid;
+  const list = document.getElementById('terms-list');
+  const row = document.createElement('div');
+  row.className = 'term-row';
+  row.id = id;
+  row.innerHTML =
+    '<textarea rows="2" oninput="refreshOutput()">' + esc(text||'') + '</textarea>' +
+    '<button type="button" class="btn-del" onclick="removeTerm(\'' + id + '\')">✕</button>';
+  list.appendChild(row);
+  refreshOutput();
+}
+
+function removeTerm(id) {
+  var el = document.getElementById(id);
+  if (el) el.remove();
+  refreshOutput();
+}
+
+function buildTermsLi() {
+  var rows = document.querySelectorAll('#terms-list textarea');
+  var html = '';
+  for (var i = 0; i < rows.length; i++) {
+    if (!rows[i].value.trim()) continue;
+    html += '      <li>' + xmlEsc(rows[i].value) + '</li>\n';
+  }
+  return html;
 }
 
 /* ============================================================
@@ -549,6 +592,7 @@ function buildDoc() {
   var items = buildItemsTbody();
 
   tpl = tpl.replace('__ITEMS_TBODY__', items.tbodyHtml);
+  tpl = tpl.replace('__TERMS_LI__', buildTermsLi());
 
   document.getElementById('tpl-subtotal').textContent = items.subtotal;
   document.getElementById('tpl-tax').textContent = items.tax5;
@@ -571,8 +615,6 @@ function buildDoc() {
     '{Subtotal Ex Tax}': items.subtotal,
     '{Tax 5%}':          items.tax5,
     '{Total Inc Tax}':   items.totalInc,
-    '{Term 1}':          v('f_term1'),
-    '{Term 2}':          v('f_term2'),
     '{Page No.}':        v('f_page_no'),
     '{Page Total}':      v('f_page_total'),
   };
@@ -626,9 +668,87 @@ document.getElementById('copy-btn').addEventListener('click', function () {
 document.querySelector('.form-panel').addEventListener('input', refreshOutput);
 
 /* ============================================================
+   草稿存讀（下載 JSON / 載入 JSON）
+   ============================================================ */
+var FIELD_IDS = [
+  'f_company_name', 'f_project_name', 'f_inv_no', 'f_proj_code',
+  'f_payment_terms', 'f_issue_date', 'f_due_date', 'f_inv_number',
+  'f_address', 'f_vat', 'f_contact', 'f_phone', 'f_email',
+  'f_page_no', 'f_page_total'
+];
+
+function collectDraft() {
+  var draft = { fields: {}, items: [], terms: [] };
+  FIELD_IDS.forEach(function (id) { draft.fields[id] = v(id); });
+  document.querySelectorAll('#items-tbody tr').forEach(function (row) {
+    var inputs = row.querySelectorAll('input');
+    draft.items.push({ name: inputs[0].value, desc: inputs[1].value, price: inputs[2].value });
+  });
+  document.querySelectorAll('#terms-list textarea').forEach(function (ta) {
+    draft.terms.push(ta.value);
+  });
+  return draft;
+}
+
+function applyDraft(draft) {
+  FIELD_IDS.forEach(function (id) {
+    if (draft.fields && id in draft.fields) {
+      var el = document.getElementById(id);
+      if (el) el.value = draft.fields[id];
+    }
+  });
+
+  document.getElementById('items-tbody').innerHTML = '';
+  if (draft.items && draft.items.length) {
+    draft.items.forEach(function (it) { addItem(it.name, it.desc, it.price); });
+  } else {
+    addItem();
+  }
+
+  document.getElementById('terms-list').innerHTML = '';
+  if (draft.terms && draft.terms.length) {
+    draft.terms.forEach(function (t) { addTerm(t); });
+  }
+
+  refreshOutput();
+}
+
+document.getElementById('save-draft-btn').addEventListener('click', function () {
+  var draft = collectDraft();
+  var blob = new Blob([JSON.stringify(draft, null, 2)], { type: 'application/json;charset=utf-8' });
+  var invNo = v('f_inv_no') || 'draft';
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = invNo + '-草稿.json';
+  a.click();
+});
+
+document.getElementById('load-draft-btn').addEventListener('click', function () {
+  document.getElementById('load-draft-input').click();
+});
+
+document.getElementById('load-draft-input').addEventListener('change', function (e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function () {
+    try {
+      var draft = JSON.parse(reader.result);
+      applyDraft(draft);
+    } catch (err) {
+      alert('草稿檔案格式錯誤，無法載入。');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+/* ============================================================
    初始化
    ============================================================ */
 addItem();
+addTerm();
+addTerm();
 refreshOutput();
 
 /* ============================================================
