@@ -99,6 +99,14 @@
     <h1>客戶品牌風格指南產生器</h1>
     <p class="hint">填入新客戶的品牌色彩與視覺風格資訊，右側會即時產生 <code>tokens.css</code> 與 <code>guideline.html</code>，可直接複製或下載，套用至 DGHM 文件模板。</p>
 
+    <div class="config-io-row" style="display:flex; gap:8px; align-items:center; margin-bottom:14px;">
+      <button type="button" class="secondary small" id="export-config-btn">匯出設定 JSON</button>
+      <input type="file" id="import-config-file" accept="application/json,.json" style="display:none;">
+      <button type="button" class="secondary small" id="import-config-btn">匯入設定 JSON</button>
+      <span id="config-io-status" class="upload-status"></span>
+    </div>
+    <p class="hint" style="margin:-8px 0 14px;">編輯到一半可先「匯出設定 JSON」存檔（含所有欄位、自訂色票、已上傳的 Logo），之後用「匯入設定 JSON」載入即可從原本進度繼續編輯。</p>
+
     <form id="form">
 
       <fieldset>
@@ -1525,6 +1533,95 @@ setupLogoUpload('logo-full-file', 'logo-full-clear', 'logo-full-status',
   (url) => { logoFullDataURL = url; }, (name) => { logoFullFileName = name; });
 setupLogoUpload('logo-mark-file', 'logo-mark-clear', 'logo-mark-status',
   (url) => { logoMarkDataURL = url; }, (name) => { logoMarkFileName = name; });
+
+/* ============================================================
+   匯出 / 匯入設定 JSON（讓編輯到一半的進度可以存檔後繼續）
+   ============================================================ */
+function exportConfig() {
+  const fields = {};
+  document.querySelectorAll('#form [id]').forEach(el => {
+    if (el.closest('.palette-row')) return;
+    fields[el.id] = el.value;
+  });
+
+  const palette = getPaletteEntries().map(p => ({ name: p.name, hex: p.hex }));
+
+  const config = {
+    __type: 'brand-guideline-generator-config',
+    __version: 1,
+    fields,
+    palette,
+    logoFullDataURL, logoFullFileName,
+    logoMarkDataURL, logoMarkFileName,
+    breakdanceBaseSettings
+  };
+
+  const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const name = (document.getElementById('client-name').value || 'brand').trim() || 'brand';
+  a.href = url;
+  a.download = name.replace(/[^a-zA-Z0-9-_]+/g, '-') + '-guideline-config.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function importConfig(json) {
+  if (!json || json.__type !== 'brand-guideline-generator-config') {
+    alert('這不是有效的設定檔，請確認檔案是由本工具「匯出設定 JSON」產生的。');
+    return;
+  }
+
+  Object.entries(json.fields || {}).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = value;
+  });
+
+  const paletteList = document.getElementById('palette-list');
+  paletteList.innerHTML = '';
+  (json.palette || []).forEach(p => {
+    paletteList.appendChild(createPaletteRow(p.name, p.hex));
+  });
+
+  logoFullDataURL = json.logoFullDataURL || null;
+  logoFullFileName = json.logoFullFileName || null;
+  logoMarkDataURL = json.logoMarkDataURL || null;
+  logoMarkFileName = json.logoMarkFileName || null;
+  breakdanceBaseSettings = json.breakdanceBaseSettings || null;
+
+  document.getElementById('logo-full-status').textContent = logoFullFileName ? '已載入：' + logoFullFileName : '';
+  document.getElementById('logo-full-clear').style.display = logoFullFileName ? 'inline-block' : 'none';
+  document.getElementById('logo-mark-status').textContent = logoMarkFileName ? '已載入：' + logoMarkFileName : '';
+  document.getElementById('logo-mark-clear').style.display = logoMarkFileName ? 'inline-block' : 'none';
+  document.getElementById('breakdance-base-status').textContent = breakdanceBaseSettings ? '已載入既有 global-settings.json' : '';
+  document.getElementById('breakdance-base-clear').style.display = breakdanceBaseSettings ? 'inline-block' : 'none';
+
+  document.getElementById('config-io-status').textContent = '已匯入設定，繼續編輯吧！';
+  renderOutputs();
+}
+
+document.getElementById('export-config-btn').addEventListener('click', exportConfig);
+
+document.getElementById('import-config-btn').addEventListener('click', () => {
+  document.getElementById('import-config-file').click();
+});
+
+document.getElementById('import-config-file').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      importConfig(JSON.parse(reader.result));
+    } catch (err) {
+      alert('讀取設定檔失敗：' + err.message);
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
 
 /* 初始渲染 */
 renderOutputs();
