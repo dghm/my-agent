@@ -355,7 +355,7 @@
     </div>
     <div class="output-view hidden" id="view-breakdance">
       <div class="breakdance-upload">
-        <label for="breakdance-base-file" style="margin:0 0 6px;">選填：上傳現有 <code>global-settings.json</code>，將本頁色彩套用到完整檔案後一併下載</label>
+        <label for="breakdance-base-file" style="margin:0 0 6px;">選填：上傳現有 <code>global-settings.json</code>（雙向同步——會自動把其中的色彩／按鈕設定套用回左側表單並即時預覽，下載時也會合併寫回此檔案的其他設定）</label>
         <div class="upload-row">
           <input type="file" id="breakdance-base-file" accept="application/json,.json">
           <button type="button" class="secondary small" id="breakdance-base-clear" style="display:none;">清除已上傳檔案</button>
@@ -1283,6 +1283,73 @@ function toBdHex(hex) {
   return hex;
 }
 
+// 8 碼 RGBA HEX → 6 碼 HEX（丟棄透明度，供色票輸入框/色票選取器使用）
+function fromBdHex(value) {
+  if (typeof value === 'string' && /^#[0-9A-Fa-f]{8}$/.test(value)) {
+    return value.slice(0, 7).toUpperCase();
+  }
+  return value;
+}
+
+// 將 Breakdance 內部的 var(--bde-xxx) 參照解析回實際色碼，
+// 解析不到（命名規則未知）則原樣保留字串。
+function resolveBdVarColor(value, varMap) {
+  if (typeof value !== 'string') return value;
+  const m = value.match(/^var\(--([\w-]+)\)$/);
+  if (!m) return value;
+  return varMap[m[1]] || value;
+}
+
+function setColorField(idPrefix, rawValue) {
+  if (rawValue == null) return;
+  const hexInput = document.getElementById(idPrefix + '-hex');
+  const colorInput = document.getElementById(idPrefix + '-color');
+  if (!hexInput) return;
+  hexInput.value = rawValue;
+  if (colorInput && /^#[0-9A-Fa-f]{6}$/.test(rawValue)) colorInput.value = rawValue;
+}
+
+// 將上傳的 Breakdance global-settings.json 內容回填到左側表單，
+// 讓「在 Breakdance 編好、下載 JSON、回到本工具讀取」這個反向流程可以直接取代左側預設值並即時預覽。
+function applyBreakdanceSettingsToForm(settings) {
+  if (!settings) return;
+  const colors = settings.colors || {};
+  const buttons = settings.buttons || {};
+
+  const varMap = {};
+  (colors.palette && colors.palette.colors || []).forEach(p => {
+    varMap[p.cssVariableName] = fromBdHex(p.value);
+  });
+  if (colors.brand != null) varMap['bde-brand-primary-color'] = fromBdHex(colors.brand);
+  if (colors.text != null) varMap['bde-body-text-color'] = fromBdHex(colors.text);
+  if (colors.headings != null) varMap['bde-headings-color'] = fromBdHex(colors.headings);
+  if (colors.links != null) varMap['bde-links-color'] = fromBdHex(colors.links);
+  if (colors.background != null) varMap['bde-background-color'] = fromBdHex(colors.background);
+
+  const resolve = (v) => fromBdHex(resolveBdVarColor(v, varMap));
+
+  if (colors.brand != null) setColorField('navy', resolve(colors.brand));
+  if (colors.text != null) setColorField('ink', resolve(colors.text));
+  if (colors.links != null) setColorField('link', resolve(colors.links));
+  if (colors.background != null) setColorField('white', resolve(colors.background));
+
+  if (colors.palette && Array.isArray(colors.palette.colors)) {
+    const paletteList = document.getElementById('palette-list');
+    paletteList.innerHTML = '';
+    colors.palette.colors.forEach(p => {
+      paletteList.appendChild(createPaletteRow(p.label || '', fromBdHex(p.value) || '#CCCCCC'));
+    });
+  }
+
+  const primary = buttons.primary || {};
+  if (primary.background != null) setColorField('btnbg', resolve(primary.background));
+  if (primary.background_hover != null) setColorField('btnbghover', resolve(primary.background_hover));
+  const textColor = primary.typography && primary.typography.color && primary.typography.color.breakpoint_base;
+  const textHoverColor = primary.typography && primary.typography.color_hover && primary.typography.color_hover.breakpoint_base;
+  if (textColor != null) setColorField('btntext', resolve(textColor));
+  if (textHoverColor != null) setColorField('btntexthover', resolve(textHoverColor));
+}
+
 function buildBreakdanceColors() {
   const existingColors = (breakdanceBaseSettings
     && breakdanceBaseSettings.settings
@@ -1505,7 +1572,8 @@ document.getElementById('breakdance-base-file').addEventListener('change', (e) =
   reader.onload = () => {
     try {
       breakdanceBaseSettings = JSON.parse(reader.result);
-      document.getElementById('breakdance-base-status').textContent = '已載入：' + file.name;
+      applyBreakdanceSettingsToForm(breakdanceBaseSettings.settings);
+      document.getElementById('breakdance-base-status').textContent = '已載入：' + file.name + '（已套用其色彩／按鈕設定到左側表單）';
       document.getElementById('breakdance-base-clear').style.display = 'inline-block';
       updateBreakdanceHint();
       renderOutputs();
