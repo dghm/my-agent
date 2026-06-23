@@ -277,12 +277,15 @@
 
       <fieldset>
         <legend>05 — 字體與排版示範</legend>
-        <label>字體 font-family</label>
+        <label>字體 font-family（Body／正文）</label>
         <input type="text" id="font-stack" value='"Noto Sans", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", -apple-system, "Segoe UI", Roboto, sans-serif'>
 
+        <label>字體 font-family（Headings／標題，選填，留空則沿用上方 Body 字體）</label>
+        <input type="text" id="heading-font-stack" placeholder='留空＝與 Body 字體相同，或填入如 "Noto Sans TC", sans-serif'>
+
         <label>Google Fonts 載入網址（選填）</label>
-        <input type="text" id="font-import-url" placeholder="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap">
-        <p class="hint" style="margin:4px 0 0;">若上方字體名稱不是系統內建字型（如 Montserrat、Inter 等 Google Fonts），需填入對應的 Google Fonts 連結，否則瀏覽器找不到字型檔案，畫面會自動 fallback 成其他字體，視覺上看不出差異。</p>
+        <input type="text" id="font-import-url" placeholder="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Roboto:wght@400;700&display=swap">
+        <p class="hint" style="margin:4px 0 0;">若上方字體名稱不是系統內建字型（如 Montserrat、Inter 等 Google Fonts），需填入對應的 Google Fonts 連結，否則瀏覽器找不到字型檔案，畫面會自動 fallback 成其他字體，視覺上看不出差異。Body／Headings 字體不同時，請在同一條網址中用多個 <code>family=</code> 參數一次帶入兩種字體（如上方範例）。</p>
 
         <label>H1 示範文字</label>
         <input type="text" id="h1-demo" value="Product Name CRM Interface User Guide">
@@ -588,6 +591,7 @@ ${paletteVarsBlock}
 
   /* ---- Typography ---- */
   --tm-font: ${val('font-stack')};
+  --tm-heading-font: ${val('heading-font-stack').trim() || val('font-stack')};
 
   /* ---- Visual Style（每客戶可自訂） ---- */
   --tm-radius-sm: ${val('radius-sm')}px;    /* 按鈕、輸入框圓角 */
@@ -786,6 +790,7 @@ ${val('font-import-url').trim() ? `<link rel="stylesheet" href="${esc(val('font-
   }
   h2 {
     color: var(--surface-heading);
+    font-family: var(--tm-heading-font);
     font-size: 20px;
     margin: 0 0 6px;
     border-bottom: 2px solid var(--surface-border);
@@ -882,9 +887,9 @@ ${val('font-import-url').trim() ? `<link rel="stylesheet" href="${esc(val('font-
     display: flex; justify-content: space-between; align-items: baseline;
     font-size: 11px; color: var(--tm-gray); margin-bottom: 6px;
   }
-  .type-demo h3 { margin: 0; color: var(--tm-pale); }
-  .type-demo .h1-demo { font-size: 32px; font-weight: 700; color: var(--tm-pale); margin: 0; }
-  .type-demo .body-demo { font-size: 14px; color: var(--tm-accent); margin: 0; }
+  .type-demo h3 { margin: 0; color: var(--tm-pale); font-family: var(--tm-heading-font); }
+  .type-demo .h1-demo { font-size: 32px; font-weight: 700; color: var(--tm-pale); margin: 0; font-family: var(--tm-heading-font); }
+  .type-demo .body-demo { font-size: 14px; color: var(--tm-accent); margin: 0; font-family: var(--tm-font); }
   .type-demo + .type-demo { margin-top: 12px; }
 
   /* ---- Do/Don't ---- */
@@ -1308,17 +1313,30 @@ function toBdHex(hex) {
 // 字體名稱 ↔ Breakdance Google Fonts slug 的轉換為「推測版」，
 // 命名規則依範例檔（如 "K2D" → "gfont-k2d"）反推，多字詞字體或特殊大小寫可能對應不完全準確，
 // 匯入/匯出後建議肉眼確認一次字體名稱。
+// 已知的 Google Fonts 名稱 ↔ Breakdance slug 對照（slug 規則為「移除所有空白後轉小寫」，
+// 例如 "Noto Sans TC" → "notosanstc"；多字字型還原時無法單靠規則拆字，
+// 因此用此表收錄常見字型以求準確，未收錄者則用最佳猜測還原，可能字距/大小寫不完全正確）。
+const KNOWN_GFONTS = [
+  'Noto Sans TC', 'Noto Sans', 'Noto Serif TC', 'Open Sans', 'Roboto', 'Roboto Condensed',
+  'Montserrat', 'Inter', 'Lato', 'Poppins', 'Source Sans Pro', 'PT Sans', 'Nunito',
+  'Work Sans', 'M PLUS Rounded 1c', 'M PLUS 1p', 'K2D', 'IBM Plex Sans', 'Plus Jakarta Sans',
+  'Mukta', 'Rubik', 'Raleway', 'Merriweather', 'Playfair Display'
+];
+const KNOWN_GFONT_SLUG_MAP = {};
+KNOWN_GFONTS.forEach(name => { KNOWN_GFONT_SLUG_MAP[name.toLowerCase().replace(/\s+/g, '')] = name; });
+
 function toGfontSlug(fontStackValue) {
   const first = String(fontStackValue || '').split(',')[0].trim().replace(/^["']|["']$/g, '');
   if (!first) return null;
-  return 'gfont-' + first.toLowerCase().replace(/\s+/g, '-');
+  return 'gfont-' + first.toLowerCase().replace(/\s+/g, '');
 }
 
 function fromGfontSlug(slug) {
   const m = String(slug || '').match(/^gfont-(.+)$/);
   if (!m) return null;
-  const name = m[1].split('-').map(seg => seg.charAt(0).toUpperCase() + seg.slice(1)).join(' ');
-  return name;
+  const key = m[1];
+  if (KNOWN_GFONT_SLUG_MAP[key]) return KNOWN_GFONT_SLUG_MAP[key];
+  return key.charAt(0).toUpperCase() + key.slice(1);
 }
 
 // 8 碼 RGBA HEX → 6 碼 HEX（丟棄透明度，供色票輸入框/色票選取器使用）
@@ -1404,9 +1422,15 @@ function applyBreakdanceSettingsToForm(settings) {
   if (textHoverColor2 != null) setColorField('btntext2hover', resolve(textHoverColor2));
 
   const typography = settings.typography || {};
-  const fontName = fromGfontSlug(typography.body_font || typography.heading_font);
-  if (fontName) {
-    document.getElementById('font-stack').value = '"' + fontName + '", sans-serif';
+  const bodyFontName = fromGfontSlug(typography.body_font);
+  const headingFontName = fromGfontSlug(typography.heading_font);
+  if (bodyFontName) {
+    document.getElementById('font-stack').value = '"' + bodyFontName + '", sans-serif';
+  }
+  if (headingFontName && headingFontName !== bodyFontName) {
+    document.getElementById('heading-font-stack').value = '"' + headingFontName + '", sans-serif';
+  } else {
+    document.getElementById('heading-font-stack').value = '';
   }
 }
 
@@ -1487,11 +1511,10 @@ function buildBreakdanceTypography() {
     && breakdanceBaseSettings.settings.typography) || {};
 
   const mergedTypography = JSON.parse(JSON.stringify(existingTypography));
-  const slug = toGfontSlug(val('font-stack'));
-  if (slug) {
-    mergedTypography.heading_font = slug;
-    mergedTypography.body_font = slug;
-  }
+  const bodySlug = toGfontSlug(val('font-stack'));
+  const headingSlug = toGfontSlug(val('heading-font-stack').trim() || val('font-stack'));
+  if (bodySlug) mergedTypography.body_font = bodySlug;
+  if (headingSlug) mergedTypography.heading_font = headingSlug;
   return mergedTypography;
 }
 
