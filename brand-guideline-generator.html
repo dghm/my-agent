@@ -1276,13 +1276,23 @@ function uuidv4() {
 /* 使用者選填上傳的現有 global-settings.json（完整物件，用於合併輸出） */
 let breakdanceBaseSettings = null;
 
-function buildBreakdanceColors() {
-  const existingPalette = (breakdanceBaseSettings
-    && breakdanceBaseSettings.settings
-    && breakdanceBaseSettings.settings.colors
-    && breakdanceBaseSettings.settings.colors.palette
-    && breakdanceBaseSettings.settings.colors.palette.colors) || [];
+// Breakdance 內部一律以 8 碼 RGBA HEX 儲存顏色（如 #143463FF）；
+// var(--xxx) 參照值原樣保留，不附加透明度。
+function toBdHex(hex) {
+  if (/^#[0-9A-Fa-f]{6}$/.test(hex)) return hex.toUpperCase() + 'FF';
+  return hex;
+}
 
+function buildBreakdanceColors() {
+  const existingColors = (breakdanceBaseSettings
+    && breakdanceBaseSettings.settings
+    && breakdanceBaseSettings.settings.colors) || {};
+
+  // 深拷貝既有 colors 區塊，保留 buttons／palette.gradients／其他未知欄位，
+  // 之後只覆寫本工具實際管理的色彩欄位，避免清空使用者原檔內容。
+  const mergedColors = JSON.parse(JSON.stringify(existingColors));
+
+  const existingPalette = (existingColors.palette && existingColors.palette.colors) || [];
   const palette = getPaletteEntries().map((p, i) => {
     const matched = existingPalette.find(e =>
       String(e.label || '').trim().toLowerCase() === p.name.trim().toLowerCase()
@@ -1290,18 +1300,33 @@ function buildBreakdanceColors() {
     return {
       cssVariableName: matched ? matched.cssVariableName : 'bde-palette-color-' + (i + 1) + '-' + uuidv4(),
       label: p.name,
-      value: p.hex
+      value: toBdHex(p.hex)
     };
   });
 
-  return {
-    brand: val('navy-hex'),
-    text: val('ink-hex'),
-    headings: val('navy-hex'),
-    links: val('link-hex'),
-    background: val('white-hex'),
-    palette: { colors: palette }
-  };
+  mergedColors.brand = toBdHex(val('navy-hex'));
+  mergedColors.text = toBdHex(val('ink-hex'));
+  mergedColors.headings = toBdHex(val('navy-hex'));
+  mergedColors.links = toBdHex(val('link-hex'));
+  mergedColors.background = toBdHex(val('white-hex'));
+  mergedColors.palette = mergedColors.palette || {};
+  mergedColors.palette.colors = palette;
+
+  // 按鈕色彩對應 Breakdance 的 settings.colors.buttons.primary：
+  // 僅覆寫 background／background_hover／文字色與 hover 文字色，
+  // 保留原檔 typography（字體）等其他 primary 設定與 secondary／button_presets 不變。
+  mergedColors.buttons = mergedColors.buttons || {};
+  const primary = mergedColors.buttons.primary || {};
+  primary.background = toBdHex(val('btnbg-hex'));
+  primary.background_hover = toBdHex(val('btnbghover-hex'));
+  primary.typography = primary.typography || {};
+  primary.typography.color = primary.typography.color || {};
+  primary.typography.color.breakpoint_base = toBdHex(val('btntext-hex'));
+  primary.typography.color_hover = primary.typography.color_hover || {};
+  primary.typography.color_hover.breakpoint_base = toBdHex(val('btntexthover-hex'));
+  mergedColors.buttons.primary = primary;
+
+  return mergedColors;
 }
 
 function buildBreakdanceJSON() {
@@ -1317,7 +1342,7 @@ function buildBreakdanceJSON() {
 function updateBreakdanceHint() {
   const hint = document.getElementById('breakdance-hint');
   if (breakdanceBaseSettings) {
-    hint.innerHTML = '已載入現有 <code>global-settings.json</code>，下方為套用本頁色彩後的完整檔案（<code>typography</code>／<code>buttons</code> 等其他設定維持原檔內容不變）。下載檔名為 <code>global-settings.json</code>。';
+    hint.innerHTML = '已載入現有 <code>global-settings.json</code>，下方為套用本頁色彩與按鈕色彩後的完整檔案（按鈕僅覆寫 Primary 的背景／Hover 背景／文字色／Hover 文字色，其餘 <code>typography</code>、Secondary 按鈕、Button Presets 等設定維持原檔內容不變）。下載檔名為 <code>global-settings.json</code>。';
   } else {
     hint.innerHTML = '此 JSON 僅包含 Breakdance 全域設定中的 <code>colors</code> 區塊（含 Palette）。可上傳現有 <code>global-settings.json</code>，將本頁色彩套用到完整檔案後一併下載。';
   }
