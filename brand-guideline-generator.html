@@ -1373,10 +1373,17 @@ function applyBreakdanceSettingsToForm(settings) {
   if (colors.background != null) setColorField('white', resolve(colors.background));
 
   if (colors.palette && Array.isArray(colors.palette.colors)) {
+    const accentName = val('accent-name').trim().toLowerCase();
+    let entries = colors.palette.colors.slice();
+    const accentIdx = entries.findIndex(p => String(p.label || '').trim().toLowerCase() === accentName);
+    if (accentIdx !== -1) {
+      setColorField('accent', resolve(entries[accentIdx].value));
+      entries.splice(accentIdx, 1);
+    }
     const paletteList = document.getElementById('palette-list');
     paletteList.innerHTML = '';
-    colors.palette.colors.forEach(p => {
-      paletteList.appendChild(createPaletteRow(p.label || '', fromBdHex(p.value) || '#CCCCCC'));
+    entries.forEach(p => {
+      paletteList.appendChild(createPaletteRow(p.label || '', resolve(p.value) || '#CCCCCC'));
     });
   }
 
@@ -1413,7 +1420,12 @@ function buildBreakdanceColors() {
   const mergedColors = JSON.parse(JSON.stringify(existingColors));
 
   const existingPalette = (existingColors.palette && existingColors.palette.colors) || [];
-  const palette = getPaletteEntries().map((p, i) => {
+  const accentName = val('accent-name').trim().toLowerCase();
+  const allEntries = [
+    { name: val('accent-name'), hex: val('accent-hex') },
+    ...getPaletteEntries().filter(p => p.name.trim().toLowerCase() !== accentName)
+  ];
+  const palette = allEntries.map((p, i) => {
     const matched = existingPalette.find(e =>
       String(e.label || '').trim().toLowerCase() === p.name.trim().toLowerCase()
     );
