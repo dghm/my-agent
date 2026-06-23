@@ -164,7 +164,7 @@
           <input type="color" class="color-swatch" id="navy-color" value="#143463">
         </div>
         <div class="color-line">
-          <input type="text" class="color-name" id="accent-name" value="Text">
+          <input type="text" class="color-name" id="accent-name" value="Accent">
           <input type="text" class="color-hex" id="accent-hex" value="#97D3DF">
           <input type="color" class="color-swatch" id="accent-color" value="#97D3DF">
         </div>
@@ -181,7 +181,7 @@
 
         <div class="group-label">中性色</div>
         <div class="color-line">
-          <input type="text" class="color-name" id="ink-name" value="Background">
+          <input type="text" class="color-name" id="ink-name" value="Text">
           <input type="text" class="color-hex" id="ink-hex" value="#222222">
           <input type="color" class="color-swatch" id="ink-color" value="#222222">
         </div>
@@ -191,7 +191,7 @@
           <input type="color" class="color-swatch" id="gray-color" value="#666666">
         </div>
         <div class="color-line">
-          <input type="text" class="color-name" id="white-name" value="Surface">
+          <input type="text" class="color-name" id="white-name" value="Background">
           <input type="text" class="color-hex" id="white-hex" value="#FFFFFF">
           <input type="color" class="color-swatch" id="white-color" value="#FFFFFF">
         </div>
@@ -1368,6 +1368,7 @@ function applyBreakdanceSettingsToForm(settings) {
 
   if (colors.brand != null) setColorField('navy', resolve(colors.brand));
   if (colors.text != null) setColorField('ink', resolve(colors.text));
+  if (colors.headings != null) setColorField('pale', resolve(colors.headings));
   if (colors.links != null) setColorField('link', resolve(colors.links));
   if (colors.background != null) setColorField('white', resolve(colors.background));
 
@@ -1425,7 +1426,7 @@ function buildBreakdanceColors() {
 
   mergedColors.brand = toBdHex(val('navy-hex'));
   mergedColors.text = toBdHex(val('ink-hex'));
-  mergedColors.headings = toBdHex(val('navy-hex'));
+  mergedColors.headings = toBdHex(val('pale-hex'));
   mergedColors.links = toBdHex(val('link-hex'));
   mergedColors.background = toBdHex(val('white-hex'));
   mergedColors.palette = mergedColors.palette || {};
