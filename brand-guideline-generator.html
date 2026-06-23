@@ -1312,11 +1312,19 @@ function buildBreakdanceColors() {
   mergedColors.palette = mergedColors.palette || {};
   mergedColors.palette.colors = palette;
 
-  // 按鈕色彩對應 Breakdance 的 settings.colors.buttons.primary：
-  // 僅覆寫 background／background_hover／文字色與 hover 文字色，
-  // 保留原檔 typography（字體）等其他 primary 設定與 secondary／button_presets 不變。
-  mergedColors.buttons = mergedColors.buttons || {};
-  const primary = mergedColors.buttons.primary || {};
+  return mergedColors;
+}
+
+// 按鈕色彩對應 Breakdance 的 settings.buttons.primary（與 settings.colors 同層，非其子項）：
+// 僅覆寫 background／background_hover／文字色／Hover 文字色，
+// 保留原檔 typography（字體）等其他 primary 設定與 secondary／button_presets 不變。
+function buildBreakdanceButtons() {
+  const existingButtons = (breakdanceBaseSettings
+    && breakdanceBaseSettings.settings
+    && breakdanceBaseSettings.settings.buttons) || {};
+
+  const mergedButtons = JSON.parse(JSON.stringify(existingButtons));
+  const primary = mergedButtons.primary || {};
   primary.background = toBdHex(val('btnbg-hex'));
   primary.background_hover = toBdHex(val('btnbghover-hex'));
   primary.typography = primary.typography || {};
@@ -1324,9 +1332,9 @@ function buildBreakdanceColors() {
   primary.typography.color.breakpoint_base = toBdHex(val('btntext-hex'));
   primary.typography.color_hover = primary.typography.color_hover || {};
   primary.typography.color_hover.breakpoint_base = toBdHex(val('btntexthover-hex'));
-  mergedColors.buttons.primary = primary;
+  mergedButtons.primary = primary;
 
-  return mergedColors;
+  return mergedButtons;
 }
 
 function buildBreakdanceJSON() {
@@ -1334,9 +1342,10 @@ function buildBreakdanceJSON() {
     const merged = JSON.parse(JSON.stringify(breakdanceBaseSettings));
     merged.settings = merged.settings || {};
     merged.settings.colors = buildBreakdanceColors();
+    merged.settings.buttons = buildBreakdanceButtons();
     return JSON.stringify(merged, null, 2);
   }
-  return JSON.stringify({ settings: { colors: buildBreakdanceColors() } }, null, 2);
+  return JSON.stringify({ settings: { colors: buildBreakdanceColors(), buttons: buildBreakdanceButtons() } }, null, 2);
 }
 
 function updateBreakdanceHint() {
