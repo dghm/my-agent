@@ -1283,6 +1283,22 @@ function toBdHex(hex) {
   return hex;
 }
 
+// 字體名稱 ↔ Breakdance Google Fonts slug 的轉換為「推測版」，
+// 命名規則依範例檔（如 "K2D" → "gfont-k2d"）反推，多字詞字體或特殊大小寫可能對應不完全準確，
+// 匯入/匯出後建議肉眼確認一次字體名稱。
+function toGfontSlug(fontStackValue) {
+  const first = String(fontStackValue || '').split(',')[0].trim().replace(/^["']|["']$/g, '');
+  if (!first) return null;
+  return 'gfont-' + first.toLowerCase().replace(/\s+/g, '-');
+}
+
+function fromGfontSlug(slug) {
+  const m = String(slug || '').match(/^gfont-(.+)$/);
+  if (!m) return null;
+  const name = m[1].split('-').map(seg => seg.charAt(0).toUpperCase() + seg.slice(1)).join(' ');
+  return name;
+}
+
 // 8 碼 RGBA HEX → 6 碼 HEX（丟棄透明度，供色票輸入框/色票選取器使用）
 function fromBdHex(value) {
   if (typeof value === 'string' && /^#[0-9A-Fa-f]{8}$/.test(value)) {
@@ -1348,6 +1364,12 @@ function applyBreakdanceSettingsToForm(settings) {
   const textHoverColor = primary.typography && primary.typography.color_hover && primary.typography.color_hover.breakpoint_base;
   if (textColor != null) setColorField('btntext', resolve(textColor));
   if (textHoverColor != null) setColorField('btntexthover', resolve(textHoverColor));
+
+  const typography = settings.typography || {};
+  const fontName = fromGfontSlug(typography.body_font || typography.heading_font);
+  if (fontName) {
+    document.getElementById('font-stack').value = '"' + fontName + '", sans-serif';
+  }
 }
 
 function buildBreakdanceColors() {
@@ -1404,15 +1426,32 @@ function buildBreakdanceButtons() {
   return mergedButtons;
 }
 
+// 字體名稱對應 Breakdance 的 settings.typography（heading_font／body_font），
+// 僅覆寫這兩個欄位，保留原檔 base_size／advanced 等其他字體設定不變。
+function buildBreakdanceTypography() {
+  const existingTypography = (breakdanceBaseSettings
+    && breakdanceBaseSettings.settings
+    && breakdanceBaseSettings.settings.typography) || {};
+
+  const mergedTypography = JSON.parse(JSON.stringify(existingTypography));
+  const slug = toGfontSlug(val('font-stack'));
+  if (slug) {
+    mergedTypography.heading_font = slug;
+    mergedTypography.body_font = slug;
+  }
+  return mergedTypography;
+}
+
 function buildBreakdanceJSON() {
   if (breakdanceBaseSettings) {
     const merged = JSON.parse(JSON.stringify(breakdanceBaseSettings));
     merged.settings = merged.settings || {};
     merged.settings.colors = buildBreakdanceColors();
     merged.settings.buttons = buildBreakdanceButtons();
+    merged.settings.typography = buildBreakdanceTypography();
     return JSON.stringify(merged, null, 2);
   }
-  return JSON.stringify({ settings: { colors: buildBreakdanceColors(), buttons: buildBreakdanceButtons() } }, null, 2);
+  return JSON.stringify({ settings: { colors: buildBreakdanceColors(), buttons: buildBreakdanceButtons(), typography: buildBreakdanceTypography() } }, null, 2);
 }
 
 function updateBreakdanceHint() {
