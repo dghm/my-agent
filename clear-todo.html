@@ -392,7 +392,6 @@
 
     text.addEventListener('input', function () { item.text = text.value; });
     text.addEventListener('blur', saveData);
-    text.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
 
     attachItemRowGestures(row, front, bg, list, item, handle);
     return row;
