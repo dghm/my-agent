@@ -222,6 +222,28 @@
           <input type="text" class="color-hex" id="btntexthover-hex" value="#FFFFFF">
           <input type="color" class="color-swatch" id="btntexthover-color" value="#FFFFFF">
         </div>
+
+        <div class="group-label">按鈕樣式（Secondary）</div>
+        <div class="color-line">
+          <input type="text" class="color-name" id="btnbg2-name" value="Button BG 2">
+          <input type="text" class="color-hex" id="btnbg2-hex" value="#FFFFFF">
+          <input type="color" class="color-swatch" id="btnbg2-color" value="#FFFFFF">
+        </div>
+        <div class="color-line">
+          <input type="text" class="color-name" id="btnbg2hover-name" value="Button BG 2 Hover">
+          <input type="text" class="color-hex" id="btnbg2hover-hex" value="#EFF1F4">
+          <input type="color" class="color-swatch" id="btnbg2hover-color" value="#EFF1F4">
+        </div>
+        <div class="color-line">
+          <input type="text" class="color-name" id="btntext2-name" value="Button Text 2">
+          <input type="text" class="color-hex" id="btntext2-hex" value="#143463">
+          <input type="color" class="color-swatch" id="btntext2-color" value="#143463">
+        </div>
+        <div class="color-line">
+          <input type="text" class="color-name" id="btntext2hover-name" value="Button Text 2 Hover">
+          <input type="text" class="color-hex" id="btntext2hover-hex" value="#143463">
+          <input type="color" class="color-swatch" id="btntext2hover-color" value="#143463">
+        </div>
       </fieldset>
 
       <fieldset>
@@ -1365,6 +1387,14 @@ function applyBreakdanceSettingsToForm(settings) {
   if (textColor != null) setColorField('btntext', resolve(textColor));
   if (textHoverColor != null) setColorField('btntexthover', resolve(textHoverColor));
 
+  const secondary = buttons.secondary || {};
+  if (secondary.background != null) setColorField('btnbg2', resolve(secondary.background));
+  if (secondary.background_hover != null) setColorField('btnbg2hover', resolve(secondary.background_hover));
+  const textColor2 = secondary.typography && secondary.typography.color && secondary.typography.color.breakpoint_base;
+  const textHoverColor2 = secondary.typography && secondary.typography.color_hover && secondary.typography.color_hover.breakpoint_base;
+  if (textColor2 != null) setColorField('btntext2', resolve(textColor2));
+  if (textHoverColor2 != null) setColorField('btntext2hover', resolve(textHoverColor2));
+
   const typography = settings.typography || {};
   const fontName = fromGfontSlug(typography.body_font || typography.heading_font);
   if (fontName) {
@@ -1404,9 +1434,9 @@ function buildBreakdanceColors() {
   return mergedColors;
 }
 
-// 按鈕色彩對應 Breakdance 的 settings.buttons.primary（與 settings.colors 同層，非其子項）：
+// 按鈕色彩對應 Breakdance 的 settings.buttons.primary／secondary（與 settings.colors 同層，非其子項）：
 // 僅覆寫 background／background_hover／文字色／Hover 文字色，
-// 保留原檔 typography（字體）等其他 primary 設定與 secondary／button_presets 不變。
+// 保留兩者的 typography（字體）設定與 button_presets 不變。
 function buildBreakdanceButtons() {
   const existingButtons = (breakdanceBaseSettings
     && breakdanceBaseSettings.settings
@@ -1422,6 +1452,16 @@ function buildBreakdanceButtons() {
   primary.typography.color_hover = primary.typography.color_hover || {};
   primary.typography.color_hover.breakpoint_base = toBdHex(val('btntexthover-hex'));
   mergedButtons.primary = primary;
+
+  const secondary = mergedButtons.secondary || {};
+  secondary.background = toBdHex(val('btnbg2-hex'));
+  secondary.background_hover = toBdHex(val('btnbg2hover-hex'));
+  secondary.typography = secondary.typography || {};
+  secondary.typography.color = secondary.typography.color || {};
+  secondary.typography.color.breakpoint_base = toBdHex(val('btntext2-hex'));
+  secondary.typography.color_hover = secondary.typography.color_hover || {};
+  secondary.typography.color_hover.breakpoint_base = toBdHex(val('btntext2hover-hex'));
+  mergedButtons.secondary = secondary;
 
   return mergedButtons;
 }
@@ -1457,7 +1497,7 @@ function buildBreakdanceJSON() {
 function updateBreakdanceHint() {
   const hint = document.getElementById('breakdance-hint');
   if (breakdanceBaseSettings) {
-    hint.innerHTML = '已載入現有 <code>global-settings.json</code>，下方為套用本頁色彩與按鈕色彩後的完整檔案（按鈕僅覆寫 Primary 的背景／Hover 背景／文字色／Hover 文字色，其餘 <code>typography</code>、Secondary 按鈕、Button Presets 等設定維持原檔內容不變）。下載檔名為 <code>global-settings.json</code>。';
+    hint.innerHTML = '已載入現有 <code>global-settings.json</code>，下方為套用本頁色彩與按鈕色彩後的完整檔案（按鈕僅覆寫 Primary／Secondary 的背景／Hover 背景／文字色／Hover 文字色，其餘 <code>typography</code>、Button Presets 等設定維持原檔內容不變）。下載檔名為 <code>global-settings.json</code>。';
   } else {
     hint.innerHTML = '此 JSON 僅包含 Breakdance 全域設定中的 <code>colors</code> 區塊（含 Palette）。可上傳現有 <code>global-settings.json</code>，將本頁色彩套用到完整檔案後一併下載。';
   }
