@@ -79,7 +79,7 @@
   }
   .item-row .swipe-bg {
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between;
-    padding: 0 18px; font-size: 13px; font-weight: 600;
+    padding: 0 18px; font-size: 13px; font-weight: 600; background: transparent;
   }
   .item-row .swipe-bg .done-side { color: #fff; opacity: 0; }
   .item-row .swipe-bg .del-side { color: #fff; opacity: 0; margin-left: auto; }
@@ -235,6 +235,7 @@
       card.setPointerCapture && card.setPointerCapture(e.pointerId);
       longPressTimer = setTimeout(function () {
         reordering = true;
+        card.style.transition = 'none';
         card.classList.add('dragging');
       }, 320);
     });
@@ -283,6 +284,7 @@
         reordering = false;
         card.classList.remove('dragging');
         card.style.transform = '';
+        card.style.transition = '';
         saveData();
         return;
       }
@@ -296,6 +298,7 @@
       reordering = false;
       card.classList.remove('dragging');
       card.style.transform = '';
+      card.style.transition = '';
     });
   }
 
@@ -405,30 +408,31 @@
       var doneEl = bg.querySelector('.done-side');
       var delEl = bg.querySelector('.del-side');
       if (d > 0) {
-        front.style.background = '#2fb35a';
+        bg.style.background = '#2fb35a';
         doneEl.style.opacity = Math.min(1, d / 90);
         delEl.style.opacity = 0;
       } else if (d < 0) {
-        front.style.background = '#e0383f';
+        bg.style.background = '#e0383f';
         delEl.style.opacity = Math.min(1, -d / 90);
         doneEl.style.opacity = 0;
       } else {
+        bg.style.background = 'transparent';
         doneEl.style.opacity = 0;
         delEl.style.opacity = 0;
       }
     }
 
     function resetVisual() {
-      front.style.transition = 'transform .2s, background .2s';
+      front.style.transition = 'transform .25s cubic-bezier(.2,.8,.2,1)';
       front.style.transform = 'translateX(0)';
-      var idx = list.items.indexOf(item);
-      front.style.background = shadeForRow(list.color, idx, list.items.length);
       setBgOpacity(0);
-      setTimeout(function () { front.style.transition = ''; }, 200);
+      setTimeout(function () { front.style.transition = ''; }, 250);
     }
 
     row.addEventListener('pointerdown', function (e) {
       startX = e.clientX; startY = e.clientY; dx = 0; dy = 0; mode = null;
+      front.style.transition = 'none';
+      row.style.transition = 'none';
       row.setPointerCapture && row.setPointerCapture(e.pointerId);
       longPressTimer = setTimeout(function () {
         mode = 'reorder';
