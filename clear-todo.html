@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Clear 風格待辦清單</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: #0b0b0d; color: #fff;
+    font-family: -apple-system, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    user-select: none; touch-action: none;
+  }
+  #app { position: relative; width: 100%; height: 100%; overflow: hidden; }
+
+  .topbar {
+    position: absolute; top: 0; left: 0; right: 0; height: 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 14px; z-index: 20; font-size: 13px; color: rgba(255,255,255,.75);
+  }
+  .topbar a { color: rgba(255,255,255,.6); text-decoration: none; }
+  .back-btn { display: none; align-items: center; gap: 4px; font-size: 15px; color: #fff; background: none; border: none; cursor: pointer; padding: 6px 4px; }
+  .back-btn.show { display: flex; }
+  .hint-text { font-size: 11px; color: rgba(255,255,255,.4); }
+
+  /* ---------- Lists screen ---------- */
+  #screen-lists {
+    position: absolute; inset: 0; padding-top: 48px;
+    display: flex; flex-direction: column;
+    transition: transform .28s ease;
+  }
+  #lists-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 90px; touch-action: pan-y; }
+  .list-card {
+    position: relative; margin: 8px 12px; border-radius: 14px; overflow: hidden;
+    min-height: 78px; display: flex; flex-direction: column; justify-content: center;
+    padding: 14px 18px; transition: transform .25s, opacity .25s;
+    box-shadow: 0 2px 10px rgba(0,0,0,.35);
+  }
+  .list-card .lc-title { font-size: 19px; font-weight: 600; }
+  .list-card .lc-meta { font-size: 12px; opacity: .8; margin-top: 3px; }
+  .list-card .lc-progress {
+    position: absolute; left: 0; bottom: 0; height: 4px; background: rgba(255,255,255,.55);
+  }
+  .list-card .lc-handle {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    font-size: 18px; color: rgba(255,255,255,.55); padding: 10px; cursor: grab; line-height: 0;
+  }
+  .empty-hint {
+    text-align: center; color: rgba(255,255,255,.35); font-size: 13px; margin-top: 60px; line-height: 1.7;
+  }
+
+  /* ---------- Items screen ---------- */
+  #screen-items {
+    position: absolute; inset: 0; padding-top: 48px; display: flex; flex-direction: column;
+    transform: translateX(100%); transition: transform .28s ease;
+  }
+  #screen-items.active { transform: translateX(0); }
+  #screen-lists.pushed { transform: translateX(-25%) scale(.92); opacity: .5; }
+
+  .items-header { padding: 0 18px 10px; }
+  .items-header input#list-title-input {
+    background: none; border: none; color: #fff; font-size: 24px; font-weight: 700;
+    width: 100%; padding: 0; outline: none; font-family: inherit;
+  }
+  .items-header .items-meta { font-size: 12px; color: rgba(255,255,255,.55); margin-top: 2px; }
+
+  #items-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 110px; touch-action: pan-y; position: relative; }
+
+  #pull-add-zone {
+    height: 0; overflow: hidden; display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,.7); font-size: 13px; transition: height .15s;
+  }
+
+  .item-row {
+    position: relative; margin: 0 12px 6px; border-radius: 12px; overflow: hidden;
+    min-height: 54px;
+  }
+  .item-row .swipe-bg {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 18px; font-size: 13px; font-weight: 600; background: transparent;
+  }
+  .item-row .swipe-bg .done-side { color: #fff; opacity: 0; }
+  .item-row .swipe-bg .del-side { color: #fff; opacity: 0; margin-left: auto; }
+  .item-row .row-front {
+    position: relative; display: flex; align-items: center; gap: 8px;
+    min-height: 54px; padding: 0 14px; border-radius: 12px;
+    will-change: transform;
+  }
+  .item-row .row-text {
+    flex: 1; background: none; border: none; color: #fff; font-size: 16px; outline: none;
+    padding: 8px 0; font-family: inherit;
+  }
+  .item-row.done .row-text { text-decoration: line-through; opacity: .55; }
+  .item-row .drag-handle {
+    font-size: 16px; color: rgba(255,255,255,.5); padding: 8px; line-height: 0; cursor: grab; flex-shrink: 0;
+  }
+
+  .fab {
+    position: absolute; right: 20px; bottom: 28px; width: 56px; height: 56px; border-radius: 50%;
+    background: #fff; color: #111; border: none; font-size: 28px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0,0,0,.4);
+    z-index: 30;
+  }
+
+  .dragging { z-index: 50; box-shadow: 0 8px 20px rgba(0,0,0,.5) !important; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="topbar">
+    <button class="back-btn" id="back-btn">‹ 清單</button>
+    <a href="index.html" id="home-link">← 回首頁</a>
+    <span class="hint-text" id="gesture-hint">右滑完成 · 左滑刪除 · 拖曳 ≡ 排序</span>
+  </div>
+
+  <div id="screen-lists">
+    <div id="lists-scroll">
+      <div id="lists-container"></div>
+      <div class="empty-hint" id="lists-empty-hint">尚無清單，點右下角「＋」新增一個清單</div>
+    </div>
+    <button class="fab" id="add-list-fab" type="button" aria-label="新增清單">＋</button>
+  </div>
+
+  <div id="screen-items">
+    <div class="items-header">
+      <input id="list-title-input" type="text" placeholder="清單名稱">
+      <div class="items-meta" id="items-meta"></div>
+    </div>
+    <div id="items-scroll">
+      <div id="pull-add-zone">放開即可新增項目</div>
+      <div id="items-container"></div>
+    </div>
+    <button class="fab" id="add-item-fab" type="button" aria-label="新增項目">＋</button>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var STORE_KEY = 'clear-todo-data-v1';
+
+  var PALETTE = [
+    { name: 'red',    top: '#ff6b6b', bottom: '#e63950' },
+    { name: 'orange', top: '#ffb238', bottom: '#ff8a00' },
+    { name: 'yellow', top: '#ffe26a', bottom: '#f4c10a' },
+    { name: 'green',  top: '#6fe08a', bottom: '#2fb35a' },
+    { name: 'teal',   top: '#4fe0c8', bottom: '#0fa993' },
+    { name: 'blue',   top: '#5aa9ff', bottom: '#1f6fe0' },
+    { name: 'purple', top: '#b07bff', bottom: '#7c3fe0' },
+    { name: 'pink',   top: '#ff7bcd', bottom: '#e2389e' }
+  ];
+
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+  function loadData() {
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return {
+      lists: [
+        { id: uid(), title: '今日待辦', color: 0, items: [
+          { id: uid(), text: '滑右完成、滑左刪除', done: false },
+          { id: uid(), text: '長按 ≡ 拖曳排序', done: false },
+          { id: uid(), text: '點文字可直接編輯', done: false }
+        ] }
+      ]
+    };
+  }
+
+  function saveData() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  var state = loadData();
+  var currentListId = null;
+
+  function getList(id) {
+    for (var i = 0; i < state.lists.length; i++) if (state.lists[i].id === id) return state.lists[i];
+    return null;
+  }
+
+  function colorFor(idx) { return PALETTE[idx % PALETTE.length]; }
+
+  function shadeForRow(colorIdx, rowIdx, rowCount) {
+    var c = colorFor(colorIdx);
+    var t = rowCount > 1 ? rowIdx / (rowCount - 1) : 0;
+    return 'linear-gradient(135deg, ' + c.top + ', ' + c.bottom + ')';
+  }
+
+  /* ---------------- Lists screen rendering ---------------- */
+
+  var listsContainer = document.getElementById('lists-container');
+  var listsEmptyHint = document.getElementById('lists-empty-hint');
+
+  function renderLists() {
+    listsContainer.innerHTML = '';
+    listsEmptyHint.style.display = state.lists.length ? 'none' : 'block';
+    state.lists.forEach(function (list, idx) {
+      var card = document.createElement('div');
+      card.className = 'list-card';
+      card.dataset.id = list.id;
+      var c = colorFor(list.color);
+      card.style.background = 'linear-gradient(135deg, ' + c.top + ', ' + c.bottom + ')';
+
+      var total = list.items.length;
+      var done = list.items.filter(function (i) { return i.done; }).length;
+      var pct = total ? Math.round((done / total) * 100) : 0;
+
+      card.innerHTML =
+        '<div class="lc-title"></div>' +
+        '<div class="lc-meta"></div>' +
+        '<div class="lc-handle">≡</div>' +
+        '<div class="lc-progress" style="width:' + pct + '%"></div>';
+      card.querySelector('.lc-title').textContent = list.title || '未命名清單';
+      card.querySelector('.lc-meta').textContent = total ? (done + ' / ' + total + ' 已完成') : '空清單';
+
+      attachListCardGestures(card, list);
+      listsContainer.appendChild(card);
+    });
+  }
+
+  function attachListCardGestures(card, list) {
+    var startX = 0, startY = 0, dx = 0, dy = 0, dragging = false, longPressTimer = null, moved = false;
+    var reordering = false;
+    var placeholderIdx = null;
+
+    card.addEventListener('pointerdown', function (e) {
+      startX = e.clientX; startY = e.clientY; dx = 0; dy = 0; moved = false;
+      card.setPointerCapture && card.setPointerCapture(e.pointerId);
+      longPressTimer = setTimeout(function () {
+        reordering = true;
+        card.style.transition = 'none';
+        card.classList.add('dragging');
+      }, 320);
+    });
+
+    card.addEventListener('pointermove', function (e) {
+      dx = e.clientX - startX; dy = e.clientY - startY;
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) moved = true;
+      if (reordering) {
+        card.style.transform = 'translateY(' + dy + 'px)';
+        reorderSiblings(card, dy);
+      } else if (Math.abs(dy) > 10 || Math.abs(dx) > 10) {
+        clearTimeout(longPressTimer);
+      }
+    });
+
+    function reorderSiblings(el, deltaY) {
+      var siblings = Array.prototype.slice.call(listsContainer.children);
+      var rect = el.getBoundingClientRect();
+      var centerY = rect.top + rect.height / 2 + deltaY;
+      var myIdx = siblings.indexOf(el);
+      for (var i = 0; i < siblings.length; i++) {
+        if (siblings[i] === el) continue;
+        var r = siblings[i].getBoundingClientRect();
+        var sibCenter = r.top + r.height / 2;
+        if (i < myIdx && centerY < sibCenter) {
+          listsContainer.insertBefore(el, siblings[i]);
+          syncListOrderFromDom();
+          break;
+        }
+        if (i > myIdx && centerY > sibCenter) {
+          listsContainer.insertBefore(el, siblings[i].nextSibling);
+          syncListOrderFromDom();
+          break;
+        }
+      }
+    }
+
+    function syncListOrderFromDom() {
+      var ids = Array.prototype.map.call(listsContainer.children, function (c) { return c.dataset.id; });
+      state.lists.sort(function (a, b) { return ids.indexOf(a.id) - ids.indexOf(b.id); });
+    }
+
+    card.addEventListener('pointerup', function (e) {
+      clearTimeout(longPressTimer);
+      if (reordering) {
+        reordering = false;
+        card.classList.remove('dragging');
+        card.style.transform = '';
+        card.style.transition = '';
+        saveData();
+        return;
+      }
+      if (!moved) {
+        openList(list.id);
+      }
+    });
+
+    card.addEventListener('pointercancel', function () {
+      clearTimeout(longPressTimer);
+      reordering = false;
+      card.classList.remove('dragging');
+      card.style.transform = '';
+      card.style.transition = '';
+    });
+  }
+
+  document.getElementById('add-list-fab').addEventListener('click', function () {
+    var newList = { id: uid(), title: '新清單', color: state.lists.length % PALETTE.length, items: [] };
+    state.lists.unshift(newList);
+    saveData();
+    renderLists();
+    openList(newList.id);
+  });
+
+  /* ---------------- Items screen ---------------- */
+
+  var screenLists = document.getElementById('screen-lists');
+  var screenItems = document.getElementById('screen-items');
+  var backBtn = document.getElementById('back-btn');
+  var homeLink = document.getElementById('home-link');
+  var titleInput = document.getElementById('list-title-input');
+  var itemsMeta = document.getElementById('items-meta');
+  var itemsContainer = document.getElementById('items-container');
+  var itemsScroll = document.getElementById('items-scroll');
+  var pullAddZone = document.getElementById('pull-add-zone');
+
+  function openList(id) {
+    currentListId = id;
+    var list = getList(id);
+    if (!list) return;
+    titleInput.value = list.title;
+    renderItems();
+    screenItems.classList.add('active');
+    screenLists.classList.add('pushed');
+    backBtn.classList.add('show');
+    homeLink.style.display = 'none';
+  }
+
+  function closeList() {
+    saveData();
+    renderLists();
+    screenItems.classList.remove('active');
+    screenLists.classList.remove('pushed');
+    backBtn.classList.remove('show');
+    homeLink.style.display = '';
+    currentListId = null;
+  }
+
+  backBtn.addEventListener('click', closeList);
+
+  titleInput.addEventListener('input', function () {
+    var list = getList(currentListId);
+    if (list) { list.title = titleInput.value; }
+  });
+  titleInput.addEventListener('blur', saveData);
+
+  function renderItems() {
+    var list = getList(currentListId);
+    if (!list) return;
+    itemsContainer.innerHTML = '';
+    var total = list.items.length;
+    var done = list.items.filter(function (i) { return i.done; }).length;
+    itemsMeta.textContent = total ? (done + ' / ' + total + ' 已完成') : '尚無項目';
+
+    list.items.forEach(function (item, idx) {
+      itemsContainer.appendChild(buildItemRow(list, item, idx, total));
+    });
+  }
+
+  function buildItemRow(list, item, idx, total) {
+    var row = document.createElement('div');
+    row.className = 'item-row' + (item.done ? ' done' : '');
+    row.dataset.id = item.id;
+
+    var bg = document.createElement('div');
+    bg.className = 'swipe-bg';
+    bg.innerHTML = '<span class="done-side">完成 ✓</span><span class="del-side">刪除 ✕</span>';
+    row.appendChild(bg);
+
+    var front = document.createElement('div');
+    front.className = 'row-front';
+    front.style.background = shadeForRow(list.color, idx, total);
+
+    var handle = document.createElement('div');
+    handle.className = 'drag-handle';
+    handle.textContent = '≡';
+
+    var text = document.createElement('input');
+    text.type = 'text';
+    text.className = 'row-text';
+    text.value = item.text;
+    text.placeholder = '輸入項目內容';
+
+    front.appendChild(text);
+    front.appendChild(handle);
+    row.appendChild(front);
+
+    text.addEventListener('input', function () { item.text = text.value; });
+    text.addEventListener('blur', saveData);
+
+    attachItemRowGestures(row, front, bg, list, item, handle);
+    return row;
+  }
+
+  function attachItemRowGestures(row, front, bg, list, item, handle) {
+    var startX = 0, startY = 0, dx = 0, dy = 0, mode = null;
+    var longPressTimer = null, reordering = false;
+
+    function setBgOpacity(d) {
+      var doneEl = bg.querySelector('.done-side');
+      var delEl = bg.querySelector('.del-side');
+      if (d > 0) {
+        bg.style.background = '#2fb35a';
+        doneEl.style.opacity = Math.min(1, d / 90);
+        delEl.style.opacity = 0;
+      } else if (d < 0) {
+        bg.style.background = '#e0383f';
+        delEl.style.opacity = Math.min(1, -d / 90);
+        doneEl.style.opacity = 0;
+      } else {
+        bg.style.background = 'transparent';
+        doneEl.style.opacity = 0;
+        delEl.style.opacity = 0;
+      }
+    }
+
+    function resetVisual() {
+      front.style.transition = 'transform .25s cubic-bezier(.2,.8,.2,1)';
+      front.style.transform = 'translateX(0)';
+      setBgOpacity(0);
+      setTimeout(function () { front.style.transition = ''; }, 250);
+    }
+
+    row.addEventListener('pointerdown', function (e) {
+      startX = e.clientX; startY = e.clientY; dx = 0; dy = 0; mode = null;
+      front.style.transition = 'none';
+      row.style.transition = 'none';
+      row.setPointerCapture && row.setPointerCapture(e.pointerId);
+      longPressTimer = setTimeout(function () {
+        mode = 'reorder';
+        reordering = true;
+        row.classList.add('dragging');
+      }, 320);
+    });
+
+    row.addEventListener('pointermove', function (e) {
+      dx = e.clientX - startX; dy = e.clientY - startY;
+
+      if (mode === 'reorder') {
+        row.style.transform = 'translateY(' + dy + 'px)';
+        reorderItemSiblings(row, dy, list);
+        return;
+      }
+      if (mode === null) {
+        if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) {
+          mode = 'swipe';
+          clearTimeout(longPressTimer);
+        } else if (Math.abs(dy) > 8) {
+          clearTimeout(longPressTimer);
+          mode = 'scroll';
+        }
+      }
+      if (mode === 'swipe') {
+        front.style.transform = 'translateX(' + dx + 'px)';
+        setBgOpacity(dx);
+      }
+    });
+
+    function reorderItemSiblings(el, deltaY, list) {
+      var siblings = Array.prototype.slice.call(itemsContainer.children);
+      var rect = el.getBoundingClientRect();
+      var centerY = rect.top + rect.height / 2 + deltaY;
+      var myIdx = siblings.indexOf(el);
+      for (var i = 0; i < siblings.length; i++) {
+        if (siblings[i] === el) continue;
+        var r = siblings[i].getBoundingClientRect();
+        var sibCenter = r.top + r.height / 2;
+        if (i < myIdx && centerY < sibCenter) {
+          itemsContainer.insertBefore(el, siblings[i]);
+          syncItemOrder(list);
+          break;
+        }
+        if (i > myIdx && centerY > sibCenter) {
+          itemsContainer.insertBefore(el, siblings[i].nextSibling);
+          syncItemOrder(list);
+          break;
+        }
+      }
+    }
+
+    function syncItemOrder(list) {
+      var ids = Array.prototype.map.call(itemsContainer.children, function (c) { return c.dataset.id; });
+      list.items.sort(function (a, b) { return ids.indexOf(a.id) - ids.indexOf(b.id); });
+    }
+
+    row.addEventListener('pointerup', function () {
+      clearTimeout(longPressTimer);
+      if (mode === 'reorder') {
+        reordering = false;
+        row.classList.remove('dragging');
+        row.style.transform = '';
+        saveData();
+        mode = null;
+        return;
+      }
+      if (mode === 'swipe') {
+        var w = row.offsetWidth || 300;
+        var threshold = w * 0.38;
+        if (dx > threshold) {
+          item.done = !item.done;
+          saveData();
+          renderItems();
+        } else if (dx < -threshold) {
+          front.style.transition = 'transform .18s';
+          front.style.transform = 'translateX(-110%)';
+          setTimeout(function () {
+            var i = list.items.indexOf(item);
+            if (i !== -1) list.items.splice(i, 1);
+            saveData();
+            renderItems();
+          }, 180);
+        } else {
+          resetVisual();
+        }
+      }
+      mode = null;
+    });
+
+    row.addEventListener('pointercancel', function () {
+      clearTimeout(longPressTimer);
+      reordering = false;
+      row.classList.remove('dragging');
+      row.style.transform = '';
+      resetVisual();
+      mode = null;
+    });
+  }
+
+  /* ---------------- Pull-to-add (items) ---------------- */
+
+  (function () {
+    var pulling = false, startY = 0, dy = 0;
+    var THRESH = 64;
+
+    itemsScroll.addEventListener('pointerdown', function (e) {
+      if (itemsScroll.scrollTop > 0) return;
+      if (e.target.closest('.item-row')) return;
+      startY = e.clientY; dy = 0; pulling = true;
+    });
+    itemsScroll.addEventListener('pointermove', function (e) {
+      if (!pulling) return;
+      dy = e.clientY - startY;
+      if (dy > 0) {
+        pullAddZone.style.height = Math.min(dy, 100) + 'px';
+      }
+    });
+    itemsScroll.addEventListener('pointerup', function () {
+      if (!pulling) return;
+      pulling = false;
+      if (dy > THRESH) {
+        addNewItem();
+      }
+      pullAddZone.style.height = '0px';
+    });
+    itemsScroll.addEventListener('pointercancel', function () {
+      pulling = false;
+      pullAddZone.style.height = '0px';
+    });
+  })();
+
+  function addNewItem() {
+    var list = getList(currentListId);
+    if (!list) return;
+    var item = { id: uid(), text: '', done: false };
+    list.items.unshift(item);
+    saveData();
+    renderItems();
+    var row = itemsContainer.querySelector('.item-row[data-id="' + item.id + '"] .row-text');
+    if (row) row.focus();
+  }
+
+  document.getElementById('add-item-fab').addEventListener('click', addNewItem);
+
+  /* ---------------- Pull-to-add (lists) ---------------- */
+
+  (function () {
+    var listsScroll = document.getElementById('lists-scroll');
+    var pulling = false, startY = 0, dy = 0;
+    var THRESH = 70;
+
+    listsScroll.addEventListener('pointerdown', function (e) {
+      if (listsScroll.scrollTop > 0) return;
+      if (e.target.closest('.list-card')) return;
+      startY = e.clientY; dy = 0; pulling = true;
+    });
+    listsScroll.addEventListener('pointermove', function (e) {
+      if (!pulling) return;
+      dy = e.clientY - startY;
+    });
+    listsScroll.addEventListener('pointerup', function () {
+      if (!pulling) return;
+      pulling = false;
+      if (dy > THRESH) {
+        document.getElementById('add-list-fab').click();
+      }
+    });
+  })();
+
+  renderLists();
+})();
+</script>
+</body>
+</html>

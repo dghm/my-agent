@@ -8,6 +8,7 @@
   * { box-sizing: border-box; }
   :root {
     --navy: #0D2F6E;
+    --navy-text: var(--navy);
     --orange: #E5622A;
     --surface-bg: #F4F6F8;
     --surface-panel-bg: #ffffff;
@@ -16,6 +17,16 @@
     --surface-text-muted: #667085;
     --surface-input-bg: #ffffff;
     --surface-input-border: #D0D5DD;
+  }
+  :root[data-theme="dark"] {
+    --surface-bg: #161b22;
+    --surface-panel-bg: #1f2530;
+    --surface-border: #323a47;
+    --surface-text: #e6e9ef;
+    --surface-text-muted: #9aa4b2;
+    --surface-input-bg: #2a313d;
+    --surface-input-border: #3d4654;
+    --navy-text: #7FA8E8;
   }
   body {
     font-family: -apple-system, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
@@ -32,10 +43,10 @@
     background: var(--surface-panel-bg);
     border-right: 1px solid var(--surface-border);
   }
-  h1 { font-size: 18px; margin: 0 0 4px; color: var(--navy); }
+  h1 { font-size: 18px; margin: 0 0 4px; color: var(--navy-text); }
   .hint { font-size: 12px; color: var(--surface-text-muted); margin: 0 0 16px; line-height: 1.6; }
   fieldset { border: 1px solid var(--surface-border); border-radius: 8px; margin-bottom: 16px; padding: 12px 14px; }
-  legend { font-size: 12px; font-weight: 700; color: var(--navy); padding: 0 4px; }
+  legend { font-size: 12px; font-weight: 700; color: var(--navy-text); padding: 0 4px; }
   label { display: block; font-size: 12px; color: var(--surface-text-muted); margin: 10px 0 4px; }
   input[type=text], input[type=date], input[type=number] {
     width: 100%; padding: 6px 8px; font-size: 13px;
@@ -48,7 +59,13 @@
     cursor: pointer; border: 1px solid var(--navy); background: var(--navy); color: #fff;
     border-radius: 6px; padding: 8px 12px; font-size: 13px;
   }
-  button.secondary { background: #fff; color: var(--navy); }
+  button.secondary { background: #fff; color: var(--navy-text); }
+  :root[data-theme="dark"] button.secondary { background: var(--surface-input-bg); color: var(--surface-text); }
+  #theme-toggle {
+    flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px;
+    border: 1px solid var(--surface-border); background: var(--surface-input-bg);
+    font-size: 16px; cursor: pointer; line-height: 1; padding: 0; color: var(--surface-text);
+  }
   button.small { padding: 4px 8px; font-size: 12px; }
   button.danger { border-color: #c0392b; background: #fff; color: #c0392b; }
   button.full { width: 100%; margin-top: 8px; }
@@ -72,7 +89,13 @@
 <body>
 <div class="app">
   <div class="form-panel">
-    <h1>DGHM 週工作排程規劃</h1>
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+      <h1>DGHM 週工作排程規劃</h1>
+      <div style="display:flex; gap:8px; align-items:center; flex-shrink:0;">
+        <a href="index.html" style="color:inherit;font-size:13px;text-decoration:underline;">← 回首頁</a>
+        <button id="theme-toggle" type="button" aria-label="切換 Dark／Day 模式" title="切換深色／淺色模式">🌙</button>
+      </div>
+    </div>
     <p class="hint">填入本週客戶專案與內部工作的時間佔比，自動產生符合排程習慣的週表，並輸出文字可貼到 Claude chat 請它建立 Google Calendar 事件。</p>
 
     <label>週次起始日（週一）</label>
@@ -115,6 +138,32 @@
 </div>
 
 <script>
+/* ---- Dark / Day 模式 ---- */
+(function () {
+  var root = document.documentElement;
+  var btn = document.getElementById('theme-toggle');
+  var saved = null;
+  try { saved = localStorage.getItem('dghm-work-schedule-theme'); } catch (e) {}
+  if (saved === 'dark') {
+    root.setAttribute('data-theme', 'dark');
+    btn.textContent = '☀️';
+  } else {
+    btn.textContent = '🌙';
+  }
+  btn.addEventListener('click', function () {
+    var isDark = root.getAttribute('data-theme') === 'dark';
+    if (isDark) {
+      root.removeAttribute('data-theme');
+      btn.textContent = '🌙';
+      try { localStorage.setItem('dghm-work-schedule-theme', 'light'); } catch (e) {}
+    } else {
+      root.setAttribute('data-theme', 'dark');
+      btn.textContent = '☀️';
+      try { localStorage.setItem('dghm-work-schedule-theme', 'dark'); } catch (e) {}
+    }
+  });
+})();
+
 const CLIENT_CODES = ['hs128','TailorMed','FP-Deco','SenWay','MeYi','Nangyuan','DGHM'];
 const DAYS = ['週一','週二','週三','週四','週五'];
 const SLOTS = [
