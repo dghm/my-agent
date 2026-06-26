@@ -79,11 +79,12 @@
   .items-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 8px; }
   .items-table th { background: var(--navy); color: #fff; padding: 6px 8px; text-align: left; font-size: 0.7rem; }
   .items-table td { padding: 5px 5px; border-bottom: 1px solid var(--surface-border); vertical-align: middle; }
-  .items-table td input {
+  .items-table td input, .items-table td textarea {
     width: 100%; border: 1px solid var(--surface-input-border); border-radius: 4px;
     padding: 4px 6px; font-family: inherit; font-size: 12px;
     background: var(--surface-input-bg); color: var(--surface-text);
   }
+  .items-table td textarea { resize: vertical; min-height: 30px; line-height: 1.4; }
   .items-table td.td-num { width: 28px; text-align: center; font-weight: 700; color: var(--navy); }
   .items-table td.td-price input { text-align: right; }
   .items-table td.td-del { text-align: center; width: 28px; }
@@ -511,7 +512,7 @@ function addItem(name, desc, price) {
   tr.innerHTML =
     '<td class="td-num"></td>' +
     '<td><input value="' + esc(name||'') + '" oninput="refreshOutput()"></td>' +
-    '<td><input value="' + esc(desc||'') + '" oninput="refreshOutput()"></td>' +
+    '<td><textarea rows="2" oninput="refreshOutput()">' + esc(desc||'') + '</textarea></td>' +
     '<td class="td-price"><input type="number" min="0" step="1" value="' + (price||'') + '" oninput="refreshOutput()" style="text-align:right"></td>' +
     '<td class="td-del"><button type="button" class="btn-del" onclick="removeItem(\'' + id + '\')">✕</button></td>';
   tbody.appendChild(tr);
@@ -592,12 +593,12 @@ function buildItemsTbody() {
   var html = '';
   var sub = 0;
   for (var i = 0; i < rows.length; i++) {
-    var inputs = rows[i].querySelectorAll('input');
-    var name  = inputs[0].value;
-    var desc  = inputs[1].value;
-    var price = parseFloat(inputs[2].value) || 0;
+    var fields = rows[i].querySelectorAll('input, textarea');
+    var name  = fields[0].value;
+    var desc  = fields[1].value;
+    var price = parseFloat(fields[2].value) || 0;
     sub += price;
-    html += '<tr><td class="num">' + (i+1) + '</td><td class="name">' + xmlEsc(name) + '</td><td class="desc">' + xmlEsc(desc) + '</td><td class="price">' + fmtNT(price) + '</td></tr>\n';
+    html += '<tr><td class="num">' + (i+1) + '</td><td class="name">' + xmlEsc(name) + '</td><td class="desc">' + xmlEsc(desc).replace(/\n/g,'<br>') + '</td><td class="price">' + fmtNT(price) + '</td></tr>\n';
   }
   var tax = Math.round(sub * 0.05);
   var total = sub + tax;
@@ -728,8 +729,8 @@ function collectDraft() {
   var draft = { fields: {}, items: [], terms: [] };
   FIELD_IDS.forEach(function (id) { draft.fields[id] = v(id); });
   document.querySelectorAll('#items-tbody tr').forEach(function (row) {
-    var inputs = row.querySelectorAll('input');
-    draft.items.push({ name: inputs[0].value, desc: inputs[1].value, price: inputs[2].value });
+    var fields = row.querySelectorAll('input, textarea');
+    draft.items.push({ name: fields[0].value, desc: fields[1].value, price: fields[2].value });
   });
   document.querySelectorAll('#terms-list textarea').forEach(function (ta) {
     draft.terms.push(ta.value);
