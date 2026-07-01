@@ -50,6 +50,8 @@
     border-right: 1px solid var(--surface-border);
   }
   .form-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .draft-actions { display: flex; gap: 8px; margin: 0 0 16px; flex-wrap: wrap; }
+  .draft-actions button { font-size: 12px; padding: 6px 10px; }
   .home-link {
     display: inline-block; font-size: 12px; color: var(--surface-text-muted);
     text-decoration: none; margin-bottom: 8px;
@@ -155,6 +157,12 @@
         <p class="hint">填入客戶操作手冊（User Guide）的基本資訊與章節規劃，右側會即時產生結構化的 Markdown 文件骨架，之後交給 Claude Cowork 進行內容撰寫與 HTML 排版。</p>
       </div>
       <button id="theme-toggle" type="button" aria-label="切換 Dark／Day 模式" title="切換深色／淺色模式">🌙</button>
+    </div>
+
+    <div class="draft-actions">
+      <button type="button" class="secondary" id="save-draft-btn">💾 下載草稿 JSON</button>
+      <button type="button" class="secondary" id="load-draft-btn">📂 載入草稿 JSON</button>
+      <input type="file" id="load-draft-input" accept="application/json" style="display:none">
     </div>
 
     <form id="form">
@@ -321,7 +329,7 @@ function addModule(name, brief, subs, workflowOn) {
     '</label>';
   document.getElementById('modules-container').appendChild(card);
 
-  if (subs && subs.length) {
+  if (Array.isArray(subs)) {
     subs.forEach(function (s) { addSubunit(id, s.name, s.checked); });
   } else {
     addSubunit(id, '', true);
@@ -632,6 +640,91 @@ document.getElementById('add-module-btn').addEventListener('click', function () 
 /* 表單任何變動 → 即時更新 */
 document.querySelector('.form-panel').addEventListener('input', refreshOutput);
 document.querySelector('.form-panel').addEventListener('change', refreshOutput);
+
+/* ============================================================
+   草稿存讀（下載 JSON / 載入 JSON）
+   ============================================================ */
+var FIELD_IDS = [
+  'f_client_name', 'f_system_name', 'f_version', 'f_date',
+  'f_language', 'f_primary', 'f_accent', 'f_audience'
+];
+var CHECK_IDS = ['c_revision', 'c_faq', 'c_appendix', 'c_support', 'c_backcover'];
+
+function collectDraft() {
+  var draft = { fields: {}, checks: {}, modules: [] };
+  FIELD_IDS.forEach(function (id) { draft.fields[id] = v(id); });
+  CHECK_IDS.forEach(function (id) { draft.checks[id] = checked(id); });
+  document.querySelectorAll('#modules-container .module-card').forEach(function (card) {
+    var subs = [];
+    card.querySelectorAll('.subunit-row').forEach(function (row) {
+      subs.push({
+        name: row.querySelector('.su-name').value,
+        checked: row.querySelector('.su-check').checked
+      });
+    });
+    draft.modules.push({
+      name: card.querySelector('.mod-name').value,
+      brief: card.querySelector('.mod-brief').value,
+      subs: subs,
+      workflow: card.querySelector('.mod-workflow').checked
+    });
+  });
+  return draft;
+}
+
+function applyDraft(draft) {
+  FIELD_IDS.forEach(function (id) {
+    if (draft.fields && id in draft.fields) {
+      var el = document.getElementById(id);
+      if (el) el.value = draft.fields[id];
+    }
+  });
+  CHECK_IDS.forEach(function (id) {
+    if (draft.checks && id in draft.checks) {
+      var el = document.getElementById(id);
+      if (el) el.checked = !!draft.checks[id];
+    }
+  });
+
+  document.getElementById('modules-container').innerHTML = '';
+  if (draft.modules && draft.modules.length) {
+    draft.modules.forEach(function (m) {
+      addModule(m.name, m.brief, m.subs, m.workflow);
+    });
+  } else {
+    addModule();
+  }
+  renumberModules();
+  refreshOutput();
+}
+
+document.getElementById('save-draft-btn').addEventListener('click', function () {
+  var blob = new Blob([JSON.stringify(collectDraft(), null, 2)], { type: 'application/json;charset=utf-8' });
+  var client = (v('f_client_name') || 'draft').trim().replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '') || 'draft';
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = client + '-UserGuide-草稿.json';
+  a.click();
+});
+
+document.getElementById('load-draft-btn').addEventListener('click', function () {
+  document.getElementById('load-draft-input').click();
+});
+
+document.getElementById('load-draft-input').addEventListener('change', function (e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function () {
+    try {
+      applyDraft(JSON.parse(reader.result));
+    } catch (err) {
+      alert('草稿檔案格式錯誤，無法載入。');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
 
 /* ============================================================
    離開頁面前提醒
