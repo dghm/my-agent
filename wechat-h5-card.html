@@ -306,7 +306,7 @@
           <button class="btn" type="button" id="btn-vcard">📇 下載 vCard (.vcf)</button>
           <button class="btn" type="button" id="btn-open">↗️ 新分頁開啟</button>
         </div>
-        <p class="hint">📦 ZIP：把 index.html、頭像／封面／QR、自動產生的 1200×630 og.jpg 與 contact.vcf 打包；解開整包丟到「分享預覽（OG）」填的網址資料夾即可，OG 縮圖免另外做。需先填 og:url。</p>
+        <p class="hint">📦 ZIP：把 index.html、頭像／封面／WeChat 與 LINE QR、自動產生的 1200×630 og.jpg 打包；解開整包丟到「分享預覽（OG）」填的網址資料夾即可，OG 縮圖免另外做。需先填 og:url。</p>
         <div id="status"></div>
       </div>
     </div>
@@ -527,14 +527,14 @@ initTheme('dghm-wechat-card-theme');
       contact: '聯絡方式', about: '公司簡介', wechatQr: '加我微信', qrHint: '長按或截圖後於微信掃一掃',
       lineQr: '加我 LINE 好友', qrHintLine: '長按或截圖後掃描加入好友',
       mobile: '手機', tel: '市話', wechat: '微信', line: 'LINE', email: 'Email', website: '網站', address: '地址',
-      call: '撥號', save: '存名片', copyWechat: '複製微信', web: '官網', copied: '已複製：'
+      call: '撥號', web: '官網', wechatId: '微信 ID', lineId: 'LINE ID', idCopied: '已複製 ID'
     },
     en: {
       htmlLang: 'en', yourName: 'Your Name', cardSuffix: ' — Digital Card', foot: 'Digital Business Card',
       contact: 'Contact', about: 'About', wechatQr: 'Add me on WeChat', qrHint: 'Long-press or screenshot, then scan in WeChat',
       lineQr: 'Add me on LINE', qrHintLine: 'Long-press or screenshot, then scan to add',
       mobile: 'Mobile', tel: 'Tel', wechat: 'WeChat', line: 'LINE', email: 'Email', website: 'Website', address: 'Address',
-      call: 'Call', save: 'Save', copyWechat: 'Copy WeChat', web: 'Website', copied: 'Copied: '
+      call: 'Call', web: 'Website', wechatId: 'WeChat ID', lineId: 'LINE ID', idCopied: 'ID Copied'
     }
   };
 
@@ -631,9 +631,8 @@ initTheme('dghm-wechat-card-theme');
 
     var actions = [];
     if (s.mobile) actions.push('<a class="act" href="tel:' + esc(s.mobile.replace(/[^0-9+]/g, '')) + '">' + svgStroke('phone', '#fff') + '<span>' + L.call + '</span></a>');
-    // plain link (no download attr) so iOS Safari opens the vCard as an "Add to Contacts" card
-    actions.push('<a class="act" href="./contact.vcf">' + svgStroke('userPlus', '#fff') + '<span>' + L.save + '</span></a>');
-    if (s.wechat) actions.push('<button class="act" type="button" onclick="copyText(\'' + esc(s.wechat).replace(/'/g, "\\'") + '\',this)">' + svgBrand('wechat', '#fff') + '<span>' + L.copyWechat + '</span></button>');
+    if (s.wechat) actions.push('<button class="act" type="button" onclick="copyText(\'' + esc(s.wechat).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\',this)">' + svgBrand('wechat', '#fff') + '<span>' + L.wechatId + '</span></button>');
+    if (s.line) actions.push('<button class="act" type="button" onclick="copyText(\'' + esc(s.line).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\',this)">' + svgBrand('line', '#fff') + '<span>' + L.lineId + '</span></button>');
     if (website) actions.push('<a class="act" href="' + esc(website) + '" target="_blank" rel="noopener">' + svgStroke('globe', '#fff') + '<span>' + L.web + '</span></a>');
 
     var css =
@@ -651,10 +650,13 @@ initTheme('dghm-wechat-card-theme');
       '.slogan{padding:46px 20px 6px;font-size:14px;color:#5a6472}' +
       '.actions{display:flex;gap:10px;padding:14px 16px;flex-wrap:wrap}' +
       '.cover+.actions{padding-top:46px}' +  /* no slogan: keep clearance for the avatar overhang */
-      '.act{flex:1;min-width:70px;text-decoration:none;color:#fff;background:linear-gradient(135deg,' + t.c1 + ',' + t.c2 + ');border:0;border-radius:12px;padding:12px 6px;font-size:12px;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-weight:600}' +
+      '.act{position:relative;flex:1;min-width:70px;text-decoration:none;color:#fff;background:linear-gradient(135deg,' + t.c1 + ',' + t.c2 + ');border:0;border-radius:12px;padding:12px 6px;font-size:12px;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-weight:600}' +
       '.act span{font-size:12px}' +
       '.act svg{width:22px;height:22px;display:block}' +
       '.act:active{opacity:.85}' +
+      '.tip{position:absolute;bottom:100%;left:50%;transform:translateX(-50%) translateY(4px);margin-bottom:9px;background:#1f2933;color:#fff;padding:5px 11px;border-radius:8px;font-size:12px;font-weight:600;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:10}' +
+      '.tip.show{opacity:1;transform:translateX(-50%) translateY(0)}' +
+      '.tip::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#1f2933}' +
       '.section{background:#fff;margin:12px 12px 0;border-radius:14px;padding:16px 16px}' +
       '.sec-title{font-size:13px;font-weight:700;color:' + t.c2 + ';margin-bottom:10px}' +
       '.row{display:grid;grid-template-columns:22px minmax(0,1fr) auto;column-gap:12px;padding:9px 0;border-top:1px solid #f0f1f4}' +
@@ -671,13 +673,11 @@ initTheme('dghm-wechat-card-theme');
       '.qr-sec{text-align:center}' +
       '.qr{width:180px;height:180px;object-fit:contain;margin:4px auto 0;display:block}' +
       '.qr-hint{font-size:12px;color:#9aa4b2;margin-top:8px}' +
-      '.foot{text-align:center;font-size:11px;color:#aab2bd;padding:22px 16px 30px}' +
-      '.toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%) translateY(20px);background:rgba(0,0,0,.8);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:99}' +
-      '.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}';
+      '.foot{text-align:center;font-size:11px;color:#aab2bd;padding:22px 16px 30px}';
 
     var js =
       'function copyText(txt,btn){' +
-      'function done(){var t=document.getElementById("toast");t.textContent=' + JSON.stringify(L.copied) + '+txt;t.classList.add("show");setTimeout(function(){t.classList.remove("show")},1600);}' +
+      'function done(){if(!btn)return;var old=btn.querySelector(".tip");if(old)old.remove();var tip=document.createElement("span");tip.className="tip";tip.textContent=' + JSON.stringify(L.idCopied) + ';btn.appendChild(tip);requestAnimationFrame(function(){tip.classList.add("show")});setTimeout(function(){tip.classList.remove("show");setTimeout(function(){if(tip.parentNode)tip.parentNode.removeChild(tip)},250)},1400);}' +
       'if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,function(){fallback(txt,done)});}else{fallback(txt,done);}}' +
       'function fallback(txt,cb){var ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy")}catch(e){}document.body.removeChild(ta);cb();}' +
       'var QRS=' + JSON.stringify(qrData) + ';' +
@@ -704,7 +704,6 @@ initTheme('dghm-wechat-card-theme');
       qrBlock + '\n' +
       '  <div class="foot">' + esc(s.company || 'DGHM') + ' · ' + L.foot + '</div>\n' +
       '</div>\n' +
-      '<div class="toast" id="toast"></div>\n' +
       '<script>' + js + '<\/script>\n' +
       '</body>\n</html>';
   }
@@ -919,7 +918,6 @@ initTheme('dghm-wechat-card-theme');
       else { names.qr = 'wechat-qr.png'; }
       if (state.lineQr) { var lq = dataURLtoBytes(state.lineQr); names.lineQr = 'line-qr.' + extForMime(lq.mime); files.push({ name: names.lineQr, data: lq.bytes }); }
       files.push({ name: 'og.jpg', data: ogBytes });
-      files.push({ name: 'contact.vcf', data: new TextEncoder().encode(buildVCard()) });
       var html = buildCardHTML({ external: true, base: base, names: names });
       files.push({ name: 'index.html', data: new TextEncoder().encode(html) });
 
