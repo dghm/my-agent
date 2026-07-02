@@ -458,6 +458,28 @@
     return /^https?:\/\//i.test(u) ? u : 'https://' + u;
   }
 
+  /* ---------- inline SVG icons (Lucide, MIT / Simple Icons, CC0) ---------- */
+  // stroke icons (Lucide) — inner markup only, coloured at render time
+  var ICON = {
+    smartphone: '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
+    phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+    mail: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+    globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+    mapPin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+    userPlus: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>'
+  };
+  // brand marks (Simple Icons) — filled paths
+  var BRAND = {
+    wechat: '<path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 0 1 .598.082l1.584.926a.272.272 0 0 0 .14.047c.134 0 .24-.111.24-.247 0-.06-.023-.12-.038-.177l-.327-1.233a.582.582 0 0 1-.023-.156.49.49 0 0 1 .201-.398C23.024 18.48 24 16.82 24 14.98c0-3.21-2.931-5.837-6.656-6.088V8.89c-.135-.01-.27-.027-.407-.03zm-2.53 3.274c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.97-.982zm4.844 0c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.969-.982z"/>',
+    line: '<path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596a.62.62 0 0 1-.194.03c-.2 0-.385-.093-.507-.254l-2.443-3.325v2.954c0 .347-.28.63-.631.63-.346 0-.626-.283-.626-.63V8.108c0-.27.173-.51.43-.595a.669.669 0 0 1 .195-.033c.192 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .347-.281.63-.631.63-.346 0-.626-.283-.626-.63V8.108c0-.345.28-.63.626-.63.35 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.083.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>'
+  };
+  function svgStroke(name, color) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + ICON[name] + '</svg>';
+  }
+  function svgBrand(name, color) {
+    return '<svg viewBox="0 0 24 24" fill="' + color + '">' + BRAND[name] + '</svg>';
+  }
+
   /* ---------- build the shareable card HTML ---------- */
   function buildCardHTML() {
     var t = { c1: state.primary, c2: state.secondary };
@@ -486,13 +508,13 @@
         '</div>'
       );
     }
-    row('📱', '手機', s.mobile, s.mobile ? 'tel:' + esc(s.mobile.replace(/[^0-9+]/g, '')) : '');
-    row('☎️', '市話', s.phone, s.phone ? 'tel:' + esc(s.phone.replace(/[^0-9+]/g, '')) : '');
-    row('💬', '微信', s.wechat, '');
-    row('🟢', 'LINE', s.line, '');
-    row('✉️', 'Email', s.email, s.email ? 'mailto:' + esc(s.email) : '');
-    row('🌐', '網站', s.website, website, ' target="_blank" rel="noopener"');
-    row('📍', '地址', s.address, s.address ? 'https://maps.google.com/?q=' + encodeURIComponent(s.address) : '', ' target="_blank" rel="noopener"');
+    row(svgStroke('smartphone', t.c2), '手機', s.mobile, s.mobile ? 'tel:' + esc(s.mobile.replace(/[^0-9+]/g, '')) : '');
+    row(svgStroke('phone', t.c2), '市話', s.phone, s.phone ? 'tel:' + esc(s.phone.replace(/[^0-9+]/g, '')) : '');
+    row(svgBrand('wechat', t.c2), '微信', s.wechat, '');
+    row(svgBrand('line', t.c2), 'LINE', s.line, '');
+    row(svgStroke('mail', t.c2), 'Email', s.email, s.email ? 'mailto:' + esc(s.email) : '');
+    row(svgStroke('globe', t.c2), '網站', s.website, website, ' target="_blank" rel="noopener"');
+    row(svgStroke('mapPin', t.c2), '地址', s.address, s.address ? 'https://maps.google.com/?q=' + encodeURIComponent(s.address) : '', ' target="_blank" rel="noopener"');
 
     var aboutBlock = s.about
       ? '<div class="section"><div class="sec-title">公司簡介</div><p class="about">' + esc(s.about).replace(/\n/g, '<br>') + '</p></div>'
@@ -505,10 +527,10 @@
     var vcardData = 'data:text/vcard;charset=utf-8,' + encodeURIComponent(vcard);
 
     var actions = [];
-    if (s.mobile) actions.push('<a class="act" href="tel:' + esc(s.mobile.replace(/[^0-9+]/g, '')) + '">📞<span>撥號</span></a>');
-    actions.push('<a class="act" href="./contact.vcf" download="contact.vcf">📇<span>存名片</span></a>');
-    if (s.wechat) actions.push('<button class="act" type="button" onclick="copyText(\'' + esc(s.wechat).replace(/'/g, "\\'") + '\',this)">💬<span>複製微信</span></button>');
-    if (website) actions.push('<a class="act" href="' + esc(website) + '" target="_blank" rel="noopener">🌐<span>官網</span></a>');
+    if (s.mobile) actions.push('<a class="act" href="tel:' + esc(s.mobile.replace(/[^0-9+]/g, '')) + '">' + svgStroke('phone', '#fff') + '<span>撥號</span></a>');
+    actions.push('<a class="act" href="./contact.vcf" download="contact.vcf">' + svgStroke('userPlus', '#fff') + '<span>存名片</span></a>');
+    if (s.wechat) actions.push('<button class="act" type="button" onclick="copyText(\'' + esc(s.wechat).replace(/'/g, "\\'") + '\',this)">' + svgBrand('wechat', '#fff') + '<span>複製微信</span></button>');
+    if (website) actions.push('<a class="act" href="' + esc(website) + '" target="_blank" rel="noopener">' + svgStroke('globe', '#fff') + '<span>官網</span></a>');
 
     var css =
       '*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}' +
@@ -526,12 +548,14 @@
       '.actions{display:flex;gap:10px;padding:14px 16px;flex-wrap:wrap}' +
       '.act{flex:1;min-width:70px;text-decoration:none;color:#fff;background:linear-gradient(135deg,' + t.c1 + ',' + t.c2 + ');border:0;border-radius:12px;padding:12px 6px;font-size:12px;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-weight:600}' +
       '.act span{font-size:12px}' +
+      '.act svg{width:22px;height:22px;display:block}' +
       '.act:active{opacity:.85}' +
       '.section{background:#fff;margin:12px 12px 0;border-radius:14px;padding:16px 16px}' +
       '.sec-title{font-size:13px;font-weight:700;color:' + t.c2 + ';margin-bottom:10px}' +
       '.row{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-top:1px solid #f0f1f4}' +
       '.row:first-of-type{border-top:0}' +
-      '.ricon{font-size:18px;width:22px;text-align:center;flex-shrink:0}' +
+      '.ricon{width:22px;flex-shrink:0;display:flex;justify-content:center;padding-top:1px}' +
+      '.ricon svg{width:20px;height:20px;display:block}' +
       '.rbody{flex:1;min-width:0}' +
       '.rlabel{font-size:11px;color:#9aa4b2}' +
       '.rval{font-size:15px;word-break:break-all}' +
