@@ -1,0 +1,156 @@
+/* ============================================================
+   DGHM Agent Tools — Shared UI Foundation
+   Version: 1.0
+   Scope: income-tracker · Invoice-Generator · work-schedule · index
+   ============================================================ */
+
+/* ---- Design Tokens ---- */
+:root {
+  --navy:               #0D2F6E;
+  --navy-text:          var(--navy);   /* foreground accent; overridden in dark mode */
+  --orange:             #E5622A;
+
+  --surface-bg:         #F4F6F8;
+  --surface-panel-bg:   #ffffff;
+  --surface-border:     #E1E5EA;
+  --surface-text:       #1f2933;
+  --surface-text-muted: #667085;
+  --surface-input-bg:   #ffffff;
+  --surface-input-border: #D0D5DD;
+}
+
+:root[data-theme="dark"] {
+  --surface-bg:           #161b22;
+  --surface-panel-bg:     #1f2530;
+  --surface-border:       #323a47;
+  --surface-text:         #e6e9ef;
+  --surface-text-muted:   #9aa4b2;
+  --surface-input-bg:     #2a313d;
+  --surface-input-border: #3d4654;
+  --navy-text:            #7FA8E8;   /* navy shifted to a readable light-blue in dark mode */
+}
+
+/* ---- Base ---- */
+* { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  margin: 0;
+  background: var(--surface-bg);
+  color: var(--surface-text);
+}
+
+/* ---- Layout shell ---- */
+.app { display: flex; }
+
+.form-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.form-head-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ---- Back link ---- */
+.home-link {
+  font-size: 13px;
+  color: var(--surface-text-muted);
+  text-decoration: none;
+}
+.home-link:hover { color: var(--navy-text); text-decoration: underline; }
+
+/* also support inline-style back links used in older markup */
+a[href="index.html"] { }
+
+/* ---- Typography ---- */
+h1 { color: var(--navy-text); }
+.hint { font-size: 12px; color: var(--surface-text-muted); margin: 0 0 16px; line-height: 1.6; }
+
+/* ---- Theme toggle ---- */
+#theme-toggle {
+  flex-shrink: 0;
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-input-bg);
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  color: var(--surface-text);
+}
+
+/* ---- Form elements ---- */
+fieldset {
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+}
+
+legend {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--navy-text);
+  padding: 0 4px;
+}
+
+label {
+  display: block;
+  font-size: 12px;
+  color: var(--surface-text-muted);
+  margin: 10px 0 4px;
+}
+label:first-of-type { margin-top: 4px; }
+
+input[type=text],
+input[type=date],
+input[type=number],
+select,
+textarea {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 13px;
+  border: 1px solid var(--surface-input-border);
+  border-radius: 6px;
+  font-family: inherit;
+  background: var(--surface-input-bg);
+  color: var(--surface-text);
+}
+textarea { resize: vertical; line-height: 1.5; }
+
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+/* ---- Buttons ---- */
+button {
+  cursor: pointer;
+  border: 1px solid var(--navy);
+  background: var(--navy);
+  color: #fff;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+button.secondary {
+  background: var(--surface-panel-bg);
+  color: var(--navy-text);
+  border-color: var(--navy-text);
+}
+:root[data-theme="dark"] button.secondary {
+  background: var(--surface-input-bg);
+  color: var(--surface-text);
+  border-color: var(--surface-input-border);
+}
+
+button.full   { width: 100%; margin-top: 8px; }
+button.small  { padding: 4px 8px; font-size: 12px; }
+button.danger { border-color: #c0392b; background: #fff; color: #c0392b; }
+:root[data-theme="dark"] button.danger { background: var(--surface-input-bg); }
+button:disabled { opacity: .5; cursor: not-allowed; }

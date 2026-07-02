@@ -4,37 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DGHM 週工作排程規劃</title>
+<link rel="stylesheet" href="dghm-ui.css">
 <style>
-  * { box-sizing: border-box; }
-  :root {
-    --navy: #0D2F6E;
-    --navy-text: var(--navy);
-    --orange: #E5622A;
-    --surface-bg: #F4F6F8;
-    --surface-panel-bg: #ffffff;
-    --surface-border: #E1E5EA;
-    --surface-text: #1f2933;
-    --surface-text-muted: #667085;
-    --surface-input-bg: #ffffff;
-    --surface-input-border: #D0D5DD;
-  }
-  :root[data-theme="dark"] {
-    --surface-bg: #161b22;
-    --surface-panel-bg: #1f2530;
-    --surface-border: #323a47;
-    --surface-text: #e6e9ef;
-    --surface-text-muted: #9aa4b2;
-    --surface-input-bg: #2a313d;
-    --surface-input-border: #3d4654;
-    --navy-text: #7FA8E8;
-  }
-  body {
-    font-family: -apple-system, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
-    margin: 0;
-    background: var(--surface-bg);
-    color: var(--surface-text);
-  }
-  .app { display: flex; min-height: 100vh; }
+  /* ---- Tool-specific layout ---- */
+  .app { min-height: 100vh; }
   .form-panel {
     width: 420px;
     flex-shrink: 0;
@@ -43,32 +16,9 @@
     background: var(--surface-panel-bg);
     border-right: 1px solid var(--surface-border);
   }
-  h1 { font-size: 18px; margin: 0 0 4px; color: var(--navy-text); }
-  .hint { font-size: 12px; color: var(--surface-text-muted); margin: 0 0 16px; line-height: 1.6; }
-  fieldset { border: 1px solid var(--surface-border); border-radius: 8px; margin-bottom: 16px; padding: 12px 14px; }
-  legend { font-size: 12px; font-weight: 700; color: var(--navy-text); padding: 0 4px; }
-  label { display: block; font-size: 12px; color: var(--surface-text-muted); margin: 10px 0 4px; }
-  input[type=text], input[type=date], input[type=number] {
-    width: 100%; padding: 6px 8px; font-size: 13px;
-    border: 1px solid var(--surface-input-border); border-radius: 6px; font-family: inherit;
-    background: var(--surface-input-bg); color: var(--surface-text);
-  }
+  h1 { font-size: 18px; margin: 0 0 4px; }
   .row3 { display: grid; grid-template-columns: 90px 1fr 70px 28px; gap: 6px; align-items: end; margin-bottom: 6px; }
   .row3 label { margin: 0 0 2px; }
-  button {
-    cursor: pointer; border: 1px solid var(--navy); background: var(--navy); color: #fff;
-    border-radius: 6px; padding: 8px 12px; font-size: 13px;
-  }
-  button.secondary { background: #fff; color: var(--navy-text); }
-  :root[data-theme="dark"] button.secondary { background: var(--surface-input-bg); color: var(--surface-text); }
-  #theme-toggle {
-    flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px;
-    border: 1px solid var(--surface-border); background: var(--surface-input-bg);
-    font-size: 16px; cursor: pointer; line-height: 1; padding: 0; color: var(--surface-text);
-  }
-  button.small { padding: 4px 8px; font-size: 12px; }
-  button.danger { border-color: #c0392b; background: #fff; color: #c0392b; }
-  button.full { width: 100%; margin-top: 8px; }
   .pct-total { font-size: 12px; margin-top: 4px; }
   .pct-total.ok { color: #1a7f37; }
   .pct-total.bad { color: #c0392b; }
@@ -137,32 +87,9 @@
   </div>
 </div>
 
+<script src="dghm-ui.js"></script>
 <script>
-/* ---- Dark / Day 模式 ---- */
-(function () {
-  var root = document.documentElement;
-  var btn = document.getElementById('theme-toggle');
-  var saved = null;
-  try { saved = localStorage.getItem('dghm-work-schedule-theme'); } catch (e) {}
-  if (saved === 'dark') {
-    root.setAttribute('data-theme', 'dark');
-    btn.textContent = '☀️';
-  } else {
-    btn.textContent = '🌙';
-  }
-  btn.addEventListener('click', function () {
-    var isDark = root.getAttribute('data-theme') === 'dark';
-    if (isDark) {
-      root.removeAttribute('data-theme');
-      btn.textContent = '🌙';
-      try { localStorage.setItem('dghm-work-schedule-theme', 'light'); } catch (e) {}
-    } else {
-      root.setAttribute('data-theme', 'dark');
-      btn.textContent = '☀️';
-      try { localStorage.setItem('dghm-work-schedule-theme', 'dark'); } catch (e) {}
-    }
-  });
-})();
+initTheme('dghm-work-schedule-theme');
 
 const CLIENT_CODES = ['hs128','TailorMed','FP-Deco','SenWay','MeYi','Nangyuan','DGHM'];
 const DAYS = ['週一','週二','週三','週四','週五'];
