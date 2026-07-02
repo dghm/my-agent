@@ -5,45 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>微信 H5 名片產生器</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="dghm-ui.css">
 <style>
-  * { box-sizing: border-box; }
-  :root {
-    --navy: #0D2F6E;
-    --heading: var(--navy);
-    --orange: #E5622A;
-    --surface-bg: #F4F6F8;
-    --surface-panel-bg: #ffffff;
-    --surface-border: #E1E5EA;
-    --surface-text: #1f2933;
-    --surface-text-muted: #667085;
-    --input-bg: #ffffff;
-  }
-  :root[data-theme="dark"] {
-    --heading: #6E9CFF;
-    --surface-bg: #161b22;
-    --surface-panel-bg: #1f2530;
-    --surface-border: #323a47;
-    --surface-text: #e6e9ef;
-    --surface-text-muted: #9aa4b2;
-    --input-bg: #161b22;
-  }
-  body {
-    font-family: -apple-system, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
-    margin: 0;
-    background: var(--surface-bg);
-    color: var(--surface-text);
-  }
   a { color: inherit; }
   .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 24px 60px; }
   .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 6px; }
   .top .home { font-size: 12px; color: var(--surface-text-muted); text-decoration: none; }
-  h1 { font-size: 22px; margin: 0 0 4px; color: var(--heading); }
+  h1 { font-size: 22px; margin: 0 0 4px; }
   .sub { font-size: 13px; color: var(--surface-text-muted); margin: 0 0 24px; line-height: 1.6; }
-  #theme-toggle {
-    flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px;
-    border: 1px solid var(--surface-border); background: var(--surface-panel-bg);
-    font-size: 16px; cursor: pointer; line-height: 1; padding: 0; color: var(--surface-text);
-  }
 
   .layout { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 28px; align-items: start; }
   @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
@@ -64,16 +33,16 @@
   .field input[type="text"], .field input[type="tel"], .field input[type="email"], .field input[type="url"], .field textarea {
     width: 100%; padding: 9px 11px; font-size: 13px; font-family: inherit;
     border: 1px solid var(--surface-border); border-radius: 8px;
-    background: var(--input-bg); color: var(--surface-text); outline: none;
+    background: var(--surface-input-bg); color: var(--surface-text); outline: none;
   }
-  .field input:focus, .field textarea:focus { border-color: var(--heading); }
+  .field input:focus, .field textarea:focus { border-color: var(--navy-text); }
   .field textarea { resize: vertical; min-height: 72px; line-height: 1.6; }
   .field select {
     width: 100%; padding: 9px 11px; font-size: 13px; font-family: inherit;
     border: 1px solid var(--surface-border); border-radius: 8px;
-    background: var(--input-bg); color: var(--surface-text); outline: none;
+    background: var(--surface-input-bg); color: var(--surface-text); outline: none;
   }
-  .field select:focus { border-color: var(--heading); }
+  .field select:focus { border-color: var(--navy-text); }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   @media (max-width: 520px) { .row2 { grid-template-columns: 1fr; } }
   .hint { font-size: 11px; color: var(--surface-text-muted); margin-top: 4px; line-height: 1.5; }
@@ -92,7 +61,7 @@
     border-radius: 8px; border: 1px solid var(--surface-border);
     background: var(--surface-panel-bg); color: var(--surface-text);
   }
-  .btn:hover { border-color: var(--heading); }
+  .btn:hover { border-color: var(--navy-text); }
   .btn.small { padding: 6px 10px; font-size: 11px; }
   .btn.link { border: none; background: none; color: var(--orange); padding: 4px 0; }
   input[type="file"] { display: none; }
@@ -101,14 +70,14 @@
   .color-row { display: flex; align-items: center; gap: 8px; }
   .color-row input[type="color"] {
     width: 42px; height: 38px; padding: 2px; border: 1px solid var(--surface-border);
-    border-radius: 8px; background: var(--input-bg); cursor: pointer; flex-shrink: 0;
+    border-radius: 8px; background: var(--surface-input-bg); cursor: pointer; flex-shrink: 0;
   }
   .color-row input[type="text"] {
     width: 100%; padding: 9px 11px; font-size: 13px; font-family: "SFMono-Regular", Consolas, monospace;
     border: 1px solid var(--surface-border); border-radius: 8px;
-    background: var(--input-bg); color: var(--surface-text); outline: none; text-transform: uppercase;
+    background: var(--surface-input-bg); color: var(--surface-text); outline: none; text-transform: uppercase;
   }
-  .color-row input[type="text"]:focus { border-color: var(--heading); }
+  .color-row input[type="text"]:focus { border-color: var(--navy-text); }
   .brand-preview {
     height: 46px; border-radius: 10px; margin-top: 12px;
     box-shadow: inset 0 0 0 1px var(--surface-border);
@@ -338,24 +307,12 @@
   <footer>萬能數維有限公司（DGHM） · help@dghm.tw</footer>
 </div>
 
+<script src="dghm-ui.js"></script>
 <script>
+initTheme('dghm-wechat-card-theme');
+
 (function () {
   "use strict";
-
-  /* ---------- theme toggle (dashboard) ---------- */
-  var root = document.documentElement;
-  var themeBtn = document.getElementById('theme-toggle');
-  try {
-    if (localStorage.getItem('dghm-tools-dashboard-theme') === 'dark') {
-      root.setAttribute('data-theme', 'dark'); themeBtn.textContent = '☀️';
-    }
-  } catch (e) {}
-  themeBtn.addEventListener('click', function () {
-    var isDark = root.getAttribute('data-theme') === 'dark';
-    if (isDark) { root.removeAttribute('data-theme'); themeBtn.textContent = '🌙'; }
-    else { root.setAttribute('data-theme', 'dark'); themeBtn.textContent = '☀️'; }
-    try { localStorage.setItem('dghm-tools-dashboard-theme', isDark ? 'light' : 'dark'); } catch (e) {}
-  });
 
   /* ---------- brand colours ---------- */
   var DEFAULT_PRIMARY = '#1AAD19';

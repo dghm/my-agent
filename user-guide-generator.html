@@ -5,39 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DGHM 操作手冊骨架產生器</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="dghm-ui.css">
 <style>
-  * { box-sizing: border-box; }
-  :root {
-    --navy: #0D2F6E;
-    --navy-text: var(--navy);
-    --orange: #E5622A;
-    --surface-bg: #F4F6F8;
-    --surface-panel-bg: #ffffff;
-    --surface-border: #E1E5EA;
-    --surface-text: #1f2933;
-    --surface-text-muted: #667085;
-    --surface-input-bg: #ffffff;
-    --surface-input-border: #D0D5DD;
-    --surface-soft: rgba(13,47,110,0.04);
-  }
-  :root[data-theme="dark"] {
-    --navy: #6FA0F2;
-    --surface-bg: #161b22;
-    --surface-panel-bg: #1f2530;
-    --surface-border: #323a47;
-    --surface-text: #e6e9ef;
-    --surface-text-muted: #9aa4b2;
-    --surface-input-bg: #2a313d;
-    --surface-input-border: #3d4654;
-    --navy-text: #7FA8E8;
-    --surface-soft: rgba(255,255,255,0.04);
-  }
-  body {
-    font-family: -apple-system, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
-    margin: 0;
-    background: var(--surface-bg);
-    color: var(--surface-text);
-  }
+  :root { --surface-soft: rgba(13,47,110,0.04); }
+  :root[data-theme="dark"] { --surface-soft: rgba(255,255,255,0.04); }
+
   .app { display: flex; height: 100vh; }
 
   /* ---- Form panel ---- */
@@ -49,45 +21,17 @@
     background: var(--surface-panel-bg);
     border-right: 1px solid var(--surface-border);
   }
-  .form-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
   .draft-actions { display: flex; gap: 8px; margin: 0 0 16px; flex-wrap: wrap; }
   .draft-actions button { font-size: 12px; padding: 6px 10px; }
-  .home-link {
-    display: inline-block; font-size: 12px; color: var(--surface-text-muted);
-    text-decoration: none; margin-bottom: 8px;
-  }
-  .home-link:hover { color: var(--navy-text); text-decoration: underline; }
-  h1 { font-size: 18px; margin: 0 0 4px; color: var(--navy-text); }
-  .hint { font-size: 12px; color: var(--surface-text-muted); margin: 0 0 16px; line-height: 1.6; }
-  #theme-toggle {
-    flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px;
-    border: 1px solid var(--surface-border); background: var(--surface-input-bg);
-    font-size: 16px; cursor: pointer; line-height: 1; padding: 0; color: var(--surface-text);
-  }
-  fieldset { border: 1px solid var(--surface-border); border-radius: 8px; margin-bottom: 16px; padding: 12px 14px; }
-  legend { font-size: 12px; font-weight: 700; color: var(--navy-text); padding: 0 4px; }
-  label { display: block; font-size: 12px; color: var(--surface-text-muted); margin: 10px 0 4px; }
-  label:first-of-type { margin-top: 4px; }
-  input[type=text], input[type=date], select {
-    width: 100%; padding: 6px 8px; font-size: 13px;
-    border: 1px solid var(--surface-input-border); border-radius: 6px; font-family: inherit;
-    background: var(--surface-input-bg); color: var(--surface-text);
-  }
+  .tip { font-size: 12px; color: var(--surface-text-muted); margin-top: 10px; line-height: 1.6; }
+
   input[type=color] {
     width: 100%; height: 34px; padding: 2px; cursor: pointer;
     border: 1px solid var(--surface-input-border); border-radius: 6px;
     background: var(--surface-input-bg);
   }
-  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .tip { font-size: 12px; color: var(--surface-text-muted); margin-top: 10px; line-height: 1.6; }
 
-  /* ---- Buttons ---- */
-  button {
-    cursor: pointer; border: 1px solid var(--navy); background: var(--navy); color: #fff;
-    padding: 6px 12px; border-radius: 6px; font-size: 12px;
-  }
-  button.secondary { background: var(--surface-input-bg); color: var(--navy-text); border-color: var(--surface-border); }
-  button.secondary:hover { border-color: var(--navy-text); }
   .btn-del { background: none; border: none; color: #ccc; cursor: pointer; font-size: 1rem; padding: 2px 4px; }
   .btn-del:hover { color: #e53935; }
   .btn-add {
@@ -260,28 +204,9 @@
 
 </div>
 
+<script src="dghm-ui.js"></script>
 <script>
-/* ============================================================
-   Dark / Day 模式（僅編輯介面）
-   ============================================================ */
-(function () {
-  var root = document.documentElement;
-  var btn = document.getElementById('theme-toggle');
-  var saved = null;
-  try { saved = localStorage.getItem('dghm-userguide-editor-theme'); } catch (e) {}
-  if (saved === 'dark') { root.setAttribute('data-theme', 'dark'); btn.textContent = '☀️'; }
-  else { btn.textContent = '🌙'; }
-  btn.addEventListener('click', function () {
-    var isDark = root.getAttribute('data-theme') === 'dark';
-    if (isDark) {
-      root.removeAttribute('data-theme'); btn.textContent = '🌙';
-      try { localStorage.setItem('dghm-userguide-editor-theme', 'light'); } catch (e) {}
-    } else {
-      root.setAttribute('data-theme', 'dark'); btn.textContent = '☀️';
-      try { localStorage.setItem('dghm-userguide-editor-theme', 'dark'); } catch (e) {}
-    }
-  });
-})();
+initTheme('dghm-userguide-editor-theme');
 
 /* ============================================================
    共用工具
