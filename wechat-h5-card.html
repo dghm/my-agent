@@ -91,13 +91,22 @@
   .btn.link { border: none; background: none; color: var(--orange); padding: 4px 0; }
   input[type="file"] { display: none; }
 
-  /* theme swatches */
-  .swatches { display: flex; flex-wrap: wrap; gap: 10px; }
-  .swatch {
-    width: 40px; height: 40px; border-radius: 10px; cursor: pointer;
-    border: 2px solid transparent; box-shadow: 0 1px 4px rgba(0,0,0,.15);
+  /* brand colours */
+  .color-row { display: flex; align-items: center; gap: 8px; }
+  .color-row input[type="color"] {
+    width: 42px; height: 38px; padding: 2px; border: 1px solid var(--surface-border);
+    border-radius: 8px; background: var(--input-bg); cursor: pointer; flex-shrink: 0;
   }
-  .swatch.active { border-color: var(--surface-text); }
+  .color-row input[type="text"] {
+    width: 100%; padding: 9px 11px; font-size: 13px; font-family: "SFMono-Regular", Consolas, monospace;
+    border: 1px solid var(--surface-border); border-radius: 8px;
+    background: var(--input-bg); color: var(--surface-text); outline: none; text-transform: uppercase;
+  }
+  .color-row input[type="text"]:focus { border-color: var(--heading); }
+  .brand-preview {
+    height: 46px; border-radius: 10px; margin-top: 12px;
+    box-shadow: inset 0 0 0 1px var(--surface-border);
+  }
 
   .actions { display: flex; flex-wrap: wrap; gap: 10px; }
 
@@ -234,8 +243,25 @@
       </div>
 
       <div class="panel">
-        <h2>配色主題</h2>
-        <div class="swatches" id="swatches"></div>
+        <h2>品牌配色</h2>
+        <div class="row2">
+          <div class="field">
+            <label for="f-primary">主色</label>
+            <div class="color-row">
+              <input type="color" id="c-primary" aria-label="主色選色器">
+              <input type="text" id="f-primary" placeholder="#1AAD19" maxlength="7" spellcheck="false">
+            </div>
+          </div>
+          <div class="field">
+            <label for="f-secondary">輔色</label>
+            <div class="color-row">
+              <input type="color" id="c-secondary" aria-label="輔色選色器">
+              <input type="text" id="f-secondary" placeholder="#0C8918" maxlength="7" spellcheck="false">
+            </div>
+          </div>
+        </div>
+        <div class="brand-preview" id="brand-preview"></div>
+        <p class="hint">填入客戶品牌的主色與輔色（HEX）。名片封面、頭像底色、動作按鈕與標題會套用此漸層。</p>
       </div>
 
       <div class="panel">
@@ -293,17 +319,22 @@
     try { localStorage.setItem('dghm-tools-dashboard-theme', isDark ? 'light' : 'dark'); } catch (e) {}
   });
 
-  /* ---------- palettes ---------- */
-  var THEMES = [
-    { id: 'wechat',  name: '微信綠', c1: '#1AAD19', c2: '#0C8918' },
-    { id: 'ocean',   name: '海洋藍', c1: '#2F80ED', c2: '#134BA6' },
-    { id: 'sunset',  name: '暖橙',   c1: '#F2994A', c2: '#E5622A' },
-    { id: 'plum',    name: '紫調',   c1: '#8E54E9', c2: '#4776E6' },
-    { id: 'rose',    name: '玫瑰',   c1: '#F857A6', c2: '#C2185B' },
-    { id: 'graphite',name: '石墨',   c1: '#434343', c2: '#000000' },
-    { id: 'gold',    name: '金褐',   c1: '#C79A54', c2: '#8A6D24' },
-    { id: 'teal',    name: '青碧',   c1: '#11998E', c2: '#0B6157' }
-  ];
+  /* ---------- brand colours ---------- */
+  var DEFAULT_PRIMARY = '#1AAD19';
+  var DEFAULT_SECONDARY = '#0C8918';
+  // legacy preset ids → [primary, secondary], so older saved files still resolve
+  var LEGACY_THEMES = {
+    wechat: ['#1AAD19', '#0C8918'], ocean: ['#2F80ED', '#134BA6'],
+    sunset: ['#F2994A', '#E5622A'], plum: ['#8E54E9', '#4776E6'],
+    rose: ['#F857A6', '#C2185B'], graphite: ['#434343', '#000000'],
+    gold: ['#C79A54', '#8A6D24'], teal: ['#11998E', '#0B6157']
+  };
+  function isHex(v) { return typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v); }
+  function normHex(v, fallback) {
+    v = (v || '').trim();
+    if (/^[0-9a-fA-F]{6}$/.test(v)) v = '#' + v;      // allow pasting without '#'
+    return isHex(v) ? v.toUpperCase() : fallback;
+  }
 
   /* ---------- state ---------- */
   var state = {
@@ -311,7 +342,7 @@
     mobile: '', phone: '', wechat: '', line: '', email: '', website: '', address: '',
     about: '',
     avatar: '', cover: '', qr: '',
-    theme: 'wechat'
+    primary: DEFAULT_PRIMARY, secondary: DEFAULT_SECONDARY
   };
 
   var STORE_KEY = 'dghm-wechat-h5-card';
@@ -319,6 +350,17 @@
     var saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
     if (saved && typeof saved === 'object') Object.assign(state, saved);
   } catch (e) {}
+  migrateColours();
+  // map an older `theme` preset id onto primary/secondary when colours are absent
+  function migrateColours() {
+    if (!isHex(state.primary) && state.theme && LEGACY_THEMES[state.theme]) {
+      state.primary = LEGACY_THEMES[state.theme][0];
+      state.secondary = LEGACY_THEMES[state.theme][1];
+    }
+    state.primary = normHex(state.primary, DEFAULT_PRIMARY);
+    state.secondary = normHex(state.secondary, DEFAULT_SECONDARY);
+    delete state.theme;
+  }
 
   function persist() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
@@ -375,31 +417,40 @@
   bindClear('clear-cover', 'cover', paintCover);
   bindClear('clear-qr', 'qr', paintQr);
 
-  /* ---------- swatches ---------- */
-  var swatchWrap = document.getElementById('swatches');
-  THEMES.forEach(function (t) {
-    var s = document.createElement('div');
-    s.className = 'swatch' + (state.theme === t.id ? ' active' : '');
-    s.title = t.name;
-    s.style.background = 'linear-gradient(135deg,' + t.c1 + ',' + t.c2 + ')';
-    s.dataset.id = t.id;
-    s.addEventListener('click', function () {
-      state.theme = t.id; persist();
-      [].forEach.call(swatchWrap.children, function (c) { c.classList.remove('active'); });
-      s.classList.add('active');
-      render();
+  /* ---------- brand colour pickers ---------- */
+  var brandPreview = document.getElementById('brand-preview');
+  function paintBrandPreview() {
+    brandPreview.style.background = 'linear-gradient(135deg,' + state.primary + ',' + state.secondary + ')';
+  }
+  // pair a native colour picker with a hex text field, both editing state[key]
+  function bindColour(key, colorId, textId, fallback) {
+    var color = document.getElementById(colorId);
+    var text = document.getElementById(textId);
+    function set(v) {
+      state[key] = v;
+      color.value = v;
+      if (document.activeElement !== text) text.value = v;
+      persist(); paintBrandPreview(); render();
+    }
+    color.value = state[key];
+    text.value = state[key];
+    color.addEventListener('input', function () { set(color.value.toUpperCase()); });
+    text.addEventListener('input', function () {
+      var v = normHex(text.value, null);
+      if (v) set(v);           // only commit when it's a valid hex
     });
-    swatchWrap.appendChild(s);
-  });
+    text.addEventListener('blur', function () { text.value = state[key]; });
+    return function () { color.value = state[key]; text.value = state[key]; };
+  }
+  var syncPrimary   = bindColour('primary', 'c-primary', 'f-primary', DEFAULT_PRIMARY);
+  var syncSecondary = bindColour('secondary', 'c-secondary', 'f-secondary', DEFAULT_SECONDARY);
+  paintBrandPreview();
 
   /* ---------- helpers ---------- */
   function esc(str) {
     return String(str || '').replace(/[&<>"']/g, function (c) {
       return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
     });
-  }
-  function currentTheme() {
-    return THEMES.filter(function (t) { return t.id === state.theme; })[0] || THEMES[0];
   }
   function normUrl(u) {
     u = (u || '').trim();
@@ -409,7 +460,7 @@
 
   /* ---------- build the shareable card HTML ---------- */
   function buildCardHTML() {
-    var t = currentTheme();
+    var t = { c1: state.primary, c2: state.secondary };
     var s = state;
     var displayName = s.name || '您的姓名';
     var website = normUrl(s.website);
@@ -611,16 +662,14 @@
   });
 
   /* ---------- edit file: save / load JSON ---------- */
-  // refresh every input, thumbnail, swatch and the preview from current state
+  // refresh every input, thumbnail, colour and the preview from current state
   function syncUI() {
     fields.forEach(function (key) {
       var el = document.getElementById('f-' + key);
       if (el) el.value = state[key] || '';
     });
     paintAvatar(); paintCover(); paintQr();
-    [].forEach.call(swatchWrap.children, function (c) {
-      c.classList.toggle('active', c.dataset.id === state.theme);
-    });
+    syncPrimary(); syncSecondary(); paintBrandPreview();
     render();
   }
 
@@ -647,7 +696,13 @@
           state[key] = parsed[key];
         }
       });
-      if (!THEMES.some(function (t) { return t.id === state.theme; })) state.theme = THEMES[0].id;
+      // migrate an old preset-based file, then guarantee valid hex colours
+      if (!isHex(parsed.primary) && parsed.theme && LEGACY_THEMES[parsed.theme]) {
+        state.primary = LEGACY_THEMES[parsed.theme][0];
+        state.secondary = LEGACY_THEMES[parsed.theme][1];
+      }
+      state.primary = normHex(state.primary, DEFAULT_PRIMARY);
+      state.secondary = normHex(state.secondary, DEFAULT_SECONDARY);
       persist(); syncUI();
       setStatus('已載入編輯檔，可接續編輯。');
     };
