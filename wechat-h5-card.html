@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>微信 H5 名片產生器</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --navy: #0D2F6E;
+    --heading: var(--navy);
+    --orange: #E5622A;
+    --surface-bg: #F4F6F8;
+    --surface-panel-bg: #ffffff;
+    --surface-border: #E1E5EA;
+    --surface-text: #1f2933;
+    --surface-text-muted: #667085;
+    --input-bg: #ffffff;
+  }
+  :root[data-theme="dark"] {
+    --heading: #6E9CFF;
+    --surface-bg: #161b22;
+    --surface-panel-bg: #1f2530;
+    --surface-border: #323a47;
+    --surface-text: #e6e9ef;
+    --surface-text-muted: #9aa4b2;
+    --input-bg: #161b22;
+  }
+  body {
+    font-family: -apple-system, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    margin: 0;
+    background: var(--surface-bg);
+    color: var(--surface-text);
+  }
+  a { color: inherit; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 24px 60px; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 6px; }
+  .top .home { font-size: 12px; color: var(--surface-text-muted); text-decoration: none; }
+  h1 { font-size: 22px; margin: 0 0 4px; color: var(--heading); }
+  .sub { font-size: 13px; color: var(--surface-text-muted); margin: 0 0 24px; line-height: 1.6; }
+  #theme-toggle {
+    flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px;
+    border: 1px solid var(--surface-border); background: var(--surface-panel-bg);
+    font-size: 16px; cursor: pointer; line-height: 1; padding: 0; color: var(--surface-text);
+  }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 28px; align-items: start; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--surface-panel-bg); border: 1px solid var(--surface-border);
+    border-radius: 12px; padding: 20px;
+  }
+  .panel + .panel { margin-top: 18px; }
+  .panel h2 {
+    font-size: 13px; margin: 0 0 14px; color: var(--orange);
+    letter-spacing: 1px; text-transform: uppercase; font-weight: 700;
+  }
+
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { display: block; font-size: 12px; color: var(--surface-text-muted); margin-bottom: 5px; font-weight: 600; }
+  .field input[type="text"], .field input[type="tel"], .field input[type="email"], .field input[type="url"], .field textarea {
+    width: 100%; padding: 9px 11px; font-size: 13px; font-family: inherit;
+    border: 1px solid var(--surface-border); border-radius: 8px;
+    background: var(--input-bg); color: var(--surface-text); outline: none;
+  }
+  .field input:focus, .field textarea:focus { border-color: var(--heading); }
+  .field textarea { resize: vertical; min-height: 72px; line-height: 1.6; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 520px) { .row2 { grid-template-columns: 1fr; } }
+  .hint { font-size: 11px; color: var(--surface-text-muted); margin-top: 4px; line-height: 1.5; }
+
+  /* upload + image preview */
+  .uploader { display: flex; align-items: center; gap: 12px; }
+  .uploader .thumb {
+    width: 54px; height: 54px; border-radius: 10px; flex-shrink: 0;
+    background: var(--surface-bg) center/cover no-repeat; border: 1px solid var(--surface-border);
+    display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--surface-text-muted);
+  }
+  .uploader .thumb.round { border-radius: 50%; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+    font-size: 12px; font-family: inherit; font-weight: 600; padding: 8px 12px;
+    border-radius: 8px; border: 1px solid var(--surface-border);
+    background: var(--surface-panel-bg); color: var(--surface-text);
+  }
+  .btn:hover { border-color: var(--heading); }
+  .btn.small { padding: 6px 10px; font-size: 11px; }
+  .btn.link { border: none; background: none; color: var(--orange); padding: 4px 0; }
+  input[type="file"] { display: none; }
+
+  /* theme swatches */
+  .swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+  .swatch {
+    width: 40px; height: 40px; border-radius: 10px; cursor: pointer;
+    border: 2px solid transparent; box-shadow: 0 1px 4px rgba(0,0,0,.15);
+  }
+  .swatch.active { border-color: var(--surface-text); }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+  /* ------- Preview (phone) ------- */
+  .preview-col { position: sticky; top: 20px; }
+  .phone {
+    width: 360px; max-width: 100%; margin: 0 auto;
+    border-radius: 34px; padding: 12px; background: #111;
+    box-shadow: 0 18px 50px rgba(0,0,0,.35);
+  }
+  .phone-screen {
+    border-radius: 24px; overflow: hidden; background: #fff; height: 640px;
+    overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative;
+  }
+  .phone-screen::-webkit-scrollbar { width: 0; }
+  .preview-note { text-align: center; font-size: 11px; color: var(--surface-text-muted); margin-top: 12px; line-height: 1.6; }
+
+  #status { font-size: 12px; color: var(--surface-text-muted); margin-top: 10px; min-height: 16px; }
+  footer { margin-top: 40px; font-size: 11px; color: var(--surface-text-muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>微信 H5 名片產生器</h1>
+      <p class="sub">
+        填入個人與公司資訊，即時預覽一張微信風格的行動裝置 H5 電子名片。<br>
+        可下載成單一自足的 HTML 檔（圖片內嵌，可直接傳給客戶或上傳分享），或匯出 vCard 存入通訊錄。
+      </p>
+      <a class="home" href="index.html">← 回工具箱</a>
+    </div>
+    <button id="theme-toggle" type="button" aria-label="切換深色／淺色模式" title="切換深色／淺色模式">🌙</button>
+  </div>
+
+  <div class="layout">
+    <!-- ------------- FORM ------------- -->
+    <div>
+      <div class="panel">
+        <h2>基本資訊</h2>
+        <div class="field">
+          <label for="f-name">姓名</label>
+          <input type="text" id="f-name" placeholder="王小明">
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="f-title">職稱</label>
+            <input type="text" id="f-title" placeholder="業務經理">
+          </div>
+          <div class="field">
+            <label for="f-company">公司名稱</label>
+            <input type="text" id="f-company" placeholder="萬能數維有限公司">
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-slogan">個人標語 / 一句話介紹</label>
+          <input type="text" id="f-slogan" placeholder="用數據驅動你的品牌成長">
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>聯絡方式</h2>
+        <div class="row2">
+          <div class="field">
+            <label for="f-mobile">手機</label>
+            <input type="tel" id="f-mobile" placeholder="0912-345-678">
+          </div>
+          <div class="field">
+            <label for="f-phone">市話</label>
+            <input type="tel" id="f-phone" placeholder="02-1234-5678">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="f-wechat">微信 ID</label>
+            <input type="text" id="f-wechat" placeholder="dghm_wechat">
+          </div>
+          <div class="field">
+            <label for="f-line">LINE ID</label>
+            <input type="text" id="f-line" placeholder="@dghm">
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-email">Email</label>
+          <input type="email" id="f-email" placeholder="help@dghm.tw">
+        </div>
+        <div class="field">
+          <label for="f-website">網站</label>
+          <input type="url" id="f-website" placeholder="https://dghm.tw">
+        </div>
+        <div class="field">
+          <label for="f-address">地址</label>
+          <input type="text" id="f-address" placeholder="台北市中正區…">
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>公司簡介</h2>
+        <div class="field">
+          <textarea id="f-about" placeholder="簡述公司提供的服務、專長或優勢…"></textarea>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>圖片</h2>
+        <div class="field">
+          <label>頭像 / 大頭照</label>
+          <div class="uploader">
+            <div class="thumb round" id="avatar-thumb">👤</div>
+            <label class="btn small" for="up-avatar">上傳頭像</label>
+            <button class="btn link" type="button" id="clear-avatar">清除</button>
+            <input type="file" id="up-avatar" accept="image/*">
+          </div>
+        </div>
+        <div class="field">
+          <label>封面背景圖（選填，未上傳則使用配色漸層）</label>
+          <div class="uploader">
+            <div class="thumb" id="cover-thumb">🖼️</div>
+            <label class="btn small" for="up-cover">上傳封面</label>
+            <button class="btn link" type="button" id="clear-cover">清除</button>
+            <input type="file" id="up-cover" accept="image/*">
+          </div>
+        </div>
+        <div class="field">
+          <label>微信 QR Code（選填，用於「加微信」）</label>
+          <div class="uploader">
+            <div class="thumb" id="qr-thumb">🔳</div>
+            <label class="btn small" for="up-qr">上傳 QR</label>
+            <button class="btn link" type="button" id="clear-qr">清除</button>
+            <input type="file" id="up-qr" accept="image/*">
+          </div>
+          <p class="hint">在微信「我的 → 個人資訊 → 二維碼名片」截圖後上傳即可。</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>配色主題</h2>
+        <div class="swatches" id="swatches"></div>
+      </div>
+
+      <div class="panel">
+        <h2>匯出</h2>
+        <div class="actions">
+          <button class="btn" type="button" id="btn-download">⬇️ 下載名片 HTML</button>
+          <button class="btn" type="button" id="btn-copy">📋 複製 HTML</button>
+          <button class="btn" type="button" id="btn-vcard">📇 下載 vCard (.vcf)</button>
+          <button class="btn" type="button" id="btn-open">↗️ 新分頁開啟</button>
+        </div>
+        <div id="status"></div>
+      </div>
+    </div>
+
+    <!-- ------------- PREVIEW ------------- -->
+    <div class="preview-col">
+      <div class="phone">
+        <div class="phone-screen">
+          <iframe id="preview-frame" title="名片預覽" style="border:0;width:100%;height:640px;display:block;"></iframe>
+        </div>
+      </div>
+      <p class="preview-note">即時預覽（微信瀏覽器行動裝置寬度）</p>
+    </div>
+  </div>
+
+  <footer>萬能數維有限公司（DGHM） · help@dghm.tw</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- theme toggle (dashboard) ---------- */
+  var root = document.documentElement;
+  var themeBtn = document.getElementById('theme-toggle');
+  try {
+    if (localStorage.getItem('dghm-tools-dashboard-theme') === 'dark') {
+      root.setAttribute('data-theme', 'dark'); themeBtn.textContent = '☀️';
+    }
+  } catch (e) {}
+  themeBtn.addEventListener('click', function () {
+    var isDark = root.getAttribute('data-theme') === 'dark';
+    if (isDark) { root.removeAttribute('data-theme'); themeBtn.textContent = '🌙'; }
+    else { root.setAttribute('data-theme', 'dark'); themeBtn.textContent = '☀️'; }
+    try { localStorage.setItem('dghm-tools-dashboard-theme', isDark ? 'light' : 'dark'); } catch (e) {}
+  });
+
+  /* ---------- palettes ---------- */
+  var THEMES = [
+    { id: 'wechat',  name: '微信綠', c1: '#1AAD19', c2: '#0C8918' },
+    { id: 'ocean',   name: '海洋藍', c1: '#2F80ED', c2: '#134BA6' },
+    { id: 'sunset',  name: '暖橙',   c1: '#F2994A', c2: '#E5622A' },
+    { id: 'plum',    name: '紫調',   c1: '#8E54E9', c2: '#4776E6' },
+    { id: 'rose',    name: '玫瑰',   c1: '#F857A6', c2: '#C2185B' },
+    { id: 'graphite',name: '石墨',   c1: '#434343', c2: '#000000' },
+    { id: 'gold',    name: '金褐',   c1: '#C79A54', c2: '#8A6D24' },
+    { id: 'teal',    name: '青碧',   c1: '#11998E', c2: '#0B6157' }
+  ];
+
+  /* ---------- state ---------- */
+  var state = {
+    name: '', title: '', company: '', slogan: '',
+    mobile: '', phone: '', wechat: '', line: '', email: '', website: '', address: '',
+    about: '',
+    avatar: '', cover: '', qr: '',
+    theme: 'wechat'
+  };
+
+  var STORE_KEY = 'dghm-wechat-h5-card';
+  try {
+    var saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+    if (saved && typeof saved === 'object') Object.assign(state, saved);
+  } catch (e) {}
+
+  function persist() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  /* ---------- bind text inputs ---------- */
+  var fields = ['name','title','company','slogan','mobile','phone','wechat','line','email','website','address','about'];
+  fields.forEach(function (key) {
+    var el = document.getElementById('f-' + key);
+    if (!el) return;
+    el.value = state[key] || '';
+    el.addEventListener('input', function () {
+      state[key] = el.value;
+      persist(); render();
+    });
+  });
+
+  /* ---------- image uploaders ---------- */
+  function bindUpload(inputId, thumbId, key, placeholder) {
+    var input = document.getElementById(inputId);
+    var thumb = document.getElementById(thumbId);
+    function paint() {
+      if (state[key]) { thumb.style.backgroundImage = 'url(' + state[key] + ')'; thumb.textContent = ''; }
+      else { thumb.style.backgroundImage = ''; thumb.textContent = placeholder; }
+    }
+    input.addEventListener('change', function () {
+      var file = input.files && input.files[0];
+      if (!file) return;
+      if (file.size > 4 * 1024 * 1024) {
+        setStatus('圖片過大（超過 4MB），請壓縮後再上傳。', true);
+        input.value = ''; return;
+      }
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        state[key] = e.target.result;
+        persist(); paint(); render();
+      };
+      reader.readAsDataURL(file);
+      input.value = '';
+    });
+    paint();
+    return paint;
+  }
+  var paintAvatar = bindUpload('up-avatar', 'avatar-thumb', 'avatar', '👤');
+  var paintCover  = bindUpload('up-cover', 'cover-thumb', 'cover', '🖼️');
+  var paintQr     = bindUpload('up-qr', 'qr-thumb', 'qr', '🔳');
+
+  function bindClear(btnId, key, paint) {
+    document.getElementById(btnId).addEventListener('click', function () {
+      state[key] = ''; persist(); paint(); render();
+    });
+  }
+  bindClear('clear-avatar', 'avatar', paintAvatar);
+  bindClear('clear-cover', 'cover', paintCover);
+  bindClear('clear-qr', 'qr', paintQr);
+
+  /* ---------- swatches ---------- */
+  var swatchWrap = document.getElementById('swatches');
+  THEMES.forEach(function (t) {
+    var s = document.createElement('div');
+    s.className = 'swatch' + (state.theme === t.id ? ' active' : '');
+    s.title = t.name;
+    s.style.background = 'linear-gradient(135deg,' + t.c1 + ',' + t.c2 + ')';
+    s.dataset.id = t.id;
+    s.addEventListener('click', function () {
+      state.theme = t.id; persist();
+      [].forEach.call(swatchWrap.children, function (c) { c.classList.remove('active'); });
+      s.classList.add('active');
+      render();
+    });
+    swatchWrap.appendChild(s);
+  });
+
+  /* ---------- helpers ---------- */
+  function esc(str) {
+    return String(str || '').replace(/[&<>"']/g, function (c) {
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+  function currentTheme() {
+    return THEMES.filter(function (t) { return t.id === state.theme; })[0] || THEMES[0];
+  }
+  function normUrl(u) {
+    u = (u || '').trim();
+    if (!u) return '';
+    return /^https?:\/\//i.test(u) ? u : 'https://' + u;
+  }
+
+  /* ---------- build the shareable card HTML ---------- */
+  function buildCardHTML() {
+    var t = currentTheme();
+    var s = state;
+    var displayName = s.name || '您的姓名';
+    var website = normUrl(s.website);
+
+    var coverStyle = s.cover
+      ? 'background-image:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.55)),url(' + s.cover + ');background-size:cover;background-position:center;'
+      : 'background-image:linear-gradient(135deg,' + t.c1 + ',' + t.c2 + ');';
+
+    var avatarInner = s.avatar
+      ? '<img src="' + s.avatar + '" alt="頭像">'
+      : '<span>' + esc(displayName.slice(0, 1)) + '</span>';
+
+    // contact rows
+    var rows = [];
+    function row(icon, label, value, href, extra) {
+      if (!value) return;
+      var v = esc(value);
+      var inner = href ? '<a href="' + href + '"' + (extra || '') + '>' + v + '</a>' : v;
+      rows.push(
+        '<div class="row">' +
+          '<div class="ricon">' + icon + '</div>' +
+          '<div class="rbody"><div class="rlabel">' + label + '</div><div class="rval">' + inner + '</div></div>' +
+        '</div>'
+      );
+    }
+    row('📱', '手機', s.mobile, s.mobile ? 'tel:' + esc(s.mobile.replace(/[^0-9+]/g, '')) : '');
+    row('☎️', '市話', s.phone, s.phone ? 'tel:' + esc(s.phone.replace(/[^0-9+]/g, '')) : '');
+    row('💬', '微信', s.wechat, '');
+    row('🟢', 'LINE', s.line, '');
+    row('✉️', 'Email', s.email, s.email ? 'mailto:' + esc(s.email) : '');
+    row('🌐', '網站', s.website, website, ' target="_blank" rel="noopener"');
+    row('📍', '地址', s.address, s.address ? 'https://maps.google.com/?q=' + encodeURIComponent(s.address) : '', ' target="_blank" rel="noopener"');
+
+    var aboutBlock = s.about
+      ? '<div class="section"><div class="sec-title">公司簡介</div><p class="about">' + esc(s.about).replace(/\n/g, '<br>') + '</p></div>'
+      : '';
+
+    var qrBlock = s.qr
+      ? '<div class="section qr-sec"><div class="sec-title">加我微信</div><img class="qr" src="' + s.qr + '" alt="微信 QR Code"><p class="qr-hint">長按或截圖後於微信掃一掃</p></div>'
+      : '';
+
+    // vCard for save-to-contacts button (built inside the card too)
+    var vcard = buildVCard();
+    var vcardData = 'data:text/vcard;charset=utf-8,' + encodeURIComponent(vcard);
+
+    var actions = [];
+    if (s.mobile) actions.push('<a class="act" href="tel:' + esc(s.mobile.replace(/[^0-9+]/g, '')) + '">📞<span>撥號</span></a>');
+    actions.push('<a class="act" href="' + vcardData + '" download="' + esc((s.name || 'contact')) + '.vcf">📇<span>存名片</span></a>');
+    if (s.wechat) actions.push('<button class="act" type="button" onclick="copyText(\'' + esc(s.wechat).replace(/'/g, "\\'") + '\',this)">💬<span>複製微信</span></button>');
+    if (website) actions.push('<a class="act" href="' + esc(website) + '" target="_blank" rel="noopener">🌐<span>官網</span></a>');
+
+    var css =
+      '*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}' +
+      'body{font-family:-apple-system,"PingFang SC","PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;background:#ecedf0;color:#1f2933;line-height:1.5}' +
+      '.card-wrap{max-width:480px;margin:0 auto;background:#f5f6f8;min-height:100vh}' +
+      '.cover{position:relative;height:230px;' + coverStyle + '}' +
+      '.cover .ctext{position:absolute;left:20px;bottom:64px;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.35)}' +
+      '.cover .ctext .nm{font-size:24px;font-weight:700}' +
+      '.cover .ctext .tt{font-size:14px;opacity:.95;margin-top:3px}' +
+      '.cover .ctext .cp{font-size:13px;opacity:.9;margin-top:2px}' +
+      '.avatar{position:absolute;right:20px;bottom:-34px;width:88px;height:88px;border-radius:50%;overflow:hidden;border:3px solid #fff;background:' + t.c1 + ';display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.25)}' +
+      '.avatar img{width:100%;height:100%;object-fit:cover}' +
+      '.avatar span{color:#fff;font-size:34px;font-weight:700}' +
+      '.slogan{padding:46px 20px 6px;font-size:14px;color:#5a6472}' +
+      '.actions{display:flex;gap:10px;padding:14px 16px;flex-wrap:wrap}' +
+      '.act{flex:1;min-width:70px;text-decoration:none;color:#fff;background:linear-gradient(135deg,' + t.c1 + ',' + t.c2 + ');border:0;border-radius:12px;padding:12px 6px;font-size:12px;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-weight:600}' +
+      '.act span{font-size:12px}' +
+      '.act:active{opacity:.85}' +
+      '.section{background:#fff;margin:12px 12px 0;border-radius:14px;padding:16px 16px}' +
+      '.sec-title{font-size:13px;font-weight:700;color:' + t.c2 + ';margin-bottom:10px}' +
+      '.row{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-top:1px solid #f0f1f4}' +
+      '.row:first-of-type{border-top:0}' +
+      '.ricon{font-size:18px;width:22px;text-align:center;flex-shrink:0}' +
+      '.rbody{flex:1;min-width:0}' +
+      '.rlabel{font-size:11px;color:#9aa4b2}' +
+      '.rval{font-size:15px;word-break:break-all}' +
+      '.rval a{color:' + t.c2 + ';text-decoration:none}' +
+      '.about{font-size:14px;color:#4a5560;white-space:normal}' +
+      '.qr-sec{text-align:center}' +
+      '.qr{width:180px;height:180px;object-fit:contain;margin:4px auto 0;display:block}' +
+      '.qr-hint{font-size:12px;color:#9aa4b2;margin-top:8px}' +
+      '.foot{text-align:center;font-size:11px;color:#aab2bd;padding:22px 16px 30px}' +
+      '.toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%) translateY(20px);background:rgba(0,0,0,.8);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:99}' +
+      '.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}';
+
+    var js =
+      'function copyText(txt,btn){' +
+      'function done(){var t=document.getElementById("toast");t.textContent="已複製："+txt;t.classList.add("show");setTimeout(function(){t.classList.remove("show")},1600);}' +
+      'if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,function(){fallback(txt,done)});}else{fallback(txt,done);}}' +
+      'function fallback(txt,cb){var ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy")}catch(e){}document.body.removeChild(ta);cb();}';
+
+    return '<!DOCTYPE html>\n<html lang="zh-Hant">\n<head>\n' +
+      '<meta charset="UTF-8">\n' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">\n' +
+      '<meta name="format-detection" content="telephone=no">\n' +
+      '<title>' + esc(displayName) + (s.company ? ' · ' + esc(s.company) : '') + ' — 電子名片</title>\n' +
+      '<style>' + css + '</style>\n</head>\n<body>\n' +
+      '<div class="card-wrap">\n' +
+      '  <div class="cover">\n' +
+      '    <div class="ctext"><div class="nm">' + esc(displayName) + '</div>' +
+            (s.title ? '<div class="tt">' + esc(s.title) + '</div>' : '') +
+            (s.company ? '<div class="cp">' + esc(s.company) + '</div>' : '') + '</div>\n' +
+      '    <div class="avatar">' + avatarInner + '</div>\n' +
+      '  </div>\n' +
+      (s.slogan ? '  <div class="slogan">' + esc(s.slogan) + '</div>\n' : '') +
+      '  <div class="actions">' + actions.join('') + '</div>\n' +
+      (rows.length ? '  <div class="section"><div class="sec-title">聯絡方式</div>' + rows.join('') + '</div>\n' : '') +
+      aboutBlock + '\n' +
+      qrBlock + '\n' +
+      '  <div class="foot">' + esc(s.company || 'DGHM') + ' · 電子名片</div>\n' +
+      '</div>\n' +
+      '<div class="toast" id="toast"></div>\n' +
+      '<script>' + js + '<\/script>\n' +
+      '</body>\n</html>';
+  }
+
+  /* ---------- vCard ---------- */
+  function buildVCard() {
+    var s = state;
+    var lines = ['BEGIN:VCARD', 'VERSION:3.0'];
+    lines.push('N:;' + (s.name || '') + ';;;');
+    lines.push('FN:' + (s.name || ''));
+    if (s.company) lines.push('ORG:' + s.company);
+    if (s.title) lines.push('TITLE:' + s.title);
+    if (s.mobile) lines.push('TEL;TYPE=CELL:' + s.mobile);
+    if (s.phone) lines.push('TEL;TYPE=WORK:' + s.phone);
+    if (s.email) lines.push('EMAIL:' + s.email);
+    if (s.website) lines.push('URL:' + normUrl(s.website));
+    if (s.address) lines.push('ADR;TYPE=WORK:;;' + s.address + ';;;;');
+    var notes = [];
+    if (s.wechat) notes.push('微信: ' + s.wechat);
+    if (s.line) notes.push('LINE: ' + s.line);
+    if (s.slogan) notes.push(s.slogan);
+    if (notes.length) lines.push('NOTE:' + notes.join(' / '));
+    lines.push('END:VCARD');
+    return lines.join('\r\n');
+  }
+
+  /* ---------- render preview ---------- */
+  var frame = document.getElementById('preview-frame');
+  function render() {
+    var html = buildCardHTML();
+    var doc = frame.contentDocument || frame.contentWindow.document;
+    doc.open(); doc.write(html); doc.close();
+  }
+
+  /* ---------- status ---------- */
+  var statusEl = document.getElementById('status');
+  var statusTimer;
+  function setStatus(msg, isError) {
+    statusEl.textContent = msg;
+    statusEl.style.color = isError ? '#d9480f' : 'var(--surface-text-muted)';
+    clearTimeout(statusTimer);
+    statusTimer = setTimeout(function () { statusEl.textContent = ''; }, 4000);
+  }
+
+  function safeName(ext) {
+    var base = (state.name || 'card').replace(/[\\/:*?"<>|]/g, '').trim() || 'card';
+    return base + '-名片.' + ext;
+  }
+  function download(content, filename, mime) {
+    var blob = new Blob([content], { type: mime });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  /* ---------- export buttons ---------- */
+  document.getElementById('btn-download').addEventListener('click', function () {
+    download(buildCardHTML(), safeName('html'), 'text/html;charset=utf-8');
+    setStatus('已下載名片 HTML，可直接用瀏覽器開啟或上傳分享。');
+  });
+  document.getElementById('btn-vcard').addEventListener('click', function () {
+    download(buildVCard(), safeName('vcf'), 'text/vcard;charset=utf-8');
+    setStatus('已下載 vCard，可匯入手機通訊錄。');
+  });
+  document.getElementById('btn-copy').addEventListener('click', function () {
+    var html = buildCardHTML();
+    function ok() { setStatus('已複製名片 HTML 原始碼到剪貼簿。'); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(html).then(ok, function () { setStatus('複製失敗，請改用下載。', true); });
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = html; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); ok(); } catch (e) { setStatus('複製失敗，請改用下載。', true); }
+      document.body.removeChild(ta);
+    }
+  });
+  document.getElementById('btn-open').addEventListener('click', function () {
+    var w = window.open('', '_blank');
+    if (!w) { setStatus('瀏覽器阻擋了彈出視窗，請允許後重試。', true); return; }
+    w.document.open(); w.document.write(buildCardHTML()); w.document.close();
+  });
+
+  /* ---------- init ---------- */
+  render();
+})();
+</script>
+</body>
+</html>
