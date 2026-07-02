@@ -123,6 +123,14 @@
       <div class="panel">
         <h2>基本資訊</h2>
         <div class="field">
+          <label for="f-lang">名片語言（固定標題）</label>
+          <select id="f-lang">
+            <option value="zh">中文</option>
+            <option value="en">English</option>
+          </select>
+          <p class="hint">切換名片上固定標題（聯絡方式、手機、存名片…）的語言；你填的內容不會被翻譯。</p>
+        </div>
+        <div class="field">
           <label for="f-name">姓名</label>
           <input type="text" id="f-name" placeholder="王小明">
         </div>
@@ -338,6 +346,7 @@ initTheme('dghm-wechat-card-theme');
     about: '',
     avatar: '', cover: '', qr: '',
     ogUrl: '', ogImage: '', ogSource: 'auto', ogCustom: '',
+    lang: 'zh',
     primary: DEFAULT_PRIMARY, secondary: DEFAULT_SECONDARY
   };
 
@@ -427,6 +436,14 @@ initTheme('dghm-wechat-card-theme');
   });
   paintOgSource();
 
+  /* ---------- card language selector ---------- */
+  var langSel = document.getElementById('f-lang');
+  function paintLang() { langSel.value = state.lang || 'zh'; }
+  langSel.addEventListener('change', function () {
+    state.lang = langSel.value; persist(); render();
+  });
+  paintLang();
+
   /* ---------- brand colour pickers ---------- */
   var brandPreview = document.getElementById('brand-preview');
   function paintBrandPreview() {
@@ -490,6 +507,22 @@ initTheme('dghm-wechat-card-theme');
     return '<svg viewBox="0 0 24 24" fill="' + color + '">' + BRAND[name] + '</svg>';
   }
 
+  /* ---------- card UI labels (fixed strings, not user content) ---------- */
+  var LABELS = {
+    zh: {
+      htmlLang: 'zh-Hant', yourName: '您的姓名', cardSuffix: ' — 電子名片', foot: '電子名片',
+      contact: '聯絡方式', about: '公司簡介', wechatQr: '加我微信', qrHint: '長按或截圖後於微信掃一掃',
+      mobile: '手機', tel: '市話', wechat: '微信', line: 'LINE', email: 'Email', website: '網站', address: '地址',
+      call: '撥號', save: '存名片', copyWechat: '複製微信', web: '官網', copied: '已複製：'
+    },
+    en: {
+      htmlLang: 'en', yourName: 'Your Name', cardSuffix: ' — Digital Card', foot: 'Digital Business Card',
+      contact: 'Contact', about: 'About', wechatQr: 'Add me on WeChat', qrHint: 'Long-press or screenshot, then scan in WeChat',
+      mobile: 'Mobile', tel: 'Tel', wechat: 'WeChat', line: 'LINE', email: 'Email', website: 'Website', address: 'Address',
+      call: 'Call', save: 'Save', copyWechat: 'Copy WeChat', web: 'Website', copied: 'Copied: '
+    }
+  };
+
   /* ---------- build the shareable card HTML ---------- */
   // opts.external: reference images as sibling files (for the ZIP folder) instead of embedding data URLs
   // opts.names: { avatar, cover, qr, og } relative filenames; opts.base: absolute folder URL for OG tags
@@ -500,7 +533,8 @@ initTheme('dghm-wechat-card-theme');
     var base = opts.base || '';
     var t = { c1: state.primary, c2: state.secondary };
     var s = state;
-    var displayName = s.name || '您的姓名';
+    var L = LABELS[state.lang] || LABELS.zh;
+    var displayName = s.name || L.yourName;
     var website = normUrl(s.website);
 
     // asset sources: sibling files in external (ZIP) mode, embedded data URLs otherwise
@@ -513,9 +547,9 @@ initTheme('dghm-wechat-card-theme');
     var ogDescParts = [];
     if (s.slogan) ogDescParts.push(s.slogan);
     var contactBits = [];
-    if (s.mobile) contactBits.push('手機 ' + s.mobile);
+    if (s.mobile) contactBits.push(L.mobile + ' ' + s.mobile);
     if (s.email) contactBits.push(s.email);
-    if (s.wechat) contactBits.push('微信 ' + s.wechat);
+    if (s.wechat) contactBits.push(L.wechat + ' ' + s.wechat);
     if (s.line) contactBits.push('LINE ' + s.line);
     if (contactBits.length) ogDescParts.push(contactBits.join(' ｜ '));
     var ogDesc = ogDescParts.join('　');
@@ -550,26 +584,26 @@ initTheme('dghm-wechat-card-theme');
         '</div>'
       );
     }
-    row(svgStroke('smartphone', t.c2), '手機', s.mobile, s.mobile ? 'tel:' + esc(s.mobile.replace(/[^0-9+]/g, '')) : '');
-    row(svgStroke('phone', t.c2), '市話', s.phone, s.phone ? 'tel:' + esc(s.phone.replace(/[^0-9+]/g, '')) : '');
-    row(svgBrand('wechat', t.c2), '微信', s.wechat, '');
-    row(svgBrand('line', t.c2), 'LINE', s.line, '');
-    row(svgStroke('mail', t.c2), 'Email', s.email, s.email ? 'mailto:' + esc(s.email) : '');
-    row(svgStroke('globe', t.c2), '網站', s.website, website, ' target="_blank" rel="noopener"');
-    row(svgStroke('mapPin', t.c2), '地址', s.address, s.address ? 'https://maps.google.com/?q=' + encodeURIComponent(s.address) : '', ' target="_blank" rel="noopener"');
+    row(svgStroke('smartphone', t.c2), L.mobile, s.mobile, s.mobile ? 'tel:' + esc(s.mobile.replace(/[^0-9+]/g, '')) : '');
+    row(svgStroke('phone', t.c2), L.tel, s.phone, s.phone ? 'tel:' + esc(s.phone.replace(/[^0-9+]/g, '')) : '');
+    row(svgBrand('wechat', t.c2), L.wechat, s.wechat, '');
+    row(svgBrand('line', t.c2), L.line, s.line, '');
+    row(svgStroke('mail', t.c2), L.email, s.email, s.email ? 'mailto:' + esc(s.email) : '');
+    row(svgStroke('globe', t.c2), L.website, s.website, website, ' target="_blank" rel="noopener"');
+    row(svgStroke('mapPin', t.c2), L.address, s.address, s.address ? 'https://maps.google.com/?q=' + encodeURIComponent(s.address) : '', ' target="_blank" rel="noopener"');
 
     var aboutBlock = s.about
-      ? '<div class="section"><div class="sec-title">公司簡介</div><p class="about">' + esc(s.about).replace(/\n/g, '<br>') + '</p></div>'
+      ? '<div class="section"><div class="sec-title">' + L.about + '</div><p class="about">' + esc(s.about).replace(/\n/g, '<br>') + '</p></div>'
       : '';
 
-    var qrBlock = '<div class="section qr-sec"><div class="sec-title">加我微信</div><img class="qr" src="' + qrSrc + '" alt="微信 QR Code"><p class="qr-hint">長按或截圖後於微信掃一掃</p></div>';
+    var qrBlock = '<div class="section qr-sec"><div class="sec-title">' + L.wechatQr + '</div><img class="qr" src="' + qrSrc + '" alt="' + L.wechatQr + '"><p class="qr-hint">' + L.qrHint + '</p></div>';
 
     var actions = [];
-    if (s.mobile) actions.push('<a class="act" href="tel:' + esc(s.mobile.replace(/[^0-9+]/g, '')) + '">' + svgStroke('phone', '#fff') + '<span>撥號</span></a>');
+    if (s.mobile) actions.push('<a class="act" href="tel:' + esc(s.mobile.replace(/[^0-9+]/g, '')) + '">' + svgStroke('phone', '#fff') + '<span>' + L.call + '</span></a>');
     // plain link (no download attr) so iOS Safari opens the vCard as an "Add to Contacts" card
-    actions.push('<a class="act" href="./contact.vcf">' + svgStroke('userPlus', '#fff') + '<span>存名片</span></a>');
-    if (s.wechat) actions.push('<button class="act" type="button" onclick="copyText(\'' + esc(s.wechat).replace(/'/g, "\\'") + '\',this)">' + svgBrand('wechat', '#fff') + '<span>複製微信</span></button>');
-    if (website) actions.push('<a class="act" href="' + esc(website) + '" target="_blank" rel="noopener">' + svgStroke('globe', '#fff') + '<span>官網</span></a>');
+    actions.push('<a class="act" href="./contact.vcf">' + svgStroke('userPlus', '#fff') + '<span>' + L.save + '</span></a>');
+    if (s.wechat) actions.push('<button class="act" type="button" onclick="copyText(\'' + esc(s.wechat).replace(/'/g, "\\'") + '\',this)">' + svgBrand('wechat', '#fff') + '<span>' + L.copyWechat + '</span></button>');
+    if (website) actions.push('<a class="act" href="' + esc(website) + '" target="_blank" rel="noopener">' + svgStroke('globe', '#fff') + '<span>' + L.web + '</span></a>');
 
     var css =
       '*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}' +
@@ -608,16 +642,16 @@ initTheme('dghm-wechat-card-theme');
 
     var js =
       'function copyText(txt,btn){' +
-      'function done(){var t=document.getElementById("toast");t.textContent="已複製："+txt;t.classList.add("show");setTimeout(function(){t.classList.remove("show")},1600);}' +
+      'function done(){var t=document.getElementById("toast");t.textContent=' + JSON.stringify(L.copied) + '+txt;t.classList.add("show");setTimeout(function(){t.classList.remove("show")},1600);}' +
       'if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,function(){fallback(txt,done)});}else{fallback(txt,done);}}' +
       'function fallback(txt,cb){var ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy")}catch(e){}document.body.removeChild(ta);cb();}';
 
-    return '<!DOCTYPE html>\n<html lang="zh-Hant">\n<head>\n' +
+    return '<!DOCTYPE html>\n<html lang="' + L.htmlLang + '">\n<head>\n' +
       '<meta charset="UTF-8">\n' +
       '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">\n' +
       '<meta name="format-detection" content="telephone=no">\n' +
       ogTags +
-      '<title>' + esc(displayName) + (s.company ? ' · ' + esc(s.company) : '') + ' — 電子名片</title>\n' +
+      '<title>' + esc(displayName) + (s.company ? ' · ' + esc(s.company) : '') + esc(L.cardSuffix) + '</title>\n' +
       '<style>' + css + '</style>\n</head>\n<body>\n' +
       '<div class="card-wrap">\n' +
       '  <div class="cover">\n' +
@@ -628,10 +662,10 @@ initTheme('dghm-wechat-card-theme');
       '  </div>\n' +
       (s.slogan ? '  <div class="slogan">' + esc(s.slogan) + '</div>\n' : '') +
       '  <div class="actions">' + actions.join('') + '</div>\n' +
-      (rows.length ? '  <div class="section"><div class="sec-title">聯絡方式</div>' + rows.join('') + '</div>\n' : '') +
+      (rows.length ? '  <div class="section"><div class="sec-title">' + L.contact + '</div>' + rows.join('') + '</div>\n' : '') +
       aboutBlock + '\n' +
       qrBlock + '\n' +
-      '  <div class="foot">' + esc(s.company || 'DGHM') + ' · 電子名片</div>\n' +
+      '  <div class="foot">' + esc(s.company || 'DGHM') + ' · ' + L.foot + '</div>\n' +
       '</div>\n' +
       '<div class="toast" id="toast"></div>\n' +
       '<script>' + js + '<\/script>\n' +
@@ -895,7 +929,7 @@ initTheme('dghm-wechat-card-theme');
       if (el) el.value = state[key] || '';
     });
     paintAvatar(); paintCover(); paintQr(); paintOgCustom();
-    syncPrimary(); syncSecondary(); paintBrandPreview(); paintOgSource();
+    syncPrimary(); syncSecondary(); paintBrandPreview(); paintOgSource(); paintLang();
     render();
   }
 
