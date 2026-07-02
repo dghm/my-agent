@@ -253,6 +253,16 @@
           </div>
           <p class="hint">在微信「我的 → 個人資訊 → 二維碼名片」截圖後上傳即可。</p>
         </div>
+        <div class="field">
+          <label>LINE QR Code（選填，用於「加 LINE 好友」）</label>
+          <div class="uploader">
+            <div class="thumb" id="lineqr-thumb">🔳</div>
+            <label class="btn small" for="up-lineqr">上傳 QR</label>
+            <button class="btn link" type="button" id="clear-lineqr">清除</button>
+            <input type="file" id="up-lineqr" accept="image/*">
+          </div>
+          <p class="hint">在 LINE「主頁 → 我的 QR code」截圖後上傳。填了才會在 LINE 那列顯示 QR 圖示。</p>
+        </div>
       </div>
 
       <div class="panel">
@@ -344,7 +354,7 @@ initTheme('dghm-wechat-card-theme');
     name: '', title: '', company: '', slogan: '',
     mobile: '', phone: '', wechat: '', line: '', email: '', website: '', address: '',
     about: '',
-    avatar: '', cover: '', qr: '',
+    avatar: '', cover: '', qr: '', lineQr: '',
     ogUrl: '', ogImage: '', ogSource: 'auto', ogCustom: '',
     lang: 'zh',
     primary: DEFAULT_PRIMARY, secondary: DEFAULT_SECONDARY
@@ -412,6 +422,7 @@ initTheme('dghm-wechat-card-theme');
   var paintAvatar = bindUpload('up-avatar', 'avatar-thumb', 'avatar', '👤');
   var paintCover  = bindUpload('up-cover', 'cover-thumb', 'cover', '🖼️');
   var paintQr     = bindUpload('up-qr', 'qr-thumb', 'qr', '🔳');
+  var paintLineQr = bindUpload('up-lineqr', 'lineqr-thumb', 'lineQr', '🔳');
   var paintOgCustom = bindUpload('up-ogcustom', 'ogcustom-thumb', 'ogCustom', '🖼️');
 
   function bindClear(btnId, key, paint) {
@@ -422,6 +433,7 @@ initTheme('dghm-wechat-card-theme');
   bindClear('clear-avatar', 'avatar', paintAvatar);
   bindClear('clear-cover', 'cover', paintCover);
   bindClear('clear-qr', 'qr', paintQr);
+  bindClear('clear-lineqr', 'lineQr', paintLineQr);
   bindClear('clear-ogcustom', 'ogCustom', paintOgCustom);
 
   /* ---------- OG image source selector ---------- */
@@ -493,7 +505,8 @@ initTheme('dghm-wechat-card-theme');
     mail: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
     globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
     mapPin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
-    userPlus: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>'
+    userPlus: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
+    qr: '<rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/>'
   };
   // brand marks (Simple Icons) — filled paths
   var BRAND = {
@@ -512,12 +525,14 @@ initTheme('dghm-wechat-card-theme');
     zh: {
       htmlLang: 'zh-Hant', yourName: '您的姓名', cardSuffix: ' — 電子名片', foot: '電子名片',
       contact: '聯絡方式', about: '公司簡介', wechatQr: '加我微信', qrHint: '長按或截圖後於微信掃一掃',
+      lineQr: '加我 LINE 好友', qrHintLine: '長按或截圖後掃描加入好友',
       mobile: '手機', tel: '市話', wechat: '微信', line: 'LINE', email: 'Email', website: '網站', address: '地址',
       call: '撥號', save: '存名片', copyWechat: '複製微信', web: '官網', copied: '已複製：'
     },
     en: {
       htmlLang: 'en', yourName: 'Your Name', cardSuffix: ' — Digital Card', foot: 'Digital Business Card',
       contact: 'Contact', about: 'About', wechatQr: 'Add me on WeChat', qrHint: 'Long-press or screenshot, then scan in WeChat',
+      lineQr: 'Add me on LINE', qrHintLine: 'Long-press or screenshot, then scan to add',
       mobile: 'Mobile', tel: 'Tel', wechat: 'WeChat', line: 'LINE', email: 'Email', website: 'Website', address: 'Address',
       call: 'Call', save: 'Save', copyWechat: 'Copy WeChat', web: 'Website', copied: 'Copied: '
     }
@@ -541,6 +556,9 @@ initTheme('dghm-wechat-card-theme');
     var avatarSrc = s.avatar ? (ext ? './' + names.avatar : s.avatar) : '';
     var coverSrc  = s.cover ? (ext ? './' + names.cover : s.cover) : '';
     var qrSrc     = ext ? './' + names.qr : (s.qr ? s.qr : './wechat-qr.png');
+    // LINE QR only exists if uploaded (no placeholder); its icon/section appear only then
+    var lineHasQR = ext ? !!names.lineQr : !!s.lineQr;
+    var lineQrSrc = lineHasQR ? (ext ? './' + names.lineQr : s.lineQr) : '';
 
     // Open Graph tags built from the real card data (LINE / social link previews)
     var ogTitle = [displayName].concat(s.title ? [s.title] : []).concat(s.company ? [s.company] : []).join(' · ');
@@ -570,9 +588,14 @@ initTheme('dghm-wechat-card-theme');
       ? '<img src="' + avatarSrc + '" alt="頭像">'
       : '<span>' + esc(displayName.slice(0, 1)) + '</span>';
 
+    // a small QR toggle button placed at the right of a row; switches the QR section below
+    function qrBtn(key, label) {
+      return '<button class="rqr" type="button" onclick="showQR(\'' + key + '\')" aria-label="' + esc(label) + '">' + svgStroke('qr', t.c2) + '</button>';
+    }
+
     // contact rows
     var rows = [];
-    function row(icon, label, value, href, extra) {
+    function row(icon, label, value, href, extra, trailing) {
       if (!value) return;
       var v = esc(value);
       var inner = href ? '<a href="' + href + '"' + (extra || '') + '>' + v + '</a>' : v;
@@ -581,13 +604,14 @@ initTheme('dghm-wechat-card-theme');
           '<div class="ricon">' + icon + '</div>' +
           '<div class="rlabel">' + label + '</div>' +
           '<div class="rval">' + inner + '</div>' +
+          (trailing || '') +
         '</div>'
       );
     }
     row(svgStroke('smartphone', t.c2), L.mobile, s.mobile, s.mobile ? 'tel:' + esc(s.mobile.replace(/[^0-9+]/g, '')) : '');
     row(svgStroke('phone', t.c2), L.tel, s.phone, s.phone ? 'tel:' + esc(s.phone.replace(/[^0-9+]/g, '')) : '');
-    row(svgBrand('wechat', t.c2), L.wechat, s.wechat, '');
-    row(svgBrand('line', t.c2), L.line, s.line, '');
+    row(svgBrand('wechat', t.c2), L.wechat, s.wechat, '', '', qrBtn('wechat', L.wechatQr));
+    row(svgBrand('line', t.c2), L.line, s.line, '', '', lineHasQR ? qrBtn('line', L.lineQr) : '');
     row(svgStroke('mail', t.c2), L.email, s.email, s.email ? 'mailto:' + esc(s.email) : '');
     row(svgStroke('globe', t.c2), L.website, s.website, website, ' target="_blank" rel="noopener"');
     row(svgStroke('mapPin', t.c2), L.address, s.address, s.address ? 'https://maps.google.com/?q=' + encodeURIComponent(s.address) : '', ' target="_blank" rel="noopener"');
@@ -596,7 +620,14 @@ initTheme('dghm-wechat-card-theme');
       ? '<div class="section"><div class="sec-title">' + L.about + '</div><p class="about">' + esc(s.about).replace(/\n/g, '<br>') + '</p></div>'
       : '';
 
-    var qrBlock = '<div class="section qr-sec"><div class="sec-title">' + L.wechatQr + '</div><img class="qr" src="' + qrSrc + '" alt="' + L.wechatQr + '"><p class="qr-hint">' + L.qrHint + '</p></div>';
+    // switchable QR section: WeChat (with placeholder fallback) + optional LINE, chosen by the row buttons
+    var qrData = { wechat: { src: qrSrc, title: L.wechatQr, hint: L.qrHint } };
+    if (lineHasQR) qrData.line = { src: lineQrSrc, title: L.lineQr, hint: L.qrHintLine };
+    var qrDefault = (s.wechat || !lineHasQR) ? 'wechat' : 'line';
+    var qd = qrData[qrDefault];
+    var qrBlock = '<div class="section qr-sec" id="qr-sec"><div class="sec-title" id="cardqr-title">' + esc(qd.title) + '</div>' +
+      '<img class="qr" id="cardqr" src="' + qd.src + '" alt="QR Code">' +
+      '<p class="qr-hint" id="cardqr-hint">' + esc(qd.hint) + '</p></div>';
 
     var actions = [];
     if (s.mobile) actions.push('<a class="act" href="tel:' + esc(s.mobile.replace(/[^0-9+]/g, '')) + '">' + svgStroke('phone', '#fff') + '<span>' + L.call + '</span></a>');
@@ -625,7 +656,10 @@ initTheme('dghm-wechat-card-theme');
       '.act:active{opacity:.85}' +
       '.section{background:#fff;margin:12px 12px 0;border-radius:14px;padding:16px 16px}' +
       '.sec-title{font-size:13px;font-weight:700;color:' + t.c2 + ';margin-bottom:10px}' +
-      '.row{display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:12px;padding:9px 0;border-top:1px solid #f0f1f4}' +
+      '.row{display:grid;grid-template-columns:22px minmax(0,1fr) auto;column-gap:12px;padding:9px 0;border-top:1px solid #f0f1f4}' +
+      '.rqr{grid-column:3;grid-row:1 / 3;align-self:center;background:none;border:0;padding:6px;cursor:pointer;display:flex;align-items:center;border-radius:8px}' +
+      '.rqr svg{width:22px;height:22px;display:block}' +
+      '.rqr:active{opacity:.6}' +
       '.row:first-of-type{border-top:0}' +
       '.ricon{grid-column:1;grid-row:1 / 3;align-self:center;transform:translateY(3px);display:flex;justify-content:center}' +
       '.ricon svg{width:20px;height:20px;display:block}' +
@@ -644,7 +678,9 @@ initTheme('dghm-wechat-card-theme');
       'function copyText(txt,btn){' +
       'function done(){var t=document.getElementById("toast");t.textContent=' + JSON.stringify(L.copied) + '+txt;t.classList.add("show");setTimeout(function(){t.classList.remove("show")},1600);}' +
       'if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,function(){fallback(txt,done)});}else{fallback(txt,done);}}' +
-      'function fallback(txt,cb){var ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy")}catch(e){}document.body.removeChild(ta);cb();}';
+      'function fallback(txt,cb){var ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy")}catch(e){}document.body.removeChild(ta);cb();}' +
+      'var QRS=' + JSON.stringify(qrData) + ';' +
+      'function showQR(k){var q=QRS[k];if(!q)return;document.getElementById("cardqr").src=q.src;document.getElementById("cardqr-title").textContent=q.title;var h=document.getElementById("cardqr-hint");h.textContent=q.hint||"";h.style.display=q.hint?"":"none";document.getElementById("qr-sec").scrollIntoView({behavior:"smooth",block:"center"});}';
 
     return '<!DOCTYPE html>\n<html lang="' + L.htmlLang + '">\n<head>\n' +
       '<meta charset="UTF-8">\n' +
@@ -875,11 +911,12 @@ initTheme('dghm-wechat-card-theme');
     setStatus('正在打包 ZIP…');
     makeOgImageBytes().then(function (ogBytes) {
       var files = [];
-      var names = { avatar: '', cover: '', qr: '', og: 'og.jpg' };
+      var names = { avatar: '', cover: '', qr: '', lineQr: '', og: 'og.jpg' };
       if (state.avatar) { var a = dataURLtoBytes(state.avatar); names.avatar = 'avatar.' + extForMime(a.mime); files.push({ name: names.avatar, data: a.bytes }); }
       if (state.cover)  { var cv = dataURLtoBytes(state.cover); names.cover = 'cover.' + extForMime(cv.mime); files.push({ name: names.cover, data: cv.bytes }); }
       if (state.qr)     { var q = dataURLtoBytes(state.qr); names.qr = 'wechat-qr.' + extForMime(q.mime); files.push({ name: names.qr, data: q.bytes }); }
       else { names.qr = 'wechat-qr.png'; }
+      if (state.lineQr) { var lq = dataURLtoBytes(state.lineQr); names.lineQr = 'line-qr.' + extForMime(lq.mime); files.push({ name: names.lineQr, data: lq.bytes }); }
       files.push({ name: 'og.jpg', data: ogBytes });
       files.push({ name: 'contact.vcf', data: new TextEncoder().encode(buildVCard()) });
       var html = buildCardHTML({ external: true, base: base, names: names });
@@ -928,7 +965,7 @@ initTheme('dghm-wechat-card-theme');
       var el = document.getElementById('f-' + key);
       if (el) el.value = state[key] || '';
     });
-    paintAvatar(); paintCover(); paintQr(); paintOgCustom();
+    paintAvatar(); paintCover(); paintQr(); paintLineQr(); paintOgCustom();
     syncPrimary(); syncSecondary(); paintBrandPreview(); paintOgSource(); paintLang();
     render();
   }
