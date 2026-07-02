@@ -607,13 +607,10 @@
 
     var qrBlock = '<div class="section qr-sec"><div class="sec-title">加我微信</div><img class="qr" src="' + qrSrc + '" alt="微信 QR Code"><p class="qr-hint">長按或截圖後於微信掃一掃</p></div>';
 
-    // vCard for save-to-contacts button (built inside the card too)
-    var vcard = buildVCard();
-    var vcardData = 'data:text/vcard;charset=utf-8,' + encodeURIComponent(vcard);
-
     var actions = [];
     if (s.mobile) actions.push('<a class="act" href="tel:' + esc(s.mobile.replace(/[^0-9+]/g, '')) + '">' + svgStroke('phone', '#fff') + '<span>撥號</span></a>');
-    actions.push('<a class="act" href="./contact.vcf" download="contact.vcf">' + svgStroke('userPlus', '#fff') + '<span>存名片</span></a>');
+    // plain link (no download attr) so iOS Safari opens the vCard as an "Add to Contacts" card
+    actions.push('<a class="act" href="./contact.vcf">' + svgStroke('userPlus', '#fff') + '<span>存名片</span></a>');
     if (s.wechat) actions.push('<button class="act" type="button" onclick="copyText(\'' + esc(s.wechat).replace(/'/g, "\\'") + '\',this)">' + svgBrand('wechat', '#fff') + '<span>複製微信</span></button>');
     if (website) actions.push('<a class="act" href="' + esc(website) + '" target="_blank" rel="noopener">' + svgStroke('globe', '#fff') + '<span>官網</span></a>');
 
