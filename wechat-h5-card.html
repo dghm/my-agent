@@ -211,6 +211,19 @@
       </div>
 
       <div class="panel">
+        <h2>分享預覽（LINE／社群 OG）</h2>
+        <div class="field">
+          <label for="f-ogUrl">名片網址（og:url）</label>
+          <input type="url" id="f-ogUrl" placeholder="https://dghm.tw/bizCard/aries.html">
+        </div>
+        <div class="field">
+          <label for="f-ogImage">分享縮圖網址（og:image）</label>
+          <input type="url" id="f-ogImage" placeholder="https://dghm.tw/bizCard/aries-og.jpg">
+        </div>
+        <p class="hint">標題與描述會自動用上方資料帶入。這兩欄需填「絕對網址」才會出現在 LINE／社群預覽，留空則不輸出。縮圖建議 1200×630、放在你的伺服器上（不能用內嵌圖片）。</p>
+      </div>
+
+      <div class="panel">
         <h2>圖片</h2>
         <div class="field">
           <label>頭像 / 大頭照</label>
@@ -342,6 +355,7 @@
     mobile: '', phone: '', wechat: '', line: '', email: '', website: '', address: '',
     about: '',
     avatar: '', cover: '', qr: '',
+    ogUrl: '', ogImage: '',
     primary: DEFAULT_PRIMARY, secondary: DEFAULT_SECONDARY
   };
 
@@ -367,7 +381,7 @@
   }
 
   /* ---------- bind text inputs ---------- */
-  var fields = ['name','title','company','slogan','mobile','phone','wechat','line','email','website','address','about'];
+  var fields = ['name','title','company','slogan','mobile','phone','wechat','line','email','website','address','about','ogUrl','ogImage'];
   fields.forEach(function (key) {
     var el = document.getElementById('f-' + key);
     if (!el) return;
@@ -487,6 +501,23 @@
     var displayName = s.name || '您的姓名';
     var website = normUrl(s.website);
 
+    // Open Graph tags built from the real card data (LINE / social link previews)
+    var ogTitle = [displayName].concat(s.title ? [s.title] : []).concat(s.company ? [s.company] : []).join(' · ');
+    var ogDescParts = [];
+    if (s.slogan) ogDescParts.push(s.slogan);
+    var contactBits = [];
+    if (s.mobile) contactBits.push('手機 ' + s.mobile);
+    if (s.email) contactBits.push(s.email);
+    if (s.wechat) contactBits.push('微信 ' + s.wechat);
+    if (s.line) contactBits.push('LINE ' + s.line);
+    if (contactBits.length) ogDescParts.push(contactBits.join(' ｜ '));
+    var ogDesc = ogDescParts.join('　');
+    var ogTags = '<meta property="og:title" content="' + esc(ogTitle) + '">\n';
+    if (ogDesc) ogTags += '<meta property="og:description" content="' + esc(ogDesc) + '">\n';
+    ogTags += '<meta property="og:type" content="website">\n';
+    if (s.ogUrl) ogTags += '<meta property="og:url" content="' + esc(s.ogUrl.trim()) + '">\n';
+    if (s.ogImage) ogTags += '<meta property="og:image" content="' + esc(s.ogImage.trim()) + '">\n';
+
     var coverStyle = s.cover
       ? 'background-image:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.55)),url(' + s.cover + ');background-size:cover;background-position:center;'
       : 'background-image:linear-gradient(135deg,' + t.c1 + ',' + t.c2 + ');';
@@ -580,11 +611,7 @@
       '<meta charset="UTF-8">\n' +
       '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">\n' +
       '<meta name="format-detection" content="telephone=no">\n' +
-      '<meta property="og:title" content="[姓名 · 職稱 · 公司]">\n' +
-      '<meta property="og:description" content="[電話 ｜ 聯絡方式]">\n' +
-      '<meta property="og:image" content="[og-image-url]">\n' +
-      '<meta property="og:type" content="website">\n' +
-      '<meta property="og:url" content="[card-url]">\n' +
+      ogTags +
       '<title>' + esc(displayName) + (s.company ? ' · ' + esc(s.company) : '') + ' — 電子名片</title>\n' +
       '<style>' + css + '</style>\n</head>\n<body>\n' +
       '<div class="card-wrap">\n' +
