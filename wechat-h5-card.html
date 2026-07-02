@@ -239,6 +239,16 @@
       </div>
 
       <div class="panel">
+        <h2>編輯檔</h2>
+        <div class="actions">
+          <button class="btn" type="button" id="btn-save-json">💾 下載編輯檔 (JSON)</button>
+          <label class="btn" for="up-json">📂 載入編輯檔</label>
+          <input type="file" id="up-json" accept="application/json,.json">
+        </div>
+        <p class="hint">將目前所有欄位與圖片存成一份 JSON；日後載回即可接續編輯。</p>
+      </div>
+
+      <div class="panel">
         <h2>匯出</h2>
         <div class="actions">
           <button class="btn" type="button" id="btn-download">⬇️ 下載名片 HTML</button>
@@ -598,6 +608,51 @@
     var w = window.open('', '_blank');
     if (!w) { setStatus('瀏覽器阻擋了彈出視窗，請允許後重試。', true); return; }
     w.document.open(); w.document.write(buildCardHTML()); w.document.close();
+  });
+
+  /* ---------- edit file: save / load JSON ---------- */
+  // refresh every input, thumbnail, swatch and the preview from current state
+  function syncUI() {
+    fields.forEach(function (key) {
+      var el = document.getElementById('f-' + key);
+      if (el) el.value = state[key] || '';
+    });
+    paintAvatar(); paintCover(); paintQr();
+    [].forEach.call(swatchWrap.children, function (c) {
+      c.classList.toggle('active', c.dataset.id === state.theme);
+    });
+    render();
+  }
+
+  document.getElementById('btn-save-json').addEventListener('click', function () {
+    download(JSON.stringify(state, null, 2), safeName('json'), 'application/json;charset=utf-8');
+    setStatus('已下載編輯檔 (JSON)，日後可載回接續編輯。');
+  });
+
+  var jsonInput = document.getElementById('up-json');
+  jsonInput.addEventListener('change', function () {
+    var file = jsonInput.files && jsonInput.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var parsed;
+      try { parsed = JSON.parse(e.target.result); }
+      catch (err) { setStatus('讀取失敗：這不是有效的 JSON 編輯檔。', true); jsonInput.value = ''; return; }
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        setStatus('讀取失敗：編輯檔格式不符。', true); jsonInput.value = ''; return;
+      }
+      // only copy known string keys so an unrelated JSON can't inject junk into state
+      Object.keys(state).forEach(function (key) {
+        if (Object.prototype.hasOwnProperty.call(parsed, key) && typeof parsed[key] === 'string') {
+          state[key] = parsed[key];
+        }
+      });
+      if (!THEMES.some(function (t) { return t.id === state.theme; })) state.theme = THEMES[0].id;
+      persist(); syncUI();
+      setStatus('已載入編輯檔，可接續編輯。');
+    };
+    reader.readAsText(file, 'utf-8');
+    jsonInput.value = '';
   });
 
   /* ---------- init ---------- */
