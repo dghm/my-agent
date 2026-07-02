@@ -290,11 +290,13 @@
       <div class="panel">
         <h2>匯出</h2>
         <div class="actions">
+          <button class="btn" type="button" id="btn-zip">📦 下載名片資料夾 (ZIP)</button>
           <button class="btn" type="button" id="btn-download">⬇️ 下載名片 HTML</button>
           <button class="btn" type="button" id="btn-copy">📋 複製 HTML</button>
           <button class="btn" type="button" id="btn-vcard">📇 下載 vCard (.vcf)</button>
           <button class="btn" type="button" id="btn-open">↗️ 新分頁開啟</button>
         </div>
+        <p class="hint">📦 ZIP：把 index.html、頭像／封面／QR、自動產生的 1200×630 og.jpg 與 contact.vcf 打包；解開整包丟到「分享預覽（OG）」填的網址資料夾即可，OG 縮圖免另外做。需先填 og:url。</p>
         <div id="status"></div>
       </div>
     </div>
@@ -495,11 +497,22 @@
   }
 
   /* ---------- build the shareable card HTML ---------- */
-  function buildCardHTML() {
+  // opts.external: reference images as sibling files (for the ZIP folder) instead of embedding data URLs
+  // opts.names: { avatar, cover, qr, og } relative filenames; opts.base: absolute folder URL for OG tags
+  function buildCardHTML(opts) {
+    opts = opts || {};
+    var ext = !!opts.external;
+    var names = opts.names || {};
+    var base = opts.base || '';
     var t = { c1: state.primary, c2: state.secondary };
     var s = state;
     var displayName = s.name || '您的姓名';
     var website = normUrl(s.website);
+
+    // asset sources: sibling files in external (ZIP) mode, embedded data URLs otherwise
+    var avatarSrc = s.avatar ? (ext ? './' + names.avatar : s.avatar) : '';
+    var coverSrc  = s.cover ? (ext ? './' + names.cover : s.cover) : '';
+    var qrSrc     = ext ? './' + names.qr : (s.qr ? s.qr : './wechat-qr.png');
 
     // Open Graph tags built from the real card data (LINE / social link previews)
     var ogTitle = [displayName].concat(s.title ? [s.title] : []).concat(s.company ? [s.company] : []).join(' · ');
@@ -512,18 +525,21 @@
     if (s.line) contactBits.push('LINE ' + s.line);
     if (contactBits.length) ogDescParts.push(contactBits.join(' ｜ '));
     var ogDesc = ogDescParts.join('　');
+    // OG url/image must be absolute — in ZIP mode derive from the deploy folder, otherwise use the manual fields
+    var ogUrlVal = ext ? base : (s.ogUrl ? s.ogUrl.trim() : '');
+    var ogImageVal = ext ? (base + names.og) : (s.ogImage ? s.ogImage.trim() : '');
     var ogTags = '<meta property="og:title" content="' + esc(ogTitle) + '">\n';
     if (ogDesc) ogTags += '<meta property="og:description" content="' + esc(ogDesc) + '">\n';
     ogTags += '<meta property="og:type" content="website">\n';
-    if (s.ogUrl) ogTags += '<meta property="og:url" content="' + esc(s.ogUrl.trim()) + '">\n';
-    if (s.ogImage) ogTags += '<meta property="og:image" content="' + esc(s.ogImage.trim()) + '">\n';
+    if (ogUrlVal) ogTags += '<meta property="og:url" content="' + esc(ogUrlVal) + '">\n';
+    if (ogImageVal) ogTags += '<meta property="og:image" content="' + esc(ogImageVal) + '">\n';
 
-    var coverStyle = s.cover
-      ? 'background-image:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.55)),url(' + s.cover + ');background-size:cover;background-position:center;'
+    var coverStyle = coverSrc
+      ? 'background-image:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.55)),url(' + coverSrc + ');background-size:cover;background-position:center;'
       : 'background-image:linear-gradient(135deg,' + t.c1 + ',' + t.c2 + ');';
 
-    var avatarInner = s.avatar
-      ? '<img src="' + s.avatar + '" alt="頭像">'
+    var avatarInner = avatarSrc
+      ? '<img src="' + avatarSrc + '" alt="頭像">'
       : '<span>' + esc(displayName.slice(0, 1)) + '</span>';
 
     // contact rows
@@ -552,8 +568,6 @@
       ? '<div class="section"><div class="sec-title">公司簡介</div><p class="about">' + esc(s.about).replace(/\n/g, '<br>') + '</p></div>'
       : '';
 
-    // embed the uploaded QR so a downloaded card is self-contained; otherwise use the sibling placeholder file
-    var qrSrc = s.qr ? s.qr : './wechat-qr.png';
     var qrBlock = '<div class="section qr-sec"><div class="sec-title">加我微信</div><img class="qr" src="' + qrSrc + '" alt="微信 QR Code"><p class="qr-hint">長按或截圖後於微信掃一掃</p></div>';
 
     // vCard for save-to-contacts button (built inside the card too)
@@ -687,7 +701,136 @@
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
 
+  /* ---------- ZIP folder export (no dependencies) ---------- */
+  function dataURLtoBytes(dataURL) {
+    var comma = dataURL.indexOf(',');
+    var mime = dataURL.substring(5, comma).split(';')[0];
+    var bin = atob(dataURL.substring(comma + 1));
+    var arr = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return { bytes: arr, mime: mime };
+  }
+  function extForMime(m) {
+    return m === 'image/jpeg' ? 'jpg' : m === 'image/webp' ? 'webp' : m === 'image/gif' ? 'gif' : 'png';
+  }
+  // absolute deploy folder (trailing slash) from the og:url the user typed
+  function folderBase(url) {
+    url = (url || '').trim();
+    if (!url) return '';
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    if (url.charAt(url.length - 1) === '/') return url;
+    var slash = url.lastIndexOf('/');
+    var tail = url.substring(slash + 1);
+    return tail.indexOf('.') > -1 ? url.substring(0, slash + 1) : url + '/';
+  }
+  var CRC_TABLE = (function () {
+    var t = [], c, n, k;
+    for (n = 0; n < 256; n++) { c = n; for (k = 0; k < 8; k++) c = c & 1 ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); t[n] = c >>> 0; }
+    return t;
+  })();
+  function crc32(buf) {
+    var crc = -1;
+    for (var i = 0; i < buf.length; i++) crc = (crc >>> 8) ^ CRC_TABLE[(crc ^ buf[i]) & 0xFF];
+    return (crc ^ -1) >>> 0;
+  }
+  // build a store-only (uncompressed) ZIP from [{name, data:Uint8Array}]
+  function makeZip(files) {
+    var enc = new TextEncoder();
+    function u16(n) { return [n & 0xff, (n >>> 8) & 0xff]; }
+    function u32(n) { return [n & 0xff, (n >>> 8) & 0xff, (n >>> 16) & 0xff, (n >>> 24) & 0xff]; }
+    var parts = [], central = [], offset = 0, DOSDATE = 0x21, DOSTIME = 0; // 1980-01-01
+    files.forEach(function (f) {
+      var nameB = enc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+      var local = u32(0x04034b50).concat(u16(20), u16(0), u16(0), u16(DOSTIME), u16(DOSDATE), u32(crc), u32(size), u32(size), u16(nameB.length), u16(0));
+      parts.push(new Uint8Array(local), nameB, f.data);
+      var cen = u32(0x02014b50).concat(u16(20), u16(20), u16(0), u16(0), u16(DOSTIME), u16(DOSDATE), u32(crc), u32(size), u32(size), u16(nameB.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset));
+      central.push(new Uint8Array(cen), nameB);
+      offset += local.length + nameB.length + size;
+    });
+    var centralStart = offset, centralSize = 0;
+    central.forEach(function (u) { centralSize += u.length; });
+    var end = new Uint8Array(u32(0x06054b50).concat(u16(0), u16(0), u16(files.length), u16(files.length), u32(centralSize), u32(centralStart), u16(0)));
+    var all = parts.concat(central, [end]);
+    var total = all.reduce(function (a, u) { return a + u.length; }, 0);
+    var out = new Uint8Array(total), p = 0;
+    all.forEach(function (u) { out.set(u, p); p += u.length; });
+    return out;
+  }
+  // render a 1200×630 branded share image (og.jpg) from the card data
+  function makeOgImageBytes() {
+    return new Promise(function (resolve) {
+      var W = 1200, H = 630, c = document.createElement('canvas');
+      c.width = W; c.height = H;
+      var ctx = c.getContext('2d');
+      var g = ctx.createLinearGradient(0, 0, W, H);
+      g.addColorStop(0, state.primary); g.addColorStop(1, state.secondary);
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      var fam = '-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif';
+      function drawText() {
+        var hasAvatar = !!state.avatar;
+        var tx = 90, textW = hasAvatar ? 720 : W - 180;
+        ctx.textBaseline = 'alphabetic'; ctx.fillStyle = '#fff';
+        ctx.font = '700 84px ' + fam;
+        ctx.fillText(state.name || '您的姓名', tx, 300, textW);
+        ctx.font = '400 40px ' + fam; ctx.fillStyle = 'rgba(255,255,255,.92)';
+        var line2 = [state.title, state.company].filter(Boolean).join(' · ');
+        if (line2) ctx.fillText(line2, tx, 366, textW);
+        if (state.slogan) { ctx.font = '400 34px ' + fam; ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fillText(state.slogan, tx, 430, textW); }
+        c.toBlob(function (blob) {
+          var r = new FileReader();
+          r.onload = function () { resolve(new Uint8Array(r.result)); };
+          r.readAsArrayBuffer(blob);
+        }, 'image/jpeg', 0.9);
+      }
+      if (state.avatar) {
+        var img = new Image();
+        img.onload = function () {
+          var d = 300, cx = 950, cy = H / 2;
+          ctx.save();
+          ctx.beginPath(); ctx.arc(cx, cy, d / 2 + 6, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fill();
+          ctx.beginPath(); ctx.arc(cx, cy, d / 2, 0, Math.PI * 2); ctx.clip();
+          var ar = img.width / img.height, dw = d, dh = d, ox = 0, oy = 0;
+          if (ar > 1) { dw = d * ar; ox = -(dw - d) / 2; } else { dh = d / ar; oy = -(dh - d) / 2; }
+          ctx.drawImage(img, cx - d / 2 + ox, cy - d / 2 + oy, dw, dh);
+          ctx.restore();
+          drawText();
+        };
+        img.onerror = drawText;
+        img.src = state.avatar;
+      } else { drawText(); }
+    });
+  }
+
   /* ---------- export buttons ---------- */
+  document.getElementById('btn-zip').addEventListener('click', function () {
+    var base = folderBase(state.ogUrl);
+    if (!base) {
+      setStatus('請先在「分享預覽（OG）」填名片網址（og:url），例如 https://dghm.tw/bizCard/aries.hsieh/，ZIP 才能寫出正確的 OG 縮圖網址。', true);
+      return;
+    }
+    setStatus('正在打包 ZIP…');
+    makeOgImageBytes().then(function (ogBytes) {
+      var files = [];
+      var names = { avatar: '', cover: '', qr: '', og: 'og.jpg' };
+      if (state.avatar) { var a = dataURLtoBytes(state.avatar); names.avatar = 'avatar.' + extForMime(a.mime); files.push({ name: names.avatar, data: a.bytes }); }
+      if (state.cover)  { var cv = dataURLtoBytes(state.cover); names.cover = 'cover.' + extForMime(cv.mime); files.push({ name: names.cover, data: cv.bytes }); }
+      if (state.qr)     { var q = dataURLtoBytes(state.qr); names.qr = 'wechat-qr.' + extForMime(q.mime); files.push({ name: names.qr, data: q.bytes }); }
+      else { names.qr = 'wechat-qr.png'; }
+      files.push({ name: 'og.jpg', data: ogBytes });
+      files.push({ name: 'contact.vcf', data: new TextEncoder().encode(buildVCard()) });
+      var html = buildCardHTML({ external: true, base: base, names: names });
+      files.push({ name: 'index.html', data: new TextEncoder().encode(html) });
+
+      var zipName = (base.replace(/\/+$/, '').split('/').pop() || 'bizcard') + '.zip';
+      download(makeZip(files), zipName, 'application/zip');
+      var warn = [];
+      if (!state.avatar) warn.push('未上傳頭像');
+      if (!state.qr) warn.push('未上傳 QR（wechat-qr.png 需另外放入）');
+      setStatus('已下載 ' + zipName + '，解開整包上傳到 ' + base + ' 即可。' + (warn.length ? '（' + warn.join('、') + '）' : ''));
+    }, function () {
+      setStatus('產生 OG 縮圖失敗，請重試。', true);
+    });
+  });
   document.getElementById('btn-download').addEventListener('click', function () {
     download(buildCardHTML(), safeName('html'), 'text/html;charset=utf-8');
     setStatus('已下載名片 HTML，可直接用瀏覽器開啟或上傳分享。');
