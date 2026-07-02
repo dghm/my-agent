@@ -1,0 +1,11 @@
+BEGIN:VCARD
+VERSION:3.0
+N:;姓名;;;
+FN:姓名
+ORG:萬能數維有限公司
+TITLE:職稱
+TEL;TYPE=CELL:0000-000-000
+EMAIL:help@dghm.tw
+URL:https://dghm.tw
+NOTE:此為佔位 vCard，請替換為實際聯絡資訊。
+END:VCARD
