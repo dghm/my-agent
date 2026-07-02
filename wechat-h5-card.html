@@ -68,6 +68,12 @@
   }
   .field input:focus, .field textarea:focus { border-color: var(--heading); }
   .field textarea { resize: vertical; min-height: 72px; line-height: 1.6; }
+  .field select {
+    width: 100%; padding: 9px 11px; font-size: 13px; font-family: inherit;
+    border: 1px solid var(--surface-border); border-radius: 8px;
+    background: var(--input-bg); color: var(--surface-text); outline: none;
+  }
+  .field select:focus { border-color: var(--heading); }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   @media (max-width: 520px) { .row2 { grid-template-columns: 1fr; } }
   .hint { font-size: 11px; color: var(--surface-text-muted); margin-top: 4px; line-height: 1.5; }
@@ -220,7 +226,24 @@
           <label for="f-ogImage">分享縮圖網址（og:image）</label>
           <input type="url" id="f-ogImage" placeholder="https://dghm.tw/bizCard/aries-og.jpg">
         </div>
-        <p class="hint">標題與描述會自動用上方資料帶入。這兩欄需填「絕對網址」才會出現在 LINE／社群預覽，留空則不輸出。縮圖建議 1200×630、放在你的伺服器上（不能用內嵌圖片）。</p>
+        <div class="field">
+          <label for="f-ogSource">ZIP 版縮圖來源（og.jpg）</label>
+          <select id="f-ogSource">
+            <option value="auto">自動品牌卡（姓名／職稱／公司）</option>
+            <option value="avatar">頭像照片（置中）</option>
+            <option value="custom">自訂上傳（LOGO／圖）</option>
+          </select>
+        </div>
+        <div class="field" id="og-custom-row" style="display:none;">
+          <label>自訂縮圖圖檔</label>
+          <div class="uploader">
+            <div class="thumb" id="ogcustom-thumb">🖼️</div>
+            <label class="btn small" for="up-ogcustom">上傳圖檔</label>
+            <button class="btn link" type="button" id="clear-ogcustom">清除</button>
+            <input type="file" id="up-ogcustom" accept="image/*">
+          </div>
+        </div>
+        <p class="hint">標題與描述會自動用上方資料帶入。og:url／og:image 需填「絕對網址」才會出現在預覽（用 ZIP 匯出時會自動填）。<br>縮圖來源決定 ZIP 內 og.jpg 的內容——LINE 常把縮圖裁成方形，選「頭像」或「LOGO」置中通常較好認。</p>
       </div>
 
       <div class="panel">
@@ -357,7 +380,7 @@
     mobile: '', phone: '', wechat: '', line: '', email: '', website: '', address: '',
     about: '',
     avatar: '', cover: '', qr: '',
-    ogUrl: '', ogImage: '',
+    ogUrl: '', ogImage: '', ogSource: 'auto', ogCustom: '',
     primary: DEFAULT_PRIMARY, secondary: DEFAULT_SECONDARY
   };
 
@@ -423,6 +446,7 @@
   var paintAvatar = bindUpload('up-avatar', 'avatar-thumb', 'avatar', '👤');
   var paintCover  = bindUpload('up-cover', 'cover-thumb', 'cover', '🖼️');
   var paintQr     = bindUpload('up-qr', 'qr-thumb', 'qr', '🔳');
+  var paintOgCustom = bindUpload('up-ogcustom', 'ogcustom-thumb', 'ogCustom', '🖼️');
 
   function bindClear(btnId, key, paint) {
     document.getElementById(btnId).addEventListener('click', function () {
@@ -432,6 +456,19 @@
   bindClear('clear-avatar', 'avatar', paintAvatar);
   bindClear('clear-cover', 'cover', paintCover);
   bindClear('clear-qr', 'qr', paintQr);
+  bindClear('clear-ogcustom', 'ogCustom', paintOgCustom);
+
+  /* ---------- OG image source selector ---------- */
+  var ogSourceSel = document.getElementById('f-ogSource');
+  var ogCustomRow = document.getElementById('og-custom-row');
+  function paintOgSource() {
+    ogSourceSel.value = state.ogSource || 'auto';
+    ogCustomRow.style.display = state.ogSource === 'custom' ? '' : 'none';
+  }
+  ogSourceSel.addEventListener('change', function () {
+    state.ogSource = ogSourceSel.value; persist(); paintOgSource();
+  });
+  paintOgSource();
 
   /* ---------- brand colour pickers ---------- */
   var brandPreview = document.getElementById('brand-preview');
@@ -756,7 +793,7 @@
     all.forEach(function (u) { out.set(u, p); p += u.length; });
     return out;
   }
-  // render a 1200×630 branded share image (og.jpg) from the card data
+  // render a 1200×630 share image (og.jpg); source: auto branded card / avatar / custom upload
   function makeOgImageBytes() {
     return new Promise(function (resolve) {
       var W = 1200, H = 630, c = document.createElement('canvas');
@@ -766,38 +803,77 @@
       g.addColorStop(0, state.primary); g.addColorStop(1, state.secondary);
       ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
       var fam = '-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif';
-      function drawText() {
-        var hasAvatar = !!state.avatar;
-        var tx = 90, textW = hasAvatar ? 720 : W - 180;
-        ctx.textBaseline = 'alphabetic'; ctx.fillStyle = '#fff';
-        ctx.font = '700 84px ' + fam;
-        ctx.fillText(state.name || '您的姓名', tx, 300, textW);
-        ctx.font = '400 40px ' + fam; ctx.fillStyle = 'rgba(255,255,255,.92)';
-        var line2 = [state.title, state.company].filter(Boolean).join(' · ');
-        if (line2) ctx.fillText(line2, tx, 366, textW);
-        if (state.slogan) { ctx.font = '400 34px ' + fam; ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fillText(state.slogan, tx, 430, textW); }
+      function finalize() {
         c.toBlob(function (blob) {
           var r = new FileReader();
           r.onload = function () { resolve(new Uint8Array(r.result)); };
           r.readAsArrayBuffer(blob);
         }, 'image/jpeg', 0.9);
       }
-      if (state.avatar) {
+      // auto branded card: name / title·company / slogan on the left, avatar circle on the right
+      function drawBrandedCard() {
+        function drawText() {
+          var hasAvatar = !!state.avatar;
+          var tx = 90, textW = hasAvatar ? 720 : W - 180;
+          ctx.textBaseline = 'alphabetic'; ctx.fillStyle = '#fff';
+          ctx.font = '700 84px ' + fam;
+          ctx.fillText(state.name || '您的姓名', tx, 300, textW);
+          ctx.font = '400 40px ' + fam; ctx.fillStyle = 'rgba(255,255,255,.92)';
+          var line2 = [state.title, state.company].filter(Boolean).join(' · ');
+          if (line2) ctx.fillText(line2, tx, 366, textW);
+          if (state.slogan) { ctx.font = '400 34px ' + fam; ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fillText(state.slogan, tx, 430, textW); }
+          finalize();
+        }
+        if (state.avatar) {
+          var img = new Image();
+          img.onload = function () {
+            var d = 300, cx = 950, cy = H / 2;
+            ctx.save();
+            ctx.beginPath(); ctx.arc(cx, cy, d / 2 + 6, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fill();
+            ctx.beginPath(); ctx.arc(cx, cy, d / 2, 0, Math.PI * 2); ctx.clip();
+            var ar = img.width / img.height, dw = d, dh = d, ox = 0, oy = 0;
+            if (ar > 1) { dw = d * ar; ox = -(dw - d) / 2; } else { dh = d / ar; oy = -(dh - d) / 2; }
+            ctx.drawImage(img, cx - d / 2 + ox, cy - d / 2 + oy, dw, dh);
+            ctx.restore();
+            drawText();
+          };
+          img.onerror = drawText;
+          img.src = state.avatar;
+        } else { drawText(); }
+      }
+      // centred circular avatar (square-crop friendly for LINE)
+      function drawCenteredAvatar(dataURL) {
         var img = new Image();
         img.onload = function () {
-          var d = 300, cx = 950, cy = H / 2;
+          var d = 400, cx = W / 2, cy = H / 2;
           ctx.save();
-          ctx.beginPath(); ctx.arc(cx, cy, d / 2 + 6, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fill();
+          ctx.beginPath(); ctx.arc(cx, cy, d / 2 + 8, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fill();
           ctx.beginPath(); ctx.arc(cx, cy, d / 2, 0, Math.PI * 2); ctx.clip();
           var ar = img.width / img.height, dw = d, dh = d, ox = 0, oy = 0;
           if (ar > 1) { dw = d * ar; ox = -(dw - d) / 2; } else { dh = d / ar; oy = -(dh - d) / 2; }
           ctx.drawImage(img, cx - d / 2 + ox, cy - d / 2 + oy, dw, dh);
           ctx.restore();
-          drawText();
+          finalize();
         };
-        img.onerror = drawText;
-        img.src = state.avatar;
-      } else { drawText(); }
+        img.onerror = drawBrandedCard;
+        img.src = dataURL;
+      }
+      // logo / custom image, contained & centred on the brand background
+      function drawContained(dataURL) {
+        var img = new Image();
+        img.onload = function () {
+          var maxW = W * 0.6, maxH = H * 0.72;
+          var ar = img.width / img.height, dw = maxW, dh = maxW / ar;
+          if (dh > maxH) { dh = maxH; dw = maxH * ar; }
+          ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+          finalize();
+        };
+        img.onerror = drawBrandedCard;
+        img.src = dataURL;
+      }
+      if (state.ogSource === 'avatar' && state.avatar) drawCenteredAvatar(state.avatar);
+      else if (state.ogSource === 'custom' && state.ogCustom) drawContained(state.ogCustom);
+      else drawBrandedCard();
     });
   }
 
@@ -864,8 +940,8 @@
       var el = document.getElementById('f-' + key);
       if (el) el.value = state[key] || '';
     });
-    paintAvatar(); paintCover(); paintQr();
-    syncPrimary(); syncSecondary(); paintBrandPreview();
+    paintAvatar(); paintCover(); paintQr(); paintOgCustom();
+    syncPrimary(); syncSecondary(); paintBrandPreview(); paintOgSource();
     render();
   }
 
