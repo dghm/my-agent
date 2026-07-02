@@ -437,9 +437,7 @@
       ? '<div class="section"><div class="sec-title">公司簡介</div><p class="about">' + esc(s.about).replace(/\n/g, '<br>') + '</p></div>'
       : '';
 
-    var qrBlock = s.qr
-      ? '<div class="section qr-sec"><div class="sec-title">加我微信</div><img class="qr" src="' + s.qr + '" alt="微信 QR Code"><p class="qr-hint">長按或截圖後於微信掃一掃</p></div>'
-      : '';
+    var qrBlock = '<div class="section qr-sec"><div class="sec-title">加我微信</div><img class="qr" src="./wechat-qr.png" alt="微信 QR Code"><p class="qr-hint">長按或截圖後於微信掃一掃</p></div>';
 
     // vCard for save-to-contacts button (built inside the card too)
     var vcard = buildVCard();
@@ -447,7 +445,7 @@
 
     var actions = [];
     if (s.mobile) actions.push('<a class="act" href="tel:' + esc(s.mobile.replace(/[^0-9+]/g, '')) + '">📞<span>撥號</span></a>');
-    actions.push('<a class="act" href="' + vcardData + '" download="' + esc((s.name || 'contact')) + '.vcf">📇<span>存名片</span></a>');
+    actions.push('<a class="act" href="./contact.vcf" download="contact.vcf">📇<span>存名片</span></a>');
     if (s.wechat) actions.push('<button class="act" type="button" onclick="copyText(\'' + esc(s.wechat).replace(/'/g, "\\'") + '\',this)">💬<span>複製微信</span></button>');
     if (website) actions.push('<a class="act" href="' + esc(website) + '" target="_blank" rel="noopener">🌐<span>官網</span></a>');
 
@@ -495,6 +493,11 @@
       '<meta charset="UTF-8">\n' +
       '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">\n' +
       '<meta name="format-detection" content="telephone=no">\n' +
+      '<meta property="og:title" content="[姓名 · 職稱 · 公司]">\n' +
+      '<meta property="og:description" content="[電話 ｜ 聯絡方式]">\n' +
+      '<meta property="og:image" content="[og-image-url]">\n' +
+      '<meta property="og:type" content="website">\n' +
+      '<meta property="og:url" content="[card-url]">\n' +
       '<title>' + esc(displayName) + (s.company ? ' · ' + esc(s.company) : '') + ' — 電子名片</title>\n' +
       '<style>' + css + '</style>\n</head>\n<body>\n' +
       '<div class="card-wrap">\n' +
