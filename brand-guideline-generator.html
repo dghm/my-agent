@@ -164,7 +164,7 @@
           <input type="color" class="color-swatch" id="navy-color" value="#143463">
         </div>
         <div class="color-line">
-          <input type="text" class="color-name" id="accent-name" value="Text">
+          <input type="text" class="color-name" id="accent-name" value="Accent">
           <input type="text" class="color-hex" id="accent-hex" value="#97D3DF">
           <input type="color" class="color-swatch" id="accent-color" value="#97D3DF">
         </div>
@@ -181,7 +181,7 @@
 
         <div class="group-label">中性色</div>
         <div class="color-line">
-          <input type="text" class="color-name" id="ink-name" value="Background">
+          <input type="text" class="color-name" id="ink-name" value="Text">
           <input type="text" class="color-hex" id="ink-hex" value="#222222">
           <input type="color" class="color-swatch" id="ink-color" value="#222222">
         </div>
@@ -191,7 +191,7 @@
           <input type="color" class="color-swatch" id="gray-color" value="#666666">
         </div>
         <div class="color-line">
-          <input type="text" class="color-name" id="white-name" value="Surface">
+          <input type="text" class="color-name" id="white-name" value="Background">
           <input type="text" class="color-hex" id="white-hex" value="#FFFFFF">
           <input type="color" class="color-swatch" id="white-color" value="#FFFFFF">
         </div>
@@ -221,6 +221,28 @@
           <input type="text" class="color-name" id="btntexthover-name" value="Button Text Hover">
           <input type="text" class="color-hex" id="btntexthover-hex" value="#FFFFFF">
           <input type="color" class="color-swatch" id="btntexthover-color" value="#FFFFFF">
+        </div>
+
+        <div class="group-label">按鈕樣式（Secondary）</div>
+        <div class="color-line">
+          <input type="text" class="color-name" id="btnbg2-name" value="Button BG 2">
+          <input type="text" class="color-hex" id="btnbg2-hex" value="#FFFFFF">
+          <input type="color" class="color-swatch" id="btnbg2-color" value="#FFFFFF">
+        </div>
+        <div class="color-line">
+          <input type="text" class="color-name" id="btnbg2hover-name" value="Button BG 2 Hover">
+          <input type="text" class="color-hex" id="btnbg2hover-hex" value="#EFF1F4">
+          <input type="color" class="color-swatch" id="btnbg2hover-color" value="#EFF1F4">
+        </div>
+        <div class="color-line">
+          <input type="text" class="color-name" id="btntext2-name" value="Button Text 2">
+          <input type="text" class="color-hex" id="btntext2-hex" value="#143463">
+          <input type="color" class="color-swatch" id="btntext2-color" value="#143463">
+        </div>
+        <div class="color-line">
+          <input type="text" class="color-name" id="btntext2hover-name" value="Button Text 2 Hover">
+          <input type="text" class="color-hex" id="btntext2hover-hex" value="#143463">
+          <input type="color" class="color-swatch" id="btntext2hover-color" value="#143463">
         </div>
       </fieldset>
 
@@ -255,12 +277,15 @@
 
       <fieldset>
         <legend>05 — 字體與排版示範</legend>
-        <label>字體 font-family</label>
+        <label>字體 font-family（Body／正文）</label>
         <input type="text" id="font-stack" value='"Noto Sans", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", -apple-system, "Segoe UI", Roboto, sans-serif'>
 
+        <label>字體 font-family（Headings／標題，選填，留空則沿用上方 Body 字體）</label>
+        <input type="text" id="heading-font-stack" placeholder='留空＝與 Body 字體相同，或填入如 "Noto Sans TC", sans-serif'>
+
         <label>Google Fonts 載入網址（選填）</label>
-        <input type="text" id="font-import-url" placeholder="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap">
-        <p class="hint" style="margin:4px 0 0;">若上方字體名稱不是系統內建字型（如 Montserrat、Inter 等 Google Fonts），需填入對應的 Google Fonts 連結，否則瀏覽器找不到字型檔案，畫面會自動 fallback 成其他字體，視覺上看不出差異。</p>
+        <input type="text" id="font-import-url" placeholder="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Roboto:wght@400;700&display=swap">
+        <p class="hint" style="margin:4px 0 0;">若上方字體名稱不是系統內建字型（如 Montserrat、Inter 等 Google Fonts），需填入對應的 Google Fonts 連結，否則瀏覽器找不到字型檔案，畫面會自動 fallback 成其他字體，視覺上看不出差異。Body／Headings 字體不同時，請在同一條網址中用多個 <code>family=</code> 參數一次帶入兩種字體（如上方範例）。</p>
 
         <label>H1 示範文字</label>
         <input type="text" id="h1-demo" value="Product Name CRM Interface User Guide">
@@ -355,7 +380,7 @@
     </div>
     <div class="output-view hidden" id="view-breakdance">
       <div class="breakdance-upload">
-        <label for="breakdance-base-file" style="margin:0 0 6px;">選填：上傳現有 <code>global-settings.json</code>，將本頁色彩套用到完整檔案後一併下載</label>
+        <label for="breakdance-base-file" style="margin:0 0 6px;">選填：上傳現有 <code>global-settings.json</code>（雙向同步——會自動把其中的色彩／按鈕設定套用回左側表單並即時預覽，下載時也會合併寫回此檔案的其他設定）</label>
         <div class="upload-row">
           <input type="file" id="breakdance-base-file" accept="application/json,.json">
           <button type="button" class="secondary small" id="breakdance-base-clear" style="display:none;">清除已上傳檔案</button>
@@ -566,6 +591,7 @@ ${paletteVarsBlock}
 
   /* ---- Typography ---- */
   --tm-font: ${val('font-stack')};
+  --tm-heading-font: ${val('heading-font-stack').trim() || val('font-stack')};
 
   /* ---- Visual Style（每客戶可自訂） ---- */
   --tm-radius-sm: ${val('radius-sm')}px;    /* 按鈕、輸入框圓角 */
@@ -764,6 +790,7 @@ ${val('font-import-url').trim() ? `<link rel="stylesheet" href="${esc(val('font-
   }
   h2 {
     color: var(--surface-heading);
+    font-family: var(--tm-heading-font);
     font-size: 20px;
     margin: 0 0 6px;
     border-bottom: 2px solid var(--surface-border);
@@ -860,9 +887,9 @@ ${val('font-import-url').trim() ? `<link rel="stylesheet" href="${esc(val('font-
     display: flex; justify-content: space-between; align-items: baseline;
     font-size: 11px; color: var(--tm-gray); margin-bottom: 6px;
   }
-  .type-demo h3 { margin: 0; color: var(--tm-pale); }
-  .type-demo .h1-demo { font-size: 32px; font-weight: 700; color: var(--tm-pale); margin: 0; }
-  .type-demo .body-demo { font-size: 14px; color: var(--tm-accent); margin: 0; }
+  .type-demo h3 { margin: 0; color: var(--tm-pale); font-family: var(--tm-heading-font); }
+  .type-demo .h1-demo { font-size: 32px; font-weight: 700; color: var(--tm-pale); margin: 0; font-family: var(--tm-heading-font); }
+  .type-demo .body-demo { font-size: 14px; color: var(--tm-accent); margin: 0; font-family: var(--tm-font); }
   .type-demo + .type-demo { margin-top: 12px; }
 
   /* ---- Do/Don't ---- */
@@ -1276,32 +1303,219 @@ function uuidv4() {
 /* 使用者選填上傳的現有 global-settings.json（完整物件，用於合併輸出） */
 let breakdanceBaseSettings = null;
 
-function buildBreakdanceColors() {
-  const existingPalette = (breakdanceBaseSettings
-    && breakdanceBaseSettings.settings
-    && breakdanceBaseSettings.settings.colors
-    && breakdanceBaseSettings.settings.colors.palette
-    && breakdanceBaseSettings.settings.colors.palette.colors) || [];
+// Breakdance 內部一律以 8 碼 RGBA HEX 儲存顏色（如 #143463FF）；
+// var(--xxx) 參照值原樣保留，不附加透明度。
+function toBdHex(hex) {
+  if (/^#[0-9A-Fa-f]{6}$/.test(hex)) return hex.toUpperCase() + 'FF';
+  return hex;
+}
 
-  const palette = getPaletteEntries().map((p, i) => {
+// 字體名稱 ↔ Breakdance Google Fonts slug 的轉換為「推測版」，
+// 命名規則依範例檔（如 "K2D" → "gfont-k2d"）反推，多字詞字體或特殊大小寫可能對應不完全準確，
+// 匯入/匯出後建議肉眼確認一次字體名稱。
+// 已知的 Google Fonts 名稱 ↔ Breakdance slug 對照（slug 規則為「移除所有空白後轉小寫」，
+// 例如 "Noto Sans TC" → "notosanstc"；多字字型還原時無法單靠規則拆字，
+// 因此用此表收錄常見字型以求準確，未收錄者則用最佳猜測還原，可能字距/大小寫不完全正確）。
+const KNOWN_GFONTS = [
+  'Noto Sans TC', 'Noto Sans', 'Noto Serif TC', 'Open Sans', 'Roboto', 'Roboto Condensed',
+  'Montserrat', 'Inter', 'Lato', 'Poppins', 'Source Sans Pro', 'PT Sans', 'Nunito',
+  'Work Sans', 'M PLUS Rounded 1c', 'M PLUS 1p', 'K2D', 'IBM Plex Sans', 'Plus Jakarta Sans',
+  'Mukta', 'Rubik', 'Raleway', 'Merriweather', 'Playfair Display'
+];
+const KNOWN_GFONT_SLUG_MAP = {};
+KNOWN_GFONTS.forEach(name => { KNOWN_GFONT_SLUG_MAP[name.toLowerCase().replace(/\s+/g, '')] = name; });
+
+function toGfontSlug(fontStackValue) {
+  const first = String(fontStackValue || '').split(',')[0].trim().replace(/^["']|["']$/g, '');
+  if (!first) return null;
+  return 'gfont-' + first.toLowerCase().replace(/\s+/g, '');
+}
+
+function fromGfontSlug(slug) {
+  const m = String(slug || '').match(/^gfont-(.+)$/);
+  if (!m) return null;
+  const key = m[1];
+  if (KNOWN_GFONT_SLUG_MAP[key]) return KNOWN_GFONT_SLUG_MAP[key];
+  return key.charAt(0).toUpperCase() + key.slice(1);
+}
+
+// 8 碼 RGBA HEX → 6 碼 HEX（丟棄透明度，供色票輸入框/色票選取器使用）
+function fromBdHex(value) {
+  if (typeof value === 'string' && /^#[0-9A-Fa-f]{8}$/.test(value)) {
+    return value.slice(0, 7).toUpperCase();
+  }
+  return value;
+}
+
+// 將 Breakdance 內部的 var(--bde-xxx) 參照解析回實際色碼，
+// 解析不到（命名規則未知）則原樣保留字串。
+function resolveBdVarColor(value, varMap) {
+  if (typeof value !== 'string') return value;
+  const m = value.match(/^var\(--([\w-]+)\)$/);
+  if (!m) return value;
+  return varMap[m[1]] || value;
+}
+
+function setColorField(idPrefix, rawValue) {
+  if (rawValue == null) return;
+  const hexInput = document.getElementById(idPrefix + '-hex');
+  const colorInput = document.getElementById(idPrefix + '-color');
+  if (!hexInput) return;
+  hexInput.value = rawValue;
+  if (colorInput && /^#[0-9A-Fa-f]{6}$/.test(rawValue)) colorInput.value = rawValue;
+}
+
+// 將上傳的 Breakdance global-settings.json 內容回填到左側表單，
+// 讓「在 Breakdance 編好、下載 JSON、回到本工具讀取」這個反向流程可以直接取代左側預設值並即時預覽。
+function applyBreakdanceSettingsToForm(settings) {
+  if (!settings) return;
+  const colors = settings.colors || {};
+  const buttons = settings.buttons || {};
+
+  const varMap = {};
+  (colors.palette && colors.palette.colors || []).forEach(p => {
+    varMap[p.cssVariableName] = fromBdHex(p.value);
+  });
+  if (colors.brand != null) varMap['bde-brand-primary-color'] = fromBdHex(colors.brand);
+  if (colors.text != null) varMap['bde-body-text-color'] = fromBdHex(colors.text);
+  if (colors.headings != null) varMap['bde-headings-color'] = fromBdHex(colors.headings);
+  if (colors.links != null) varMap['bde-links-color'] = fromBdHex(colors.links);
+  if (colors.background != null) varMap['bde-background-color'] = fromBdHex(colors.background);
+
+  const resolve = (v) => fromBdHex(resolveBdVarColor(v, varMap));
+
+  if (colors.brand != null) setColorField('navy', resolve(colors.brand));
+  if (colors.text != null) setColorField('ink', resolve(colors.text));
+  if (colors.headings != null) setColorField('pale', resolve(colors.headings));
+  if (colors.links != null) setColorField('link', resolve(colors.links));
+  if (colors.background != null) setColorField('white', resolve(colors.background));
+
+  if (colors.palette && Array.isArray(colors.palette.colors)) {
+    const accentName = val('accent-name').trim().toLowerCase();
+    let entries = colors.palette.colors.slice();
+    const accentIdx = entries.findIndex(p => String(p.label || '').trim().toLowerCase() === accentName);
+    if (accentIdx !== -1) {
+      setColorField('accent', resolve(entries[accentIdx].value));
+      entries.splice(accentIdx, 1);
+    }
+    const paletteList = document.getElementById('palette-list');
+    paletteList.innerHTML = '';
+    entries.forEach(p => {
+      paletteList.appendChild(createPaletteRow(p.label || '', resolve(p.value) || '#CCCCCC'));
+    });
+  }
+
+  const primary = buttons.primary || {};
+  if (primary.background != null) setColorField('btnbg', resolve(primary.background));
+  if (primary.background_hover != null) setColorField('btnbghover', resolve(primary.background_hover));
+  const textColor = primary.typography && primary.typography.color && primary.typography.color.breakpoint_base;
+  const textHoverColor = primary.typography && primary.typography.color_hover && primary.typography.color_hover.breakpoint_base;
+  if (textColor != null) setColorField('btntext', resolve(textColor));
+  if (textHoverColor != null) setColorField('btntexthover', resolve(textHoverColor));
+
+  const secondary = buttons.secondary || {};
+  if (secondary.background != null) setColorField('btnbg2', resolve(secondary.background));
+  if (secondary.background_hover != null) setColorField('btnbg2hover', resolve(secondary.background_hover));
+  const textColor2 = secondary.typography && secondary.typography.color && secondary.typography.color.breakpoint_base;
+  const textHoverColor2 = secondary.typography && secondary.typography.color_hover && secondary.typography.color_hover.breakpoint_base;
+  if (textColor2 != null) setColorField('btntext2', resolve(textColor2));
+  if (textHoverColor2 != null) setColorField('btntext2hover', resolve(textHoverColor2));
+
+  const typography = settings.typography || {};
+  const bodyFontName = fromGfontSlug(typography.body_font);
+  const headingFontName = fromGfontSlug(typography.heading_font);
+  if (bodyFontName) {
+    document.getElementById('font-stack').value = '"' + bodyFontName + '", sans-serif';
+  }
+  if (headingFontName && headingFontName !== bodyFontName) {
+    document.getElementById('heading-font-stack').value = '"' + headingFontName + '", sans-serif';
+  } else {
+    document.getElementById('heading-font-stack').value = '';
+  }
+}
+
+function buildBreakdanceColors() {
+  const existingColors = (breakdanceBaseSettings
+    && breakdanceBaseSettings.settings
+    && breakdanceBaseSettings.settings.colors) || {};
+
+  // 深拷貝既有 colors 區塊，保留 buttons／palette.gradients／其他未知欄位，
+  // 之後只覆寫本工具實際管理的色彩欄位，避免清空使用者原檔內容。
+  const mergedColors = JSON.parse(JSON.stringify(existingColors));
+
+  const existingPalette = (existingColors.palette && existingColors.palette.colors) || [];
+  const accentName = val('accent-name').trim().toLowerCase();
+  const allEntries = [
+    { name: val('accent-name'), hex: val('accent-hex') },
+    ...getPaletteEntries().filter(p => p.name.trim().toLowerCase() !== accentName)
+  ];
+  const palette = allEntries.map((p, i) => {
     const matched = existingPalette.find(e =>
       String(e.label || '').trim().toLowerCase() === p.name.trim().toLowerCase()
     );
     return {
       cssVariableName: matched ? matched.cssVariableName : 'bde-palette-color-' + (i + 1) + '-' + uuidv4(),
       label: p.name,
-      value: p.hex
+      value: toBdHex(p.hex)
     };
   });
 
-  return {
-    brand: val('navy-hex'),
-    text: val('ink-hex'),
-    headings: val('navy-hex'),
-    links: val('link-hex'),
-    background: val('white-hex'),
-    palette: { colors: palette }
-  };
+  mergedColors.brand = toBdHex(val('navy-hex'));
+  mergedColors.text = toBdHex(val('ink-hex'));
+  mergedColors.headings = toBdHex(val('pale-hex'));
+  mergedColors.links = toBdHex(val('link-hex'));
+  mergedColors.background = toBdHex(val('white-hex'));
+  mergedColors.palette = mergedColors.palette || {};
+  mergedColors.palette.colors = palette;
+
+  return mergedColors;
+}
+
+// 按鈕色彩對應 Breakdance 的 settings.buttons.primary／secondary（與 settings.colors 同層，非其子項）：
+// 僅覆寫 background／background_hover／文字色／Hover 文字色，
+// 保留兩者的 typography（字體）設定與 button_presets 不變。
+function buildBreakdanceButtons() {
+  const existingButtons = (breakdanceBaseSettings
+    && breakdanceBaseSettings.settings
+    && breakdanceBaseSettings.settings.buttons) || {};
+
+  const mergedButtons = JSON.parse(JSON.stringify(existingButtons));
+  const primary = mergedButtons.primary || {};
+  primary.background = toBdHex(val('btnbg-hex'));
+  primary.background_hover = toBdHex(val('btnbghover-hex'));
+  primary.typography = primary.typography || {};
+  primary.typography.color = primary.typography.color || {};
+  primary.typography.color.breakpoint_base = toBdHex(val('btntext-hex'));
+  primary.typography.color_hover = primary.typography.color_hover || {};
+  primary.typography.color_hover.breakpoint_base = toBdHex(val('btntexthover-hex'));
+  mergedButtons.primary = primary;
+
+  const secondary = mergedButtons.secondary || {};
+  secondary.background = toBdHex(val('btnbg2-hex'));
+  secondary.background_hover = toBdHex(val('btnbg2hover-hex'));
+  secondary.typography = secondary.typography || {};
+  secondary.typography.color = secondary.typography.color || {};
+  secondary.typography.color.breakpoint_base = toBdHex(val('btntext2-hex'));
+  secondary.typography.color_hover = secondary.typography.color_hover || {};
+  secondary.typography.color_hover.breakpoint_base = toBdHex(val('btntext2hover-hex'));
+  mergedButtons.secondary = secondary;
+
+  return mergedButtons;
+}
+
+// 字體名稱對應 Breakdance 的 settings.typography（heading_font／body_font），
+// 僅覆寫這兩個欄位，保留原檔 base_size／advanced 等其他字體設定不變。
+function buildBreakdanceTypography() {
+  const existingTypography = (breakdanceBaseSettings
+    && breakdanceBaseSettings.settings
+    && breakdanceBaseSettings.settings.typography) || {};
+
+  const mergedTypography = JSON.parse(JSON.stringify(existingTypography));
+  const bodySlug = toGfontSlug(val('font-stack'));
+  const headingSlug = toGfontSlug(val('heading-font-stack').trim() || val('font-stack'));
+  if (bodySlug) mergedTypography.body_font = bodySlug;
+  if (headingSlug) mergedTypography.heading_font = headingSlug;
+  return mergedTypography;
 }
 
 function buildBreakdanceJSON() {
@@ -1309,15 +1523,17 @@ function buildBreakdanceJSON() {
     const merged = JSON.parse(JSON.stringify(breakdanceBaseSettings));
     merged.settings = merged.settings || {};
     merged.settings.colors = buildBreakdanceColors();
+    merged.settings.buttons = buildBreakdanceButtons();
+    merged.settings.typography = buildBreakdanceTypography();
     return JSON.stringify(merged, null, 2);
   }
-  return JSON.stringify({ settings: { colors: buildBreakdanceColors() } }, null, 2);
+  return JSON.stringify({ settings: { colors: buildBreakdanceColors(), buttons: buildBreakdanceButtons(), typography: buildBreakdanceTypography() } }, null, 2);
 }
 
 function updateBreakdanceHint() {
   const hint = document.getElementById('breakdance-hint');
   if (breakdanceBaseSettings) {
-    hint.innerHTML = '已載入現有 <code>global-settings.json</code>，下方為套用本頁色彩後的完整檔案（<code>typography</code>／<code>buttons</code> 等其他設定維持原檔內容不變）。下載檔名為 <code>global-settings.json</code>。';
+    hint.innerHTML = '已載入現有 <code>global-settings.json</code>，下方為套用本頁色彩與按鈕色彩後的完整檔案（按鈕僅覆寫 Primary／Secondary 的背景／Hover 背景／文字色／Hover 文字色，其餘 <code>typography</code>、Button Presets 等設定維持原檔內容不變）。下載檔名為 <code>global-settings.json</code>。';
   } else {
     hint.innerHTML = '此 JSON 僅包含 Breakdance 全域設定中的 <code>colors</code> 區塊（含 Palette）。可上傳現有 <code>global-settings.json</code>，將本頁色彩套用到完整檔案後一併下載。';
   }
@@ -1471,7 +1687,8 @@ document.getElementById('breakdance-base-file').addEventListener('change', (e) =
   reader.onload = () => {
     try {
       breakdanceBaseSettings = JSON.parse(reader.result);
-      document.getElementById('breakdance-base-status').textContent = '已載入：' + file.name;
+      applyBreakdanceSettingsToForm(breakdanceBaseSettings.settings);
+      document.getElementById('breakdance-base-status').textContent = '已載入：' + file.name + '（已套用其色彩／按鈕設定到左側表單）';
       document.getElementById('breakdance-base-clear').style.display = 'inline-block';
       updateBreakdanceHint();
       renderOutputs();

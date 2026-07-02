@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DGHM 操作手冊骨架產生器</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --navy: #0D2F6E;
+    --navy-text: var(--navy);
+    --orange: #E5622A;
+    --surface-bg: #F4F6F8;
+    --surface-panel-bg: #ffffff;
+    --surface-border: #E1E5EA;
+    --surface-text: #1f2933;
+    --surface-text-muted: #667085;
+    --surface-input-bg: #ffffff;
+    --surface-input-border: #D0D5DD;
+    --surface-soft: rgba(13,47,110,0.04);
+  }
+  :root[data-theme="dark"] {
+    --navy: #6FA0F2;
+    --surface-bg: #161b22;
+    --surface-panel-bg: #1f2530;
+    --surface-border: #323a47;
+    --surface-text: #e6e9ef;
+    --surface-text-muted: #9aa4b2;
+    --surface-input-bg: #2a313d;
+    --surface-input-border: #3d4654;
+    --navy-text: #7FA8E8;
+    --surface-soft: rgba(255,255,255,0.04);
+  }
+  body {
+    font-family: -apple-system, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    margin: 0;
+    background: var(--surface-bg);
+    color: var(--surface-text);
+  }
+  .app { display: flex; height: 100vh; }
+
+  /* ---- Form panel ---- */
+  .form-panel {
+    width: 460px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    padding: 20px;
+    background: var(--surface-panel-bg);
+    border-right: 1px solid var(--surface-border);
+  }
+  .form-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .draft-actions { display: flex; gap: 8px; margin: 0 0 16px; flex-wrap: wrap; }
+  .draft-actions button { font-size: 12px; padding: 6px 10px; }
+  .home-link {
+    display: inline-block; font-size: 12px; color: var(--surface-text-muted);
+    text-decoration: none; margin-bottom: 8px;
+  }
+  .home-link:hover { color: var(--navy-text); text-decoration: underline; }
+  h1 { font-size: 18px; margin: 0 0 4px; color: var(--navy-text); }
+  .hint { font-size: 12px; color: var(--surface-text-muted); margin: 0 0 16px; line-height: 1.6; }
+  #theme-toggle {
+    flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px;
+    border: 1px solid var(--surface-border); background: var(--surface-input-bg);
+    font-size: 16px; cursor: pointer; line-height: 1; padding: 0; color: var(--surface-text);
+  }
+  fieldset { border: 1px solid var(--surface-border); border-radius: 8px; margin-bottom: 16px; padding: 12px 14px; }
+  legend { font-size: 12px; font-weight: 700; color: var(--navy-text); padding: 0 4px; }
+  label { display: block; font-size: 12px; color: var(--surface-text-muted); margin: 10px 0 4px; }
+  label:first-of-type { margin-top: 4px; }
+  input[type=text], input[type=date], select {
+    width: 100%; padding: 6px 8px; font-size: 13px;
+    border: 1px solid var(--surface-input-border); border-radius: 6px; font-family: inherit;
+    background: var(--surface-input-bg); color: var(--surface-text);
+  }
+  input[type=color] {
+    width: 100%; height: 34px; padding: 2px; cursor: pointer;
+    border: 1px solid var(--surface-input-border); border-radius: 6px;
+    background: var(--surface-input-bg);
+  }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tip { font-size: 12px; color: var(--surface-text-muted); margin-top: 10px; line-height: 1.6; }
+
+  /* ---- Buttons ---- */
+  button {
+    cursor: pointer; border: 1px solid var(--navy); background: var(--navy); color: #fff;
+    padding: 6px 12px; border-radius: 6px; font-size: 12px;
+  }
+  button.secondary { background: var(--surface-input-bg); color: var(--navy-text); border-color: var(--surface-border); }
+  button.secondary:hover { border-color: var(--navy-text); }
+  .btn-del { background: none; border: none; color: #ccc; cursor: pointer; font-size: 1rem; padding: 2px 4px; }
+  .btn-del:hover { color: #e53935; }
+  .btn-add {
+    display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
+    background: none; border: 1px dashed var(--surface-input-border); color: var(--surface-text-muted);
+    border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer;
+  }
+  .btn-add:hover { border-color: var(--navy-text); color: var(--navy-text); }
+  .btn-add.sub { padding: 4px 10px; font-size: 11px; margin-top: 2px; }
+
+  /* ---- Chapter 1 (fixed) ---- */
+  .chapter1-card {
+    background: var(--surface-soft); border: 1px solid var(--surface-border);
+    border-radius: 8px; padding: 10px 12px; font-size: 12px;
+    color: var(--surface-text-muted); line-height: 1.75;
+  }
+  .chapter1-card .c1-title { font-weight: 700; color: var(--surface-text-muted); margin-bottom: 4px; }
+  .chapter1-card .c1-lock { float: right; font-size: 11px; opacity: .7; }
+  .chapter1-card ul { margin: 6px 0 0; padding-left: 18px; }
+
+  /* ---- Modules ---- */
+  .module-card {
+    border: 1px solid var(--surface-border); border-radius: 8px;
+    padding: 12px; margin-bottom: 12px; background: var(--surface-input-bg);
+  }
+  .module-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .module-badge { font-size: 11px; font-weight: 700; color: var(--navy-text); white-space: nowrap; }
+  .module-head input { flex: 1; }
+  .module-card label { margin-top: 8px; }
+  .subunit-list { margin: 6px 0; }
+  .subunit-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .subunit-row input[type=checkbox] { flex-shrink: 0; width: 16px; height: 16px; margin: 0; cursor: pointer; }
+  .subunit-row input[type=text] { flex: 1; }
+  .workflow-row {
+    display: flex; align-items: center; gap: 8px; margin-top: 10px; padding-top: 10px;
+    border-top: 1px dashed var(--surface-border); font-size: 12px; color: var(--surface-text-muted);
+  }
+  .workflow-row input[type=checkbox] { width: 16px; height: 16px; margin: 0; cursor: pointer; }
+  .workflow-row .wf-note { opacity: .8; }
+
+  /* ---- Extra chapters checklist ---- */
+  .check-list label { display: flex; align-items: center; gap: 8px; margin: 8px 0; color: var(--surface-text); font-size: 13px; cursor: pointer; }
+  .check-list input[type=checkbox] { width: 16px; height: 16px; margin: 0; cursor: pointer; }
+
+  /* ---- Output panel ---- */
+  .output-panel { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow: hidden; }
+  .output-title { font-size: 13px; font-weight: 700; color: var(--navy-text); margin: 0 0 8px; }
+  .output-actions { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; align-items: center; }
+  .copy-status { font-size: 12px; color: #1a7f4b; font-weight: 600; }
+  #out-md {
+    flex: 1; width: 100%; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px;
+    line-height: 1.65; border: 1px solid var(--surface-input-border); border-radius: 8px;
+    padding: 14px; resize: none; background: var(--surface-input-bg); color: var(--surface-text);
+    white-space: pre; overflow: auto;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ FORM PANEL ============ -->
+  <div class="form-panel">
+    <div class="form-head">
+      <div>
+        <a href="index.html" class="home-link">← 返回首頁</a>
+        <h1>操作手冊骨架產生器</h1>
+        <p class="hint">填入客戶操作手冊（User Guide）的基本資訊與章節規劃，右側會即時產生結構化的 Markdown 文件骨架，之後交給 Claude Cowork 進行內容撰寫與 HTML 排版。</p>
+      </div>
+      <button id="theme-toggle" type="button" aria-label="切換 Dark／Day 模式" title="切換深色／淺色模式">🌙</button>
+    </div>
+
+    <div class="draft-actions">
+      <button type="button" class="secondary" id="save-draft-btn">💾 下載草稿 JSON</button>
+      <button type="button" class="secondary" id="load-draft-btn">📂 載入草稿 JSON</button>
+      <input type="file" id="load-draft-input" accept="application/json" style="display:none">
+    </div>
+
+    <form id="form">
+
+      <fieldset>
+        <legend>01 — 文件識別</legend>
+        <label>客戶名稱 Client Name</label>
+        <input type="text" id="f_client_name" placeholder="e.g. Acme Corp">
+
+        <label>系統名稱 System Name</label>
+        <input type="text" id="f_system_name" placeholder="e.g. Partner Portal">
+
+        <div class="row2">
+          <div>
+            <label>文件版本 Version</label>
+            <input type="text" id="f_version" value="v0.1">
+          </div>
+          <div>
+            <label>文件日期 Date</label>
+            <input type="date" id="f_date">
+          </div>
+        </div>
+
+        <label>文件語言 Language</label>
+        <select id="f_language">
+          <option value="English">English</option>
+          <option value="繁體中文">繁體中文</option>
+        </select>
+      </fieldset>
+
+      <fieldset>
+        <legend>02 — 品牌設定</legend>
+        <div class="row2">
+          <div>
+            <label>主色 Primary Color</label>
+            <input type="color" id="f_primary" value="#143463">
+          </div>
+          <div>
+            <label>強調色 Accent Color</label>
+            <input type="color" id="f_accent" value="#97D3DF">
+          </div>
+        </div>
+        <p class="tip">💡 製作 HTML 時請另外提供客戶 Logo（白底版 + 深色版 PNG）</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>03 — 受眾</legend>
+        <label>適用對象描述</label>
+        <input type="text" id="f_audience" placeholder="e.g. All staff who operate the [System] Interface">
+      </fieldset>
+
+      <fieldset>
+        <legend>04 — 章節規劃</legend>
+
+        <div class="chapter1-card">
+          <span class="c1-lock">🔒 固定章節</span>
+          <div class="c1-title">Chapter 1 — System Overview</div>
+          <ul>
+            <li>1.1 Accessing the System</li>
+            <li>1.2 Navigation Modules</li>
+            <li>1.3 Recommended Workflow</li>
+          </ul>
+        </div>
+
+        <div id="modules-container" style="margin-top:12px"></div>
+
+        <button type="button" class="btn-add" id="add-module-btn">＋ 新增模組</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>05 — 附加章節</legend>
+        <div class="check-list">
+          <label><input type="checkbox" id="c_revision"> 版本紀錄 Revision History</label>
+          <label><input type="checkbox" id="c_faq"> FAQ</label>
+          <label><input type="checkbox" id="c_appendix"> 附錄 Appendix（欄位定義 / 術語表）</label>
+          <label><input type="checkbox" id="c_support"> 技術支援 Technical Support</label>
+          <label><input type="checkbox" id="c_backcover"> 封底 Back Cover</label>
+        </div>
+      </fieldset>
+
+    </form>
+  </div>
+
+  <!-- ============ OUTPUT PANEL ============ -->
+  <div class="output-panel">
+    <p class="output-title">Markdown 骨架預覽</p>
+    <div class="output-actions">
+      <button type="button" class="secondary" id="copy-btn">複製 MD</button>
+      <button type="button" class="secondary" id="download-btn">下載 MD</button>
+      <button type="button" class="secondary" id="open-btn">在新視窗開啟</button>
+      <span class="copy-status" id="copy-status"></span>
+    </div>
+    <textarea id="out-md" readonly spellcheck="false"></textarea>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   Dark / Day 模式（僅編輯介面）
+   ============================================================ */
+(function () {
+  var root = document.documentElement;
+  var btn = document.getElementById('theme-toggle');
+  var saved = null;
+  try { saved = localStorage.getItem('dghm-userguide-editor-theme'); } catch (e) {}
+  if (saved === 'dark') { root.setAttribute('data-theme', 'dark'); btn.textContent = '☀️'; }
+  else { btn.textContent = '🌙'; }
+  btn.addEventListener('click', function () {
+    var isDark = root.getAttribute('data-theme') === 'dark';
+    if (isDark) {
+      root.removeAttribute('data-theme'); btn.textContent = '🌙';
+      try { localStorage.setItem('dghm-userguide-editor-theme', 'light'); } catch (e) {}
+    } else {
+      root.setAttribute('data-theme', 'dark'); btn.textContent = '☀️';
+      try { localStorage.setItem('dghm-userguide-editor-theme', 'dark'); } catch (e) {}
+    }
+  });
+})();
+
+/* ============================================================
+   共用工具
+   ============================================================ */
+function v(id) { return (document.getElementById(id) || {}).value || ''; }
+function checked(id) { return !!(document.getElementById(id) || {}).checked; }
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function ph(val, placeholder) { val = (val || '').trim(); return val || placeholder; }
+function mdCell(s) { return String(s || '').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ').trim(); }
+function today() {
+  var d = new Date();
+  var m = ('0' + (d.getMonth() + 1)).slice(-2);
+  var day = ('0' + d.getDate()).slice(-2);
+  return d.getFullYear() + '-' + m + '-' + day;
+}
+
+/* ============================================================
+   模組 / 子單元（動態新增／刪除）
+   ============================================================ */
+var _mid = 0;
+
+function addModule(name, brief, subs, workflowOn) {
+  _mid++;
+  var id = 'mod' + _mid;
+  var card = document.createElement('div');
+  card.className = 'module-card';
+  card.id = id;
+  card.innerHTML =
+    '<div class="module-head">' +
+      '<span class="module-badge">Chapter <span class="mod-num"></span></span>' +
+      '<input type="text" class="mod-name" placeholder="模組名稱，例：Partners" value="' + esc(name || '') + '">' +
+      '<button type="button" class="btn-del" title="刪除模組" onclick="removeModule(\'' + id + '\')">✕</button>' +
+    '</div>' +
+    '<input type="text" class="mod-brief" placeholder="模組簡述（一行，可選填）" value="' + esc(brief || '') + '">' +
+    '<div class="subunit-list"></div>' +
+    '<button type="button" class="btn-add sub" onclick="addSubunit(\'' + id + '\')">＋ 新增子單元</button>' +
+    '<label class="workflow-row">' +
+      '<input type="checkbox" class="mod-workflow"' + (workflowOn !== false ? ' checked' : '') + '>' +
+      '<span>Workflow（流程圖頁）<span class="wf-note"> — 永遠置於該模組最後</span></span>' +
+    '</label>';
+  document.getElementById('modules-container').appendChild(card);
+
+  if (Array.isArray(subs)) {
+    subs.forEach(function (s) { addSubunit(id, s.name, s.checked); });
+  } else {
+    addSubunit(id, '', true);
+    addSubunit(id, '', true);
+  }
+  renumberModules();
+  refreshOutput();
+}
+
+function removeModule(id) {
+  var el = document.getElementById(id);
+  if (el) el.remove();
+  renumberModules();
+  refreshOutput();
+}
+
+function addSubunit(moduleId, name, isChecked) {
+  var card = document.getElementById(moduleId);
+  if (!card) return;
+  var list = card.querySelector('.subunit-list');
+  var row = document.createElement('div');
+  row.className = 'subunit-row';
+  row.innerHTML =
+    '<input type="checkbox" class="su-check"' + (isChecked === false ? '' : ' checked') + '>' +
+    '<input type="text" class="su-name" placeholder="子單元名稱（一行，可選填）" value="' + esc(name || '') + '">' +
+    '<button type="button" class="btn-del" title="刪除子單元" onclick="removeSubunit(this)">✕</button>';
+  list.appendChild(row);
+  refreshOutput();
+}
+
+function removeSubunit(btn) {
+  var row = btn.closest('.subunit-row');
+  if (row) row.remove();
+  refreshOutput();
+}
+
+function renumberModules() {
+  var cards = document.querySelectorAll('#modules-container .module-card');
+  for (var i = 0; i < cards.length; i++) {
+    cards[i].querySelector('.mod-num').textContent = i + 2;
+  }
+}
+
+/* ============================================================
+   排版備註（交給 Claude 製作 HTML 時遵守的規範）
+   ============================================================ */
+var LAYOUT_NOTES = [
+'## 排版備註（交給 Claude 製作 HTML 時遵守）',
+'',
+'> 以下規範不影響骨架內容，是本 MD 交給 Claude 製作 HTML 時必須遵守的排版原則。',
+'',
+'### 頁面架構',
+'',
+'每份文件由「封面」與「內頁」兩種 HTML 元素組成：',
+'',
+'```html',
+'<!-- 封面 -->',
+'<section class="cover"> ... </section>',
+'',
+'<!-- 內頁（每一頁一個） -->',
+'<section class="page">',
+'  <header class="page-header"> ... </header>',
+'  <div class="page-content"> ... </div>',
+'  <footer class="page-footer"> ... </footer>',
+'</section>',
+'```',
+'',
+'- 每頁固定高度 `297mm`，`overflow: hidden`',
+'- **內容超過頁面高度會被裁切，不會自動換頁 — 必須手動拆頁**',
+'',
+'### Mini Header（每個內頁頂部）',
+'',
+'```html',
+'<header class="page-header">',
+'  <img src="[logo-dark.png]" alt="[Client Name]">       <!-- 左側：客戶 Logo 深色版，高度 20px -->',
+'  <div class="module-name">[CHAPTER NAME]</div>          <!-- 右側：章節名稱，大寫，letter-spacing -->',
+'</header>',
+'```',
+'',
+'- 底部有 1.5px 主色（`--brand-primary`）分隔線',
+'- Logo 使用深色版（白色背景頁面）',
+'',
+'### Mini Footer（每個內頁底部）',
+'',
+'```html',
+'<footer class="page-footer">',
+'  <span>[System Name] User Guide</span>   <!-- 左側：文件標題 -->',
+'  <span>02</span>                          <!-- 右側：頁碼，從 02 開始，DM Mono 字體 -->',
+'</footer>',
+'```',
+'',
+'- 封面不計頁碼，內頁從 `02` 開始遞增',
+'- 字體：`DM Mono`，字色：`--gray`（`#666666`）',
+'',
+'### 分頁判斷原則',
+'',
+'| 頁面類型 | 建議上限 | 拆頁時機 |',
+'|----------|----------|----------|',
+'| 截圖 + 說明文字 | 每頁最多 2 張截圖 | 截圖高度加說明文字超過可用高度 → 新開一頁 |',
+'| 欄位表格（field-table） | 約 12–15 行 | 超過時從下一個 Section 起拆頁 |',
+'| 步驟清單（steps） | 約 8–10 步 | 超過時在合適的步驟斷點拆頁 |',
+'| 流程圖（SVG） | 單頁獨立 | Workflow 頁永遠獨立一頁，不與其他內容共用 |',
+'',
+'> ⚠ 每頁可用高度估算：297mm − 上下 padding（29mm）− header（約 12mm）− footer（約 10mm）≈ **246mm 可用**',
+'',
+'### 色彩變數',
+'',
+'將本文件表頭的 Primary / Accent Color 套入 HTML `:root`：',
+'',
+'```css',
+':root {',
+'  --brand-primary: [Primary Color hex];',
+'  --brand-accent:  [Accent Color hex];',
+'  --gray: #666666;',
+'}',
+'```'
+].join('\n');
+
+/* ============================================================
+   產生 Markdown 骨架
+   ============================================================ */
+function generateMD() {
+  var systemName = v('f_system_name');
+  var clientName = v('f_client_name');
+  var audience   = v('f_audience');
+  var version    = v('f_version');
+  var date       = v('f_date');
+  var language   = v('f_language');
+  var primary    = v('f_primary');
+  var accent     = v('f_accent');
+
+  var out = [];
+
+  // --- 標題 ---
+  out.push('# ' + ph(systemName, '[System Name]') + ' User Guide');
+  out.push('');
+
+  // --- 文件資訊表 ---
+  out.push('| 欄位 | 內容 |');
+  out.push('|------|------|');
+  out.push('| Client | ' + mdCell(ph(clientName, '[Client Name]')) + ' |');
+  out.push('| Audience | ' + mdCell(ph(audience, '[Audience]')) + ' |');
+  out.push('| Version | ' + mdCell(ph(version, 'v0.1')) + ' |');
+  out.push('| Date | ' + mdCell(ph(date, '[Date]')) + ' |');
+  out.push('| Language | ' + mdCell(language) + ' |');
+  out.push('| Primary Color | ' + mdCell(primary) + ' |');
+  out.push('| Accent Color | ' + mdCell(accent) + ' |');
+  out.push('');
+  out.push('---');
+  out.push('');
+
+  // --- 版本紀錄（最前）---
+  if (checked('c_revision')) {
+    out.push('## Revision History');
+    out.push('');
+    out.push('| Version | Date | Changes | Author |');
+    out.push('|---------|------|---------|--------|');
+    out.push('| ' + mdCell(ph(version, 'v0.1')) + ' | ' + mdCell(ph(date, '[Date]')) + ' | Initial draft | — |');
+    out.push('');
+    out.push('---');
+    out.push('');
+  }
+
+  // --- Chapter 1（固定）---
+  out.push('## Chapter 1 — System Overview');
+  out.push('');
+  out.push('### 1.1 Accessing the System');
+  out.push('> 待填寫：說明如何進入系統（URL / 路徑 / 登入方式）');
+  out.push('');
+  out.push('### 1.2 Navigation Modules');
+  out.push('> 待填寫：各模組導覽說明（表格形式）');
+  out.push('');
+  out.push('### 1.3 Recommended Workflow');
+  out.push('> 待填寫：跨模組建議操作順序（SVG 流程圖）');
+  out.push('');
+  out.push('---');
+  out.push('');
+
+  // --- 動態模組（Chapter 2 起）---
+  var cards = document.querySelectorAll('#modules-container .module-card');
+  for (var i = 0; i < cards.length; i++) {
+    var card = cards[i];
+    var chapterNo = i + 2;
+    var modName = (card.querySelector('.mod-name').value || '').trim();
+    var modNameOut = modName || '[Module Name]';
+    var brief = (card.querySelector('.mod-brief').value || '').trim();
+
+    out.push('## Chapter ' + chapterNo + ' — ' + modNameOut);
+    out.push('> ' + (brief || '待填寫：模組簡述'));
+    out.push('');
+
+    // 收集勾選的文字子單元
+    var subs = [];
+    var subRows = card.querySelectorAll('.subunit-row');
+    for (var j = 0; j < subRows.length; j++) {
+      if (!subRows[j].querySelector('.su-check').checked) continue;
+      var subName = (subRows[j].querySelector('.su-name').value || '').trim();
+      subs.push({ name: subName || '[子單元名稱]', workflow: false });
+    }
+    // Workflow 永遠置於最後
+    if (card.querySelector('.mod-workflow').checked) {
+      subs.push({ name: modNameOut + ' Workflow', workflow: true });
+    }
+
+    for (var k = 0; k < subs.length; k++) {
+      out.push('### ' + chapterNo + '.' + (k + 1) + ' ' + subs[k].name);
+      out.push('> ' + (subs[k].workflow ? '待填寫：模組操作流程圖（SVG）' : '待填寫'));
+      out.push('');
+    }
+
+    out.push('---');
+    out.push('');
+  }
+
+  // --- 附加章節（Back Cover 最後）---
+  if (checked('c_faq')) {
+    out.push('## FAQ');
+    out.push('> 待整理：常見問題與解答');
+    out.push('');
+    out.push('---');
+    out.push('');
+  }
+
+  if (checked('c_appendix')) {
+    out.push('## Appendix');
+    out.push('');
+    out.push('### Field Definitions');
+    out.push('> 待填寫：各模組欄位名稱、類型、說明');
+    out.push('');
+    out.push('### Glossary');
+    out.push('> 待填寫：術語縮寫說明');
+    out.push('');
+    out.push('---');
+    out.push('');
+  }
+
+  if (checked('c_support')) {
+    out.push('## Technical Support');
+    out.push('> 待填寫：聯絡窗口、問題回報方式、SLA');
+    out.push('');
+    out.push('---');
+    out.push('');
+  }
+
+  if (checked('c_backcover')) {
+    out.push('## Back Cover');
+    out.push('> ' + ph(clientName, '[Client Name]') + ' — ' + ph(systemName, '[System Name]') + ' User Guide ' + ph(version, 'v0.1'));
+    out.push('');
+    out.push('---');
+    out.push('');
+  }
+
+  // --- 排版備註（尾部）---
+  out.push(LAYOUT_NOTES);
+  out.push('');
+
+  return out.join('\n');
+}
+
+function refreshOutput() {
+  document.getElementById('out-md').value = generateMD();
+}
+
+/* ============================================================
+   輸出動作：複製 / 下載 / 在新視窗開啟
+   ============================================================ */
+function fileName() {
+  var client = (v('f_client_name') || 'Client').trim().replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '') || 'Client';
+  var system = (v('f_system_name') || 'System').trim().replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '') || 'System';
+  return client + '-' + system + '-UserGuide-Draft.md';
+}
+
+document.getElementById('copy-btn').addEventListener('click', function () {
+  var status = document.getElementById('copy-status');
+  navigator.clipboard.writeText(generateMD()).then(function () {
+    status.textContent = '已複製！';
+    setTimeout(function () { status.textContent = ''; }, 1500);
+  }, function () {
+    status.textContent = '複製失敗，請手動選取後複製';
+    setTimeout(function () { status.textContent = ''; }, 2000);
+  });
+});
+
+document.getElementById('download-btn').addEventListener('click', function () {
+  var blob = new Blob([generateMD()], { type: 'text/markdown;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fileName();
+  a.click();
+});
+
+document.getElementById('open-btn').addEventListener('click', function () {
+  var md = generateMD();
+  var html = '<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8">' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+    '<title>' + escHtml(ph(v('f_system_name'), 'User Guide') + ' — Draft 預覽') + '</title>' +
+    '<style>body{margin:0;background:#f4f6f8;font-family:-apple-system,"Segoe UI","Noto Sans TC",sans-serif;}' +
+    'pre{max-width:900px;margin:0 auto;padding:48px 40px;background:#fff;min-height:100vh;box-sizing:border-box;' +
+    'white-space:pre-wrap;word-wrap:break-word;font-family:"SF Mono",Menlo,Consolas,monospace;' +
+    'font-size:13px;line-height:1.7;color:#1f2933;box-shadow:0 0 24px rgba(0,0,0,.06);}</style>' +
+    '</head><body><pre>' + escHtml(md) + '</pre></body></html>';
+  var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  window.open(URL.createObjectURL(blob), '_blank');
+});
+
+document.getElementById('add-module-btn').addEventListener('click', function () { addModule(); });
+
+/* 表單任何變動 → 即時更新 */
+document.querySelector('.form-panel').addEventListener('input', refreshOutput);
+document.querySelector('.form-panel').addEventListener('change', refreshOutput);
+
+/* ============================================================
+   草稿存讀（下載 JSON / 載入 JSON）
+   ============================================================ */
+var FIELD_IDS = [
+  'f_client_name', 'f_system_name', 'f_version', 'f_date',
+  'f_language', 'f_primary', 'f_accent', 'f_audience'
+];
+var CHECK_IDS = ['c_revision', 'c_faq', 'c_appendix', 'c_support', 'c_backcover'];
+
+function collectDraft() {
+  var draft = { fields: {}, checks: {}, modules: [] };
+  FIELD_IDS.forEach(function (id) { draft.fields[id] = v(id); });
+  CHECK_IDS.forEach(function (id) { draft.checks[id] = checked(id); });
+  document.querySelectorAll('#modules-container .module-card').forEach(function (card) {
+    var subs = [];
+    card.querySelectorAll('.subunit-row').forEach(function (row) {
+      subs.push({
+        name: row.querySelector('.su-name').value,
+        checked: row.querySelector('.su-check').checked
+      });
+    });
+    draft.modules.push({
+      name: card.querySelector('.mod-name').value,
+      brief: card.querySelector('.mod-brief').value,
+      subs: subs,
+      workflow: card.querySelector('.mod-workflow').checked
+    });
+  });
+  return draft;
+}
+
+function applyDraft(draft) {
+  FIELD_IDS.forEach(function (id) {
+    if (draft.fields && id in draft.fields) {
+      var el = document.getElementById(id);
+      if (el) el.value = draft.fields[id];
+    }
+  });
+  CHECK_IDS.forEach(function (id) {
+    if (draft.checks && id in draft.checks) {
+      var el = document.getElementById(id);
+      if (el) el.checked = !!draft.checks[id];
+    }
+  });
+
+  document.getElementById('modules-container').innerHTML = '';
+  if (draft.modules && draft.modules.length) {
+    draft.modules.forEach(function (m) {
+      addModule(m.name, m.brief, m.subs, m.workflow);
+    });
+  } else {
+    addModule();
+  }
+  renumberModules();
+  refreshOutput();
+}
+
+document.getElementById('save-draft-btn').addEventListener('click', function () {
+  var blob = new Blob([JSON.stringify(collectDraft(), null, 2)], { type: 'application/json;charset=utf-8' });
+  var client = (v('f_client_name') || 'draft').trim().replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '') || 'draft';
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = client + '-UserGuide-草稿.json';
+  a.click();
+});
+
+document.getElementById('load-draft-btn').addEventListener('click', function () {
+  document.getElementById('load-draft-input').click();
+});
+
+document.getElementById('load-draft-input').addEventListener('change', function (e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function () {
+    try {
+      applyDraft(JSON.parse(reader.result));
+    } catch (err) {
+      alert('草稿檔案格式錯誤，無法載入。');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+/* ============================================================
+   離開頁面前提醒
+   ============================================================ */
+var _isDirty = false;
+document.querySelector('.form-panel').addEventListener('input', function () { _isDirty = true; });
+document.querySelector('.form-panel').addEventListener('click', function () { _isDirty = true; });
+window.addEventListener('beforeunload', function (e) {
+  if (!_isDirty) return;
+  e.preventDefault();
+  e.returnValue = '';
+});
+
+/* ============================================================
+   初始化
+   ============================================================ */
+document.getElementById('f_date').value = today();
+addModule();
+refreshOutput();
+</script>
+</body>
+</html>

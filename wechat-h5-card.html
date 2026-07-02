@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>微信 H5 名片產生器</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --navy: #0D2F6E;
+    --heading: var(--navy);
+    --orange: #E5622A;
+    --surface-bg: #F4F6F8;
+    --surface-panel-bg: #ffffff;
+    --surface-border: #E1E5EA;
+    --surface-text: #1f2933;
+    --surface-text-muted: #667085;
+    --input-bg: #ffffff;
+  }
+  :root[data-theme="dark"] {
+    --heading: #6E9CFF;
+    --surface-bg: #161b22;
+    --surface-panel-bg: #1f2530;
+    --surface-border: #323a47;
+    --surface-text: #e6e9ef;
+    --surface-text-muted: #9aa4b2;
+    --input-bg: #161b22;
+  }
+  body {
+    font-family: -apple-system, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    margin: 0;
+    background: var(--surface-bg);
+    color: var(--surface-text);
+  }
+  a { color: inherit; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 24px 60px; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 6px; }
+  .top .home { font-size: 12px; color: var(--surface-text-muted); text-decoration: none; }
+  h1 { font-size: 22px; margin: 0 0 4px; color: var(--heading); }
+  .sub { font-size: 13px; color: var(--surface-text-muted); margin: 0 0 24px; line-height: 1.6; }
+  #theme-toggle {
+    flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px;
+    border: 1px solid var(--surface-border); background: var(--surface-panel-bg);
+    font-size: 16px; cursor: pointer; line-height: 1; padding: 0; color: var(--surface-text);
+  }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 28px; align-items: start; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--surface-panel-bg); border: 1px solid var(--surface-border);
+    border-radius: 12px; padding: 20px;
+  }
+  .panel + .panel { margin-top: 18px; }
+  .panel h2 {
+    font-size: 13px; margin: 0 0 14px; color: var(--orange);
+    letter-spacing: 1px; text-transform: uppercase; font-weight: 700;
+  }
+
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { display: block; font-size: 12px; color: var(--surface-text-muted); margin-bottom: 5px; font-weight: 600; }
+  .field input[type="text"], .field input[type="tel"], .field input[type="email"], .field input[type="url"], .field textarea {
+    width: 100%; padding: 9px 11px; font-size: 13px; font-family: inherit;
+    border: 1px solid var(--surface-border); border-radius: 8px;
+    background: var(--input-bg); color: var(--surface-text); outline: none;
+  }
+  .field input:focus, .field textarea:focus { border-color: var(--heading); }
+  .field textarea { resize: vertical; min-height: 72px; line-height: 1.6; }
+  .field select {
+    width: 100%; padding: 9px 11px; font-size: 13px; font-family: inherit;
+    border: 1px solid var(--surface-border); border-radius: 8px;
+    background: var(--input-bg); color: var(--surface-text); outline: none;
+  }
+  .field select:focus { border-color: var(--heading); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 520px) { .row2 { grid-template-columns: 1fr; } }
+  .hint { font-size: 11px; color: var(--surface-text-muted); margin-top: 4px; line-height: 1.5; }
+
+  /* upload + image preview */
+  .uploader { display: flex; align-items: center; gap: 12px; }
+  .uploader .thumb {
+    width: 54px; height: 54px; border-radius: 10px; flex-shrink: 0;
+    background: var(--surface-bg) center/cover no-repeat; border: 1px solid var(--surface-border);
+    display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--surface-text-muted);
+  }
+  .uploader .thumb.round { border-radius: 50%; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+    font-size: 12px; font-family: inherit; font-weight: 600; padding: 8px 12px;
+    border-radius: 8px; border: 1px solid var(--surface-border);
+    background: var(--surface-panel-bg); color: var(--surface-text);
+  }
+  .btn:hover { border-color: var(--heading); }
+  .btn.small { padding: 6px 10px; font-size: 11px; }
+  .btn.link { border: none; background: none; color: var(--orange); padding: 4px 0; }
+  input[type="file"] { display: none; }
+
+  /* brand colours */
+  .color-row { display: flex; align-items: center; gap: 8px; }
+  .color-row input[type="color"] {
+    width: 42px; height: 38px; padding: 2px; border: 1px solid var(--surface-border);
+    border-radius: 8px; background: var(--input-bg); cursor: pointer; flex-shrink: 0;
+  }
+  .color-row input[type="text"] {
+    width: 100%; padding: 9px 11px; font-size: 13px; font-family: "SFMono-Regular", Consolas, monospace;
+    border: 1px solid var(--surface-border); border-radius: 8px;
+    background: var(--input-bg); color: var(--surface-text); outline: none; text-transform: uppercase;
+  }
+  .color-row input[type="text"]:focus { border-color: var(--heading); }
+  .brand-preview {
+    height: 46px; border-radius: 10px; margin-top: 12px;
+    box-shadow: inset 0 0 0 1px var(--surface-border);
+  }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+  /* ------- Preview (phone) ------- */
+  .preview-col { position: sticky; top: 20px; }
+  .phone {
+    width: 360px; max-width: 100%; margin: 0 auto;
+    border-radius: 34px; padding: 12px; background: #111;
+    box-shadow: 0 18px 50px rgba(0,0,0,.35);
+  }
+  .phone-screen {
+    border-radius: 24px; overflow: hidden; background: #fff; height: 640px;
+    overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative;
+  }
+  .phone-screen::-webkit-scrollbar { width: 0; }
+  .preview-note { text-align: center; font-size: 11px; color: var(--surface-text-muted); margin-top: 12px; line-height: 1.6; }
+
+  #status { font-size: 12px; color: var(--surface-text-muted); margin-top: 10px; min-height: 16px; }
+  footer { margin-top: 40px; font-size: 11px; color: var(--surface-text-muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>微信 H5 名片產生器</h1>
+      <p class="sub">
+        填入個人與公司資訊，即時預覽一張微信風格的行動裝置 H5 電子名片。<br>
+        可下載成單一自足的 HTML 檔（圖片內嵌，可直接傳給客戶或上傳分享），或匯出 vCard 存入通訊錄。
+      </p>
+      <a class="home" href="index.html">← 回工具箱</a>
+    </div>
+    <button id="theme-toggle" type="button" aria-label="切換深色／淺色模式" title="切換深色／淺色模式">🌙</button>
+  </div>
+
+  <div class="layout">
+    <!-- ------------- FORM ------------- -->
+    <div>
+      <div class="panel">
+        <h2>基本資訊</h2>
+        <div class="field">
+          <label for="f-name">姓名</label>
+          <input type="text" id="f-name" placeholder="王小明">
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="f-title">職稱</label>
+            <input type="text" id="f-title" placeholder="業務經理">
+          </div>
+          <div class="field">
+            <label for="f-company">公司名稱</label>
+            <input type="text" id="f-company" placeholder="萬能數維有限公司">
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-slogan">個人標語 / 一句話介紹</label>
+          <input type="text" id="f-slogan" placeholder="用數據驅動你的品牌成長">
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>聯絡方式</h2>
+        <div class="row2">
+          <div class="field">
+            <label for="f-mobile">手機</label>
+            <input type="tel" id="f-mobile" placeholder="0912-345-678">
+          </div>
+          <div class="field">
+            <label for="f-phone">市話</label>
+            <input type="tel" id="f-phone" placeholder="02-1234-5678">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="f-wechat">微信 ID</label>
+            <input type="text" id="f-wechat" placeholder="dghm_wechat">
+          </div>
+          <div class="field">
+            <label for="f-line">LINE ID</label>
+            <input type="text" id="f-line" placeholder="@dghm">
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-email">Email</label>
+          <input type="email" id="f-email" placeholder="help@dghm.tw">
+        </div>
+        <div class="field">
+          <label for="f-website">網站</label>
+          <input type="url" id="f-website" placeholder="https://dghm.tw">
+        </div>
+        <div class="field">
+          <label for="f-address">地址</label>
+          <input type="text" id="f-address" placeholder="台北市中正區…">
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>公司簡介</h2>
+        <div class="field">
+          <textarea id="f-about" placeholder="簡述公司提供的服務、專長或優勢…"></textarea>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>分享預覽（LINE／社群 OG）</h2>
+        <div class="field">
+          <label for="f-ogUrl">名片網址（og:url）</label>
+          <input type="url" id="f-ogUrl" placeholder="https://dghm.tw/bizCard/aries.html">
+        </div>
+        <div class="field">
+          <label for="f-ogImage">分享縮圖網址（og:image）</label>
+          <input type="url" id="f-ogImage" placeholder="https://dghm.tw/bizCard/aries-og.jpg">
+        </div>
+        <div class="field">
+          <label for="f-ogSource">ZIP 版縮圖來源（og.jpg）</label>
+          <select id="f-ogSource">
+            <option value="auto">自動品牌卡（姓名／職稱／公司）</option>
+            <option value="avatar">頭像照片（置中）</option>
+            <option value="custom">自訂上傳（LOGO／圖）</option>
+          </select>
+        </div>
+        <div class="field" id="og-custom-row" style="display:none;">
+          <label>自訂縮圖圖檔</label>
+          <div class="uploader">
+            <div class="thumb" id="ogcustom-thumb">🖼️</div>
+            <label class="btn small" for="up-ogcustom">上傳圖檔</label>
+            <button class="btn link" type="button" id="clear-ogcustom">清除</button>
+            <input type="file" id="up-ogcustom" accept="image/*">
+          </div>
+        </div>
+        <p class="hint">標題與描述會自動用上方資料帶入。og:url／og:image 需填「絕對網址」才會出現在預覽（用 ZIP 匯出時會自動填）。<br>縮圖來源決定 ZIP 內 og.jpg 的內容——LINE 常把縮圖裁成方形，選「頭像」或「LOGO」置中通常較好認。</p>
+      </div>
+
+      <div class="panel">
+        <h2>圖片</h2>
+        <div class="field">
+          <label>頭像 / 大頭照</label>
+          <div class="uploader">
+            <div class="thumb round" id="avatar-thumb">👤</div>
+            <label class="btn small" for="up-avatar">上傳頭像</label>
+            <button class="btn link" type="button" id="clear-avatar">清除</button>
+            <input type="file" id="up-avatar" accept="image/*">
+          </div>
+        </div>
+        <div class="field">
+          <label>封面背景圖（選填，未上傳則使用配色漸層）</label>
+          <div class="uploader">
+            <div class="thumb" id="cover-thumb">🖼️</div>
+            <label class="btn small" for="up-cover">上傳封面</label>
+            <button class="btn link" type="button" id="clear-cover">清除</button>
+            <input type="file" id="up-cover" accept="image/*">
+          </div>
+        </div>
+        <div class="field">
+          <label>微信 QR Code（選填，用於「加微信」）</label>
+          <div class="uploader">
+            <div class="thumb" id="qr-thumb">🔳</div>
+            <label class="btn small" for="up-qr">上傳 QR</label>
+            <button class="btn link" type="button" id="clear-qr">清除</button>
+            <input type="file" id="up-qr" accept="image/*">
+          </div>
+          <p class="hint">在微信「我的 → 個人資訊 → 二維碼名片」截圖後上傳即可。</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>品牌配色</h2>
+        <div class="row2">
+          <div class="field">
+            <label for="f-primary">主色</label>
+            <div class="color-row">
+              <input type="color" id="c-primary" aria-label="主色選色器">
+              <input type="text" id="f-primary" placeholder="#1AAD19" maxlength="7" spellcheck="false">
+            </div>
+          </div>
+          <div class="field">
+            <label for="f-secondary">輔色</label>
+            <div class="color-row">
+              <input type="color" id="c-secondary" aria-label="輔色選色器">
+              <input type="text" id="f-secondary" placeholder="#0C8918" maxlength="7" spellcheck="false">
+            </div>
+          </div>
+        </div>
+        <div class="brand-preview" id="brand-preview"></div>
+        <p class="hint">填入客戶品牌的主色與輔色（HEX）。名片封面、頭像底色、動作按鈕與標題會套用此漸層。</p>
+      </div>
+
+      <div class="panel">
+        <h2>編輯檔</h2>
+        <div class="actions">
+          <button class="btn" type="button" id="btn-save-json">💾 下載編輯檔 (JSON)</button>
+          <label class="btn" for="up-json">📂 載入編輯檔</label>
+          <input type="file" id="up-json" accept="application/json,.json">
+        </div>
+        <p class="hint">將目前所有欄位與圖片存成一份 JSON；日後載回即可接續編輯。</p>
+      </div>
+
+      <div class="panel">
+        <h2>匯出</h2>
+        <div class="actions">
+          <button class="btn" type="button" id="btn-zip">📦 下載名片資料夾 (ZIP)</button>
+          <button class="btn" type="button" id="btn-download">⬇️ 下載名片 HTML</button>
+          <button class="btn" type="button" id="btn-copy">📋 複製 HTML</button>
+          <button class="btn" type="button" id="btn-vcard">📇 下載 vCard (.vcf)</button>
+          <button class="btn" type="button" id="btn-open">↗️ 新分頁開啟</button>
+        </div>
+        <p class="hint">📦 ZIP：把 index.html、頭像／封面／QR、自動產生的 1200×630 og.jpg 與 contact.vcf 打包；解開整包丟到「分享預覽（OG）」填的網址資料夾即可，OG 縮圖免另外做。需先填 og:url。</p>
+        <div id="status"></div>
+      </div>
+    </div>
+
+    <!-- ------------- PREVIEW ------------- -->
+    <div class="preview-col">
+      <div class="phone">
+        <div class="phone-screen">
+          <iframe id="preview-frame" title="名片預覽" style="border:0;width:100%;height:640px;display:block;"></iframe>
+        </div>
+      </div>
+      <p class="preview-note">即時預覽（微信瀏覽器行動裝置寬度）</p>
+    </div>
+  </div>
+
+  <footer>萬能數維有限公司（DGHM） · help@dghm.tw</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- theme toggle (dashboard) ---------- */
+  var root = document.documentElement;
+  var themeBtn = document.getElementById('theme-toggle');
+  try {
+    if (localStorage.getItem('dghm-tools-dashboard-theme') === 'dark') {
+      root.setAttribute('data-theme', 'dark'); themeBtn.textContent = '☀️';
+    }
+  } catch (e) {}
+  themeBtn.addEventListener('click', function () {
+    var isDark = root.getAttribute('data-theme') === 'dark';
+    if (isDark) { root.removeAttribute('data-theme'); themeBtn.textContent = '🌙'; }
+    else { root.setAttribute('data-theme', 'dark'); themeBtn.textContent = '☀️'; }
+    try { localStorage.setItem('dghm-tools-dashboard-theme', isDark ? 'light' : 'dark'); } catch (e) {}
+  });
+
+  /* ---------- brand colours ---------- */
+  var DEFAULT_PRIMARY = '#1AAD19';
+  var DEFAULT_SECONDARY = '#0C8918';
+  // legacy preset ids → [primary, secondary], so older saved files still resolve
+  var LEGACY_THEMES = {
+    wechat: ['#1AAD19', '#0C8918'], ocean: ['#2F80ED', '#134BA6'],
+    sunset: ['#F2994A', '#E5622A'], plum: ['#8E54E9', '#4776E6'],
+    rose: ['#F857A6', '#C2185B'], graphite: ['#434343', '#000000'],
+    gold: ['#C79A54', '#8A6D24'], teal: ['#11998E', '#0B6157']
+  };
+  function isHex(v) { return typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v); }
+  function normHex(v, fallback) {
+    v = (v || '').trim();
+    if (/^[0-9a-fA-F]{6}$/.test(v)) v = '#' + v;      // allow pasting without '#'
+    return isHex(v) ? v.toUpperCase() : fallback;
+  }
+
+  /* ---------- state ---------- */
+  var state = {
+    name: '', title: '', company: '', slogan: '',
+    mobile: '', phone: '', wechat: '', line: '', email: '', website: '', address: '',
+    about: '',
+    avatar: '', cover: '', qr: '',
+    ogUrl: '', ogImage: '', ogSource: 'auto', ogCustom: '',
+    primary: DEFAULT_PRIMARY, secondary: DEFAULT_SECONDARY
+  };
+
+  var STORE_KEY = 'dghm-wechat-h5-card';
+  try {
+    var saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+    if (saved && typeof saved === 'object') Object.assign(state, saved);
+  } catch (e) {}
+  migrateColours();
+  // map an older `theme` preset id onto primary/secondary when colours are absent
+  function migrateColours() {
+    if (!isHex(state.primary) && state.theme && LEGACY_THEMES[state.theme]) {
+      state.primary = LEGACY_THEMES[state.theme][0];
+      state.secondary = LEGACY_THEMES[state.theme][1];
+    }
+    state.primary = normHex(state.primary, DEFAULT_PRIMARY);
+    state.secondary = normHex(state.secondary, DEFAULT_SECONDARY);
+    delete state.theme;
+  }
+
+  function persist() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  /* ---------- bind text inputs ---------- */
+  var fields = ['name','title','company','slogan','mobile','phone','wechat','line','email','website','address','about','ogUrl','ogImage'];
+  fields.forEach(function (key) {
+    var el = document.getElementById('f-' + key);
+    if (!el) return;
+    el.value = state[key] || '';
+    el.addEventListener('input', function () {
+      state[key] = el.value;
+      persist(); render();
+    });
+  });
+
+  /* ---------- image uploaders ---------- */
+  function bindUpload(inputId, thumbId, key, placeholder) {
+    var input = document.getElementById(inputId);
+    var thumb = document.getElementById(thumbId);
+    function paint() {
+      if (state[key]) { thumb.style.backgroundImage = 'url(' + state[key] + ')'; thumb.textContent = ''; }
+      else { thumb.style.backgroundImage = ''; thumb.textContent = placeholder; }
+    }
+    input.addEventListener('change', function () {
+      var file = input.files && input.files[0];
+      if (!file) return;
+      if (file.size > 4 * 1024 * 1024) {
+        setStatus('圖片過大（超過 4MB），請壓縮後再上傳。', true);
+        input.value = ''; return;
+      }
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        state[key] = e.target.result;
+        persist(); paint(); render();
+      };
+      reader.readAsDataURL(file);
+      input.value = '';
+    });
+    paint();
+    return paint;
+  }
+  var paintAvatar = bindUpload('up-avatar', 'avatar-thumb', 'avatar', '👤');
+  var paintCover  = bindUpload('up-cover', 'cover-thumb', 'cover', '🖼️');
+  var paintQr     = bindUpload('up-qr', 'qr-thumb', 'qr', '🔳');
+  var paintOgCustom = bindUpload('up-ogcustom', 'ogcustom-thumb', 'ogCustom', '🖼️');
+
+  function bindClear(btnId, key, paint) {
+    document.getElementById(btnId).addEventListener('click', function () {
+      state[key] = ''; persist(); paint(); render();
+    });
+  }
+  bindClear('clear-avatar', 'avatar', paintAvatar);
+  bindClear('clear-cover', 'cover', paintCover);
+  bindClear('clear-qr', 'qr', paintQr);
+  bindClear('clear-ogcustom', 'ogCustom', paintOgCustom);
+
+  /* ---------- OG image source selector ---------- */
+  var ogSourceSel = document.getElementById('f-ogSource');
+  var ogCustomRow = document.getElementById('og-custom-row');
+  function paintOgSource() {
+    ogSourceSel.value = state.ogSource || 'auto';
+    ogCustomRow.style.display = state.ogSource === 'custom' ? '' : 'none';
+  }
+  ogSourceSel.addEventListener('change', function () {
+    state.ogSource = ogSourceSel.value; persist(); paintOgSource();
+  });
+  paintOgSource();
+
+  /* ---------- brand colour pickers ---------- */
+  var brandPreview = document.getElementById('brand-preview');
+  function paintBrandPreview() {
+    brandPreview.style.background = 'linear-gradient(135deg,' + state.primary + ',' + state.secondary + ')';
+  }
+  // pair a native colour picker with a hex text field, both editing state[key]
+  function bindColour(key, colorId, textId, fallback) {
+    var color = document.getElementById(colorId);
+    var text = document.getElementById(textId);
+    function set(v) {
+      state[key] = v;
+      color.value = v;
+      if (document.activeElement !== text) text.value = v;
+      persist(); paintBrandPreview(); render();
+    }
+    color.value = state[key];
+    text.value = state[key];
+    color.addEventListener('input', function () { set(color.value.toUpperCase()); });
+    text.addEventListener('input', function () {
+      var v = normHex(text.value, null);
+      if (v) set(v);           // only commit when it's a valid hex
+    });
+    text.addEventListener('blur', function () { text.value = state[key]; });
+    return function () { color.value = state[key]; text.value = state[key]; };
+  }
+  var syncPrimary   = bindColour('primary', 'c-primary', 'f-primary', DEFAULT_PRIMARY);
+  var syncSecondary = bindColour('secondary', 'c-secondary', 'f-secondary', DEFAULT_SECONDARY);
+  paintBrandPreview();
+
+  /* ---------- helpers ---------- */
+  function esc(str) {
+    return String(str || '').replace(/[&<>"']/g, function (c) {
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+  function normUrl(u) {
+    u = (u || '').trim();
+    if (!u) return '';
+    return /^https?:\/\//i.test(u) ? u : 'https://' + u;
+  }
+
+  /* ---------- inline SVG icons (Lucide, MIT / Simple Icons, CC0) ---------- */
+  // stroke icons (Lucide) — inner markup only, coloured at render time
+  var ICON = {
+    smartphone: '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
+    phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+    mail: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+    globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+    mapPin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+    userPlus: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>'
+  };
+  // brand marks (Simple Icons) — filled paths
+  var BRAND = {
+    wechat: '<path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 0 1 .598.082l1.584.926a.272.272 0 0 0 .14.047c.134 0 .24-.111.24-.247 0-.06-.023-.12-.038-.177l-.327-1.233a.582.582 0 0 1-.023-.156.49.49 0 0 1 .201-.398C23.024 18.48 24 16.82 24 14.98c0-3.21-2.931-5.837-6.656-6.088V8.89c-.135-.01-.27-.027-.407-.03zm-2.53 3.274c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.97-.982zm4.844 0c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.969-.982z"/>',
+    line: '<path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596a.62.62 0 0 1-.194.03c-.2 0-.385-.093-.507-.254l-2.443-3.325v2.954c0 .347-.28.63-.631.63-.346 0-.626-.283-.626-.63V8.108c0-.27.173-.51.43-.595a.669.669 0 0 1 .195-.033c.192 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .347-.281.63-.631.63-.346 0-.626-.283-.626-.63V8.108c0-.345.28-.63.626-.63.35 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.083.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>'
+  };
+  function svgStroke(name, color) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + ICON[name] + '</svg>';
+  }
+  function svgBrand(name, color) {
+    return '<svg viewBox="0 0 24 24" fill="' + color + '">' + BRAND[name] + '</svg>';
+  }
+
+  /* ---------- build the shareable card HTML ---------- */
+  // opts.external: reference images as sibling files (for the ZIP folder) instead of embedding data URLs
+  // opts.names: { avatar, cover, qr, og } relative filenames; opts.base: absolute folder URL for OG tags
+  function buildCardHTML(opts) {
+    opts = opts || {};
+    var ext = !!opts.external;
+    var names = opts.names || {};
+    var base = opts.base || '';
+    var t = { c1: state.primary, c2: state.secondary };
+    var s = state;
+    var displayName = s.name || '您的姓名';
+    var website = normUrl(s.website);
+
+    // asset sources: sibling files in external (ZIP) mode, embedded data URLs otherwise
+    var avatarSrc = s.avatar ? (ext ? './' + names.avatar : s.avatar) : '';
+    var coverSrc  = s.cover ? (ext ? './' + names.cover : s.cover) : '';
+    var qrSrc     = ext ? './' + names.qr : (s.qr ? s.qr : './wechat-qr.png');
+
+    // Open Graph tags built from the real card data (LINE / social link previews)
+    var ogTitle = [displayName].concat(s.title ? [s.title] : []).concat(s.company ? [s.company] : []).join(' · ');
+    var ogDescParts = [];
+    if (s.slogan) ogDescParts.push(s.slogan);
+    var contactBits = [];
+    if (s.mobile) contactBits.push('手機 ' + s.mobile);
+    if (s.email) contactBits.push(s.email);
+    if (s.wechat) contactBits.push('微信 ' + s.wechat);
+    if (s.line) contactBits.push('LINE ' + s.line);
+    if (contactBits.length) ogDescParts.push(contactBits.join(' ｜ '));
+    var ogDesc = ogDescParts.join('　');
+    // OG url/image must be absolute — in ZIP mode derive from the deploy folder, otherwise use the manual fields
+    var ogUrlVal = ext ? base : (s.ogUrl ? s.ogUrl.trim() : '');
+    var ogImageVal = ext ? (base + names.og) : (s.ogImage ? s.ogImage.trim() : '');
+    var ogTags = '<meta property="og:title" content="' + esc(ogTitle) + '">\n';
+    if (ogDesc) ogTags += '<meta property="og:description" content="' + esc(ogDesc) + '">\n';
+    ogTags += '<meta property="og:type" content="website">\n';
+    if (ogUrlVal) ogTags += '<meta property="og:url" content="' + esc(ogUrlVal) + '">\n';
+    if (ogImageVal) ogTags += '<meta property="og:image" content="' + esc(ogImageVal) + '">\n';
+
+    var coverStyle = coverSrc
+      ? 'background-image:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.55)),url(' + coverSrc + ');background-size:cover;background-position:center;'
+      : 'background-image:linear-gradient(135deg,' + t.c1 + ',' + t.c2 + ');';
+
+    var avatarInner = avatarSrc
+      ? '<img src="' + avatarSrc + '" alt="頭像">'
+      : '<span>' + esc(displayName.slice(0, 1)) + '</span>';
+
+    // contact rows
+    var rows = [];
+    function row(icon, label, value, href, extra) {
+      if (!value) return;
+      var v = esc(value);
+      var inner = href ? '<a href="' + href + '"' + (extra || '') + '>' + v + '</a>' : v;
+      rows.push(
+        '<div class="row">' +
+          '<div class="ricon">' + icon + '</div>' +
+          '<div class="rlabel">' + label + '</div>' +
+          '<div class="rval">' + inner + '</div>' +
+        '</div>'
+      );
+    }
+    row(svgStroke('smartphone', t.c2), '手機', s.mobile, s.mobile ? 'tel:' + esc(s.mobile.replace(/[^0-9+]/g, '')) : '');
+    row(svgStroke('phone', t.c2), '市話', s.phone, s.phone ? 'tel:' + esc(s.phone.replace(/[^0-9+]/g, '')) : '');
+    row(svgBrand('wechat', t.c2), '微信', s.wechat, '');
+    row(svgBrand('line', t.c2), 'LINE', s.line, '');
+    row(svgStroke('mail', t.c2), 'Email', s.email, s.email ? 'mailto:' + esc(s.email) : '');
+    row(svgStroke('globe', t.c2), '網站', s.website, website, ' target="_blank" rel="noopener"');
+    row(svgStroke('mapPin', t.c2), '地址', s.address, s.address ? 'https://maps.google.com/?q=' + encodeURIComponent(s.address) : '', ' target="_blank" rel="noopener"');
+
+    var aboutBlock = s.about
+      ? '<div class="section"><div class="sec-title">公司簡介</div><p class="about">' + esc(s.about).replace(/\n/g, '<br>') + '</p></div>'
+      : '';
+
+    var qrBlock = '<div class="section qr-sec"><div class="sec-title">加我微信</div><img class="qr" src="' + qrSrc + '" alt="微信 QR Code"><p class="qr-hint">長按或截圖後於微信掃一掃</p></div>';
+
+    var actions = [];
+    if (s.mobile) actions.push('<a class="act" href="tel:' + esc(s.mobile.replace(/[^0-9+]/g, '')) + '">' + svgStroke('phone', '#fff') + '<span>撥號</span></a>');
+    // plain link (no download attr) so iOS Safari opens the vCard as an "Add to Contacts" card
+    actions.push('<a class="act" href="./contact.vcf">' + svgStroke('userPlus', '#fff') + '<span>存名片</span></a>');
+    if (s.wechat) actions.push('<button class="act" type="button" onclick="copyText(\'' + esc(s.wechat).replace(/'/g, "\\'") + '\',this)">' + svgBrand('wechat', '#fff') + '<span>複製微信</span></button>');
+    if (website) actions.push('<a class="act" href="' + esc(website) + '" target="_blank" rel="noopener">' + svgStroke('globe', '#fff') + '<span>官網</span></a>');
+
+    var css =
+      '*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}' +
+      'body{font-family:-apple-system,"PingFang SC","PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;background:#ecedf0;color:#1f2933;line-height:1.5}' +
+      '.card-wrap{max-width:480px;margin:0 auto;background:#f5f6f8;min-height:100vh}' +
+      '.cover{position:relative;height:230px;' + coverStyle + '}' +
+      '.cover .ctext{position:absolute;left:20px;bottom:64px;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.35)}' +
+      '.cover .ctext .nm{font-size:24px;font-weight:700}' +
+      '.cover .ctext .tt{font-size:14px;opacity:.95;margin-top:3px}' +
+      '.cover .ctext .cp{font-size:13px;opacity:.9;margin-top:2px}' +
+      '.avatar{position:absolute;right:20px;bottom:-34px;width:88px;height:88px;border-radius:50%;overflow:hidden;border:3px solid #fff;background:' + t.c1 + ';display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.25)}' +
+      '.avatar img{width:100%;height:100%;object-fit:cover}' +
+      '.avatar span{color:#fff;font-size:34px;font-weight:700}' +
+      '.slogan{padding:46px 20px 6px;font-size:14px;color:#5a6472}' +
+      '.actions{display:flex;gap:10px;padding:14px 16px;flex-wrap:wrap}' +
+      '.act{flex:1;min-width:70px;text-decoration:none;color:#fff;background:linear-gradient(135deg,' + t.c1 + ',' + t.c2 + ');border:0;border-radius:12px;padding:12px 6px;font-size:12px;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-weight:600}' +
+      '.act span{font-size:12px}' +
+      '.act svg{width:22px;height:22px;display:block}' +
+      '.act:active{opacity:.85}' +
+      '.section{background:#fff;margin:12px 12px 0;border-radius:14px;padding:16px 16px}' +
+      '.sec-title{font-size:13px;font-weight:700;color:' + t.c2 + ';margin-bottom:10px}' +
+      '.row{display:grid;grid-template-columns:22px minmax(0,1fr);column-gap:12px;padding:9px 0;border-top:1px solid #f0f1f4}' +
+      '.row:first-of-type{border-top:0}' +
+      '.ricon{grid-column:1;grid-row:1 / 3;align-self:center;transform:translateY(3px);display:flex;justify-content:center}' +
+      '.ricon svg{width:20px;height:20px;display:block}' +
+      '.rlabel{grid-column:2;grid-row:1;font-size:11px;color:#9aa4b2}' +
+      '.rval{grid-column:2;grid-row:2;font-size:15px;word-break:break-all}' +
+      '.rval a{color:' + t.c2 + ';text-decoration:none}' +
+      '.about{font-size:14px;color:#4a5560;white-space:normal}' +
+      '.qr-sec{text-align:center}' +
+      '.qr{width:180px;height:180px;object-fit:contain;margin:4px auto 0;display:block}' +
+      '.qr-hint{font-size:12px;color:#9aa4b2;margin-top:8px}' +
+      '.foot{text-align:center;font-size:11px;color:#aab2bd;padding:22px 16px 30px}' +
+      '.toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%) translateY(20px);background:rgba(0,0,0,.8);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:99}' +
+      '.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}';
+
+    var js =
+      'function copyText(txt,btn){' +
+      'function done(){var t=document.getElementById("toast");t.textContent="已複製："+txt;t.classList.add("show");setTimeout(function(){t.classList.remove("show")},1600);}' +
+      'if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,function(){fallback(txt,done)});}else{fallback(txt,done);}}' +
+      'function fallback(txt,cb){var ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy")}catch(e){}document.body.removeChild(ta);cb();}';
+
+    return '<!DOCTYPE html>\n<html lang="zh-Hant">\n<head>\n' +
+      '<meta charset="UTF-8">\n' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">\n' +
+      '<meta name="format-detection" content="telephone=no">\n' +
+      ogTags +
+      '<title>' + esc(displayName) + (s.company ? ' · ' + esc(s.company) : '') + ' — 電子名片</title>\n' +
+      '<style>' + css + '</style>\n</head>\n<body>\n' +
+      '<div class="card-wrap">\n' +
+      '  <div class="cover">\n' +
+      '    <div class="ctext"><div class="nm">' + esc(displayName) + '</div>' +
+            (s.title ? '<div class="tt">' + esc(s.title) + '</div>' : '') +
+            (s.company ? '<div class="cp">' + esc(s.company) + '</div>' : '') + '</div>\n' +
+      '    <div class="avatar">' + avatarInner + '</div>\n' +
+      '  </div>\n' +
+      (s.slogan ? '  <div class="slogan">' + esc(s.slogan) + '</div>\n' : '') +
+      '  <div class="actions">' + actions.join('') + '</div>\n' +
+      (rows.length ? '  <div class="section"><div class="sec-title">聯絡方式</div>' + rows.join('') + '</div>\n' : '') +
+      aboutBlock + '\n' +
+      qrBlock + '\n' +
+      '  <div class="foot">' + esc(s.company || 'DGHM') + ' · 電子名片</div>\n' +
+      '</div>\n' +
+      '<div class="toast" id="toast"></div>\n' +
+      '<script>' + js + '<\/script>\n' +
+      '</body>\n</html>';
+  }
+
+  /* ---------- vCard ---------- */
+  function buildVCard() {
+    var s = state;
+    var lines = ['BEGIN:VCARD', 'VERSION:3.0'];
+    lines.push('N:;' + (s.name || '') + ';;;');
+    lines.push('FN:' + (s.name || ''));
+    if (s.company) lines.push('ORG:' + s.company);
+    if (s.title) lines.push('TITLE:' + s.title);
+    if (s.mobile) lines.push('TEL;TYPE=CELL:' + s.mobile);
+    if (s.phone) lines.push('TEL;TYPE=WORK:' + s.phone);
+    if (s.email) lines.push('EMAIL:' + s.email);
+    if (s.website) lines.push('URL:' + normUrl(s.website));
+    if (s.address) lines.push('ADR;TYPE=WORK:;;' + s.address + ';;;;');
+    var notes = [];
+    if (s.wechat) notes.push('微信: ' + s.wechat);
+    if (s.line) notes.push('LINE: ' + s.line);
+    if (s.slogan) notes.push(s.slogan);
+    if (notes.length) lines.push('NOTE:' + notes.join(' / '));
+    lines.push('END:VCARD');
+    return lines.join('\r\n');
+  }
+
+  /* ---------- render preview ---------- */
+  var frame = document.getElementById('preview-frame');
+  function render() {
+    var html = buildCardHTML();
+    var doc = frame.contentDocument || frame.contentWindow.document;
+    doc.open(); doc.write(html); doc.close();
+  }
+
+  /* ---------- status ---------- */
+  var statusEl = document.getElementById('status');
+  var statusTimer;
+  function setStatus(msg, isError) {
+    statusEl.textContent = msg;
+    statusEl.style.color = isError ? '#d9480f' : 'var(--surface-text-muted)';
+    clearTimeout(statusTimer);
+    statusTimer = setTimeout(function () { statusEl.textContent = ''; }, 4000);
+  }
+
+  function safeName(ext) {
+    var base = (state.name || 'card').replace(/[\\/:*?"<>|]/g, '').trim() || 'card';
+    return base + '-名片.' + ext;
+  }
+  function download(content, filename, mime) {
+    var blob = new Blob([content], { type: mime });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  /* ---------- ZIP folder export (no dependencies) ---------- */
+  function dataURLtoBytes(dataURL) {
+    var comma = dataURL.indexOf(',');
+    var mime = dataURL.substring(5, comma).split(';')[0];
+    var bin = atob(dataURL.substring(comma + 1));
+    var arr = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return { bytes: arr, mime: mime };
+  }
+  function extForMime(m) {
+    return m === 'image/jpeg' ? 'jpg' : m === 'image/webp' ? 'webp' : m === 'image/gif' ? 'gif' : 'png';
+  }
+  // absolute deploy folder (trailing slash) from the og:url the user typed
+  function folderBase(url) {
+    url = (url || '').trim();
+    if (!url) return '';
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    if (url.charAt(url.length - 1) === '/') return url;
+    var slash = url.lastIndexOf('/');
+    var tail = url.substring(slash + 1);
+    return tail.indexOf('.') > -1 ? url.substring(0, slash + 1) : url + '/';
+  }
+  var CRC_TABLE = (function () {
+    var t = [], c, n, k;
+    for (n = 0; n < 256; n++) { c = n; for (k = 0; k < 8; k++) c = c & 1 ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); t[n] = c >>> 0; }
+    return t;
+  })();
+  function crc32(buf) {
+    var crc = -1;
+    for (var i = 0; i < buf.length; i++) crc = (crc >>> 8) ^ CRC_TABLE[(crc ^ buf[i]) & 0xFF];
+    return (crc ^ -1) >>> 0;
+  }
+  // build a store-only (uncompressed) ZIP from [{name, data:Uint8Array}]
+  function makeZip(files) {
+    var enc = new TextEncoder();
+    function u16(n) { return [n & 0xff, (n >>> 8) & 0xff]; }
+    function u32(n) { return [n & 0xff, (n >>> 8) & 0xff, (n >>> 16) & 0xff, (n >>> 24) & 0xff]; }
+    var parts = [], central = [], offset = 0, DOSDATE = 0x21, DOSTIME = 0; // 1980-01-01
+    files.forEach(function (f) {
+      var nameB = enc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+      var local = u32(0x04034b50).concat(u16(20), u16(0), u16(0), u16(DOSTIME), u16(DOSDATE), u32(crc), u32(size), u32(size), u16(nameB.length), u16(0));
+      parts.push(new Uint8Array(local), nameB, f.data);
+      var cen = u32(0x02014b50).concat(u16(20), u16(20), u16(0), u16(0), u16(DOSTIME), u16(DOSDATE), u32(crc), u32(size), u32(size), u16(nameB.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset));
+      central.push(new Uint8Array(cen), nameB);
+      offset += local.length + nameB.length + size;
+    });
+    var centralStart = offset, centralSize = 0;
+    central.forEach(function (u) { centralSize += u.length; });
+    var end = new Uint8Array(u32(0x06054b50).concat(u16(0), u16(0), u16(files.length), u16(files.length), u32(centralSize), u32(centralStart), u16(0)));
+    var all = parts.concat(central, [end]);
+    var total = all.reduce(function (a, u) { return a + u.length; }, 0);
+    var out = new Uint8Array(total), p = 0;
+    all.forEach(function (u) { out.set(u, p); p += u.length; });
+    return out;
+  }
+  // render a 1200×630 share image (og.jpg); source: auto branded card / avatar / custom upload
+  function makeOgImageBytes() {
+    return new Promise(function (resolve) {
+      var W = 1200, H = 630, c = document.createElement('canvas');
+      c.width = W; c.height = H;
+      var ctx = c.getContext('2d');
+      var g = ctx.createLinearGradient(0, 0, W, H);
+      g.addColorStop(0, state.primary); g.addColorStop(1, state.secondary);
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      var fam = '-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif';
+      function finalize() {
+        c.toBlob(function (blob) {
+          var r = new FileReader();
+          r.onload = function () { resolve(new Uint8Array(r.result)); };
+          r.readAsArrayBuffer(blob);
+        }, 'image/jpeg', 0.9);
+      }
+      // auto branded card: name / title·company / slogan on the left, avatar circle on the right
+      function drawBrandedCard() {
+        function drawText() {
+          var hasAvatar = !!state.avatar;
+          var tx = 90, textW = hasAvatar ? 720 : W - 180;
+          ctx.textBaseline = 'alphabetic'; ctx.fillStyle = '#fff';
+          ctx.font = '700 84px ' + fam;
+          ctx.fillText(state.name || '您的姓名', tx, 300, textW);
+          ctx.font = '400 40px ' + fam; ctx.fillStyle = 'rgba(255,255,255,.92)';
+          var line2 = [state.title, state.company].filter(Boolean).join(' · ');
+          if (line2) ctx.fillText(line2, tx, 366, textW);
+          if (state.slogan) { ctx.font = '400 34px ' + fam; ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fillText(state.slogan, tx, 430, textW); }
+          finalize();
+        }
+        if (state.avatar) {
+          var img = new Image();
+          img.onload = function () {
+            var d = 300, cx = 950, cy = H / 2;
+            ctx.save();
+            ctx.beginPath(); ctx.arc(cx, cy, d / 2 + 6, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fill();
+            ctx.beginPath(); ctx.arc(cx, cy, d / 2, 0, Math.PI * 2); ctx.clip();
+            var ar = img.width / img.height, dw = d, dh = d, ox = 0, oy = 0;
+            if (ar > 1) { dw = d * ar; ox = -(dw - d) / 2; } else { dh = d / ar; oy = -(dh - d) / 2; }
+            ctx.drawImage(img, cx - d / 2 + ox, cy - d / 2 + oy, dw, dh);
+            ctx.restore();
+            drawText();
+          };
+          img.onerror = drawText;
+          img.src = state.avatar;
+        } else { drawText(); }
+      }
+      // centred circular avatar (square-crop friendly for LINE)
+      function drawCenteredAvatar(dataURL) {
+        var img = new Image();
+        img.onload = function () {
+          var d = 400, cx = W / 2, cy = H / 2;
+          ctx.save();
+          ctx.beginPath(); ctx.arc(cx, cy, d / 2 + 8, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fill();
+          ctx.beginPath(); ctx.arc(cx, cy, d / 2, 0, Math.PI * 2); ctx.clip();
+          var ar = img.width / img.height, dw = d, dh = d, ox = 0, oy = 0;
+          if (ar > 1) { dw = d * ar; ox = -(dw - d) / 2; } else { dh = d / ar; oy = -(dh - d) / 2; }
+          ctx.drawImage(img, cx - d / 2 + ox, cy - d / 2 + oy, dw, dh);
+          ctx.restore();
+          finalize();
+        };
+        img.onerror = drawBrandedCard;
+        img.src = dataURL;
+      }
+      // logo / custom image, contained & centred on the brand background
+      function drawContained(dataURL) {
+        var img = new Image();
+        img.onload = function () {
+          var maxW = W * 0.6, maxH = H * 0.72;
+          var ar = img.width / img.height, dw = maxW, dh = maxW / ar;
+          if (dh > maxH) { dh = maxH; dw = maxH * ar; }
+          ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+          finalize();
+        };
+        img.onerror = drawBrandedCard;
+        img.src = dataURL;
+      }
+      if (state.ogSource === 'avatar' && state.avatar) drawCenteredAvatar(state.avatar);
+      else if (state.ogSource === 'custom' && state.ogCustom) drawContained(state.ogCustom);
+      else drawBrandedCard();
+    });
+  }
+
+  /* ---------- export buttons ---------- */
+  document.getElementById('btn-zip').addEventListener('click', function () {
+    var base = folderBase(state.ogUrl);
+    if (!base) {
+      setStatus('請先在「分享預覽（OG）」填名片網址（og:url），例如 https://dghm.tw/bizCard/aries.hsieh/，ZIP 才能寫出正確的 OG 縮圖網址。', true);
+      return;
+    }
+    setStatus('正在打包 ZIP…');
+    makeOgImageBytes().then(function (ogBytes) {
+      var files = [];
+      var names = { avatar: '', cover: '', qr: '', og: 'og.jpg' };
+      if (state.avatar) { var a = dataURLtoBytes(state.avatar); names.avatar = 'avatar.' + extForMime(a.mime); files.push({ name: names.avatar, data: a.bytes }); }
+      if (state.cover)  { var cv = dataURLtoBytes(state.cover); names.cover = 'cover.' + extForMime(cv.mime); files.push({ name: names.cover, data: cv.bytes }); }
+      if (state.qr)     { var q = dataURLtoBytes(state.qr); names.qr = 'wechat-qr.' + extForMime(q.mime); files.push({ name: names.qr, data: q.bytes }); }
+      else { names.qr = 'wechat-qr.png'; }
+      files.push({ name: 'og.jpg', data: ogBytes });
+      files.push({ name: 'contact.vcf', data: new TextEncoder().encode(buildVCard()) });
+      var html = buildCardHTML({ external: true, base: base, names: names });
+      files.push({ name: 'index.html', data: new TextEncoder().encode(html) });
+
+      var zipName = (base.replace(/\/+$/, '').split('/').pop() || 'bizcard') + '.zip';
+      download(makeZip(files), zipName, 'application/zip');
+      var warn = [];
+      if (!state.avatar) warn.push('未上傳頭像');
+      if (!state.qr) warn.push('未上傳 QR（wechat-qr.png 需另外放入）');
+      setStatus('已下載 ' + zipName + '，解開整包上傳到 ' + base + ' 即可。' + (warn.length ? '（' + warn.join('、') + '）' : ''));
+    }, function () {
+      setStatus('產生 OG 縮圖失敗，請重試。', true);
+    });
+  });
+  document.getElementById('btn-download').addEventListener('click', function () {
+    download(buildCardHTML(), safeName('html'), 'text/html;charset=utf-8');
+    setStatus('已下載名片 HTML，可直接用瀏覽器開啟或上傳分享。');
+  });
+  document.getElementById('btn-vcard').addEventListener('click', function () {
+    download(buildVCard(), safeName('vcf'), 'text/vcard;charset=utf-8');
+    setStatus('已下載 vCard，可匯入手機通訊錄。');
+  });
+  document.getElementById('btn-copy').addEventListener('click', function () {
+    var html = buildCardHTML();
+    function ok() { setStatus('已複製名片 HTML 原始碼到剪貼簿。'); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(html).then(ok, function () { setStatus('複製失敗，請改用下載。', true); });
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = html; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); ok(); } catch (e) { setStatus('複製失敗，請改用下載。', true); }
+      document.body.removeChild(ta);
+    }
+  });
+  document.getElementById('btn-open').addEventListener('click', function () {
+    var w = window.open('', '_blank');
+    if (!w) { setStatus('瀏覽器阻擋了彈出視窗，請允許後重試。', true); return; }
+    w.document.open(); w.document.write(buildCardHTML()); w.document.close();
+  });
+
+  /* ---------- edit file: save / load JSON ---------- */
+  // refresh every input, thumbnail, colour and the preview from current state
+  function syncUI() {
+    fields.forEach(function (key) {
+      var el = document.getElementById('f-' + key);
+      if (el) el.value = state[key] || '';
+    });
+    paintAvatar(); paintCover(); paintQr(); paintOgCustom();
+    syncPrimary(); syncSecondary(); paintBrandPreview(); paintOgSource();
+    render();
+  }
+
+  document.getElementById('btn-save-json').addEventListener('click', function () {
+    download(JSON.stringify(state, null, 2), safeName('json'), 'application/json;charset=utf-8');
+    setStatus('已下載編輯檔 (JSON)，日後可載回接續編輯。');
+  });
+
+  var jsonInput = document.getElementById('up-json');
+  jsonInput.addEventListener('change', function () {
+    var file = jsonInput.files && jsonInput.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var parsed;
+      try { parsed = JSON.parse(e.target.result); }
+      catch (err) { setStatus('讀取失敗：這不是有效的 JSON 編輯檔。', true); jsonInput.value = ''; return; }
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        setStatus('讀取失敗：編輯檔格式不符。', true); jsonInput.value = ''; return;
+      }
+      // only copy known string keys so an unrelated JSON can't inject junk into state
+      Object.keys(state).forEach(function (key) {
+        if (Object.prototype.hasOwnProperty.call(parsed, key) && typeof parsed[key] === 'string') {
+          state[key] = parsed[key];
+        }
+      });
+      // migrate an old preset-based file, then guarantee valid hex colours
+      if (!isHex(parsed.primary) && parsed.theme && LEGACY_THEMES[parsed.theme]) {
+        state.primary = LEGACY_THEMES[parsed.theme][0];
+        state.secondary = LEGACY_THEMES[parsed.theme][1];
+      }
+      state.primary = normHex(state.primary, DEFAULT_PRIMARY);
+      state.secondary = normHex(state.secondary, DEFAULT_SECONDARY);
+      persist(); syncUI();
+      setStatus('已載入編輯檔，可接續編輯。');
+    };
+    reader.readAsText(file, 'utf-8');
+    jsonInput.value = '';
+  });
+
+  /* ---------- init ---------- */
+  render();
+})();
+</script>
+</body>
+</html>
