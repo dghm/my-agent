@@ -202,6 +202,105 @@ async function googleCallback(req) {
   ]);
 }
 
+/* ---- LINE Login (OAuth 2.1 / OpenID Connect) ---- */
+
+function lineLogin(req) {
+  const channelId = process.env.LINE_CHANNEL_ID;
+  if (!channelId) {
+    return json(500, { ok: false, error: '尚未設定 LINE_CHANNEL_ID 環境變數' });
+  }
+
+  const origin = siteOrigin(req);
+  const secure = origin.startsWith('https');
+  const state = crypto.randomBytes(16).toString('hex');
+
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: channelId,
+    redirect_uri: `${origin}/api/auth/callback/line`,
+    state,
+    scope: 'profile openid email',
+  });
+
+  return redirect(`https://access.line.me/oauth2/v2.1/authorize?${params}`, [
+    buildCookie(STATE_COOKIE, state, STATE_MAX_AGE, secure),
+  ]);
+}
+
+async function lineCallback(req) {
+  const origin = siteOrigin(req);
+  const secure = origin.startsWith('https');
+  const url = new URL(req.url);
+  const code = url.searchParams.get('code');
+  const state = url.searchParams.get('state');
+  const cookieState = getCookie(req, STATE_COOKIE);
+
+  if (url.searchParams.get('error')) {
+    return redirect('/login.html?error=denied');
+  }
+  if (!code || !state || !cookieState || state !== cookieState) {
+    return redirect('/login.html?error=state');
+  }
+
+  const channelId = process.env.LINE_CHANNEL_ID;
+  const channelSecret = process.env.LINE_CHANNEL_SECRET;
+  if (!channelId || !channelSecret) {
+    return redirect('/login.html?error=config');
+  }
+
+  // 1) 用 code 換 token
+  const tokenRes = await fetch('https://api.line.me/oauth2/v2.1/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: `${origin}/api/auth/callback/line`,
+      client_id: channelId,
+      client_secret: channelSecret,
+    }),
+  });
+  if (!tokenRes.ok) return redirect('/login.html?error=token');
+  const token = await tokenRes.json();
+
+  // 2) 取得使用者資料：優先用 id_token（含 email，若已取得 email 權限）
+  let profile = { sub: '', name: '', picture: '', email: '' };
+  if (token.id_token) {
+    const verifyRes = await fetch('https://api.line.me/oauth2/v2.1/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ id_token: token.id_token, client_id: channelId }),
+    });
+    if (verifyRes.ok) {
+      const v = await verifyRes.json();
+      profile = { sub: v.sub, name: v.name || '', picture: v.picture || '', email: v.email || '' };
+    }
+  }
+  // 後備：沒有 id_token 時改用 profile API（拿不到 email）
+  if (!profile.sub) {
+    const pRes = await fetch('https://api.line.me/v2/profile', {
+      headers: { Authorization: `Bearer ${token.access_token}` },
+    });
+    if (!pRes.ok) return redirect('/login.html?error=userinfo');
+    const p = await pRes.json();
+    profile = { sub: p.userId, name: p.displayName || '', picture: p.pictureUrl || '', email: '' };
+  }
+
+  // 3) 建立／更新會員，發登入 cookie
+  const user = await findOrCreateUser({
+    provider: 'line',
+    providerId: profile.sub,
+    email: profile.email,
+    name: profile.name,
+    avatar: profile.picture,
+  });
+
+  return redirect('/index.html', [
+    buildCookie(SESSION_COOKIE, createSession(user), SESSION_MAX_AGE, secure),
+    buildCookie(STATE_COOKIE, '', 0, secure),
+  ]);
+}
+
 /* ---- 進入點 ---- */
 
 export default async (req) => {
@@ -211,6 +310,8 @@ export default async (req) => {
   try {
     if (path.endsWith('/login/google')) return googleLogin(req);
     if (path.endsWith('/callback/google')) return googleCallback(req);
+    if (path.endsWith('/login/line')) return lineLogin(req);
+    if (path.endsWith('/callback/line')) return lineCallback(req);
 
     if (path.endsWith('/me')) {
       const session = verifySession(getCookie(req, SESSION_COOKIE));

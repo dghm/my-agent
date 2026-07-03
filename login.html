@@ -168,7 +168,7 @@
     </div>
   </div>
 
-  <p class="auth-note" id="auth-status">Google 已可登入；Facebook／LINE 尚未接上。</p>
+  <p class="auth-note" id="auth-status">Google／LINE 已可登入；Facebook 尚未接上。</p>
 
   <p class="auth-terms">
     登入即表示你同意我們的
@@ -194,12 +194,12 @@
   document.querySelectorAll('.social-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var provider = btn.getAttribute('data-provider');
-      if (provider === 'google') {
-        // 導向後端 OAuth 進入點，開始 Google 登入流程
-        window.location.href = '/api/auth/login/google';
+      if (provider === 'google' || provider === 'line') {
+        // 導向後端 OAuth 進入點，開始登入流程
+        window.location.href = '/api/auth/login/' + provider;
         return;
       }
-      // Facebook / LINE 尚未接上後端
+      // Facebook 尚未接上後端
       document.getElementById('auth-status').textContent =
         '「' + PROVIDER_NAMES[provider] + '」登入尚未接上後端，敬請期待。';
     });
