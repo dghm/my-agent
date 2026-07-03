@@ -164,6 +164,13 @@
         </div>
         <div class="row2">
           <div class="field">
+            <label for="f-fax">傳真 / Fax</label>
+            <input type="tel" id="f-fax" placeholder="02-1234-5679">
+          </div>
+          <div class="field"></div>
+        </div>
+        <div class="row2">
+          <div class="field">
             <label for="f-wechat">微信 ID</label>
             <input type="text" id="f-wechat" placeholder="dghm_wechat">
           </div>
@@ -352,7 +359,7 @@ initTheme('dghm-wechat-card-theme');
   /* ---------- state ---------- */
   var state = {
     name: '', title: '', company: '', slogan: '',
-    mobile: '', phone: '', wechat: '', line: '', email: '', website: '', address: '',
+    mobile: '', phone: '', fax: '', wechat: '', line: '', email: '', website: '', address: '',
     about: '',
     avatar: '', cover: '', qr: '', lineQr: '',
     ogUrl: '', ogImage: '', ogSource: 'auto', ogCustom: '',
@@ -382,7 +389,7 @@ initTheme('dghm-wechat-card-theme');
   }
 
   /* ---------- bind text inputs ---------- */
-  var fields = ['name','title','company','slogan','mobile','phone','wechat','line','email','website','address','about','ogUrl','ogImage'];
+  var fields = ['name','title','company','slogan','mobile','phone','fax','wechat','line','email','website','address','about','ogUrl','ogImage'];
   fields.forEach(function (key) {
     var el = document.getElementById('f-' + key);
     if (!el) return;
@@ -505,6 +512,7 @@ initTheme('dghm-wechat-card-theme');
     mail: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
     globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
     mapPin: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+    printer: '<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>',
     userPlus: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
     qr: '<rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/>'
   };
@@ -529,14 +537,14 @@ initTheme('dghm-wechat-card-theme');
       htmlLang: 'zh-Hant', yourName: '您的姓名', cardSuffix: ' — 電子名片', foot: '電子名片',
       contact: '聯絡方式', about: '公司簡介', wechatQr: '加我微信', qrHint: '長按或截圖後於微信掃一掃',
       lineQr: '加我 LINE 好友', qrHintLine: '長按或截圖後掃描加入好友',
-      mobile: '手機', tel: '市話', wechat: '微信', line: 'LINE', email: 'Email', website: '網站', address: '地址',
+      mobile: '手機', tel: '市話', fax: '傳真', wechat: '微信', line: 'LINE', email: 'Email', website: '網站', address: '地址',
       call: '撥號', web: '官網', wechatId: '微信 ID', lineId: 'LINE ID', idCopied: '已複製 ID'
     },
     en: {
       htmlLang: 'en', yourName: 'Your Name', cardSuffix: ' — Digital Card', foot: 'Digital Business Card',
       contact: 'Contact', about: 'About', wechatQr: 'Add me on WeChat', qrHint: 'Long-press or screenshot, then scan in WeChat',
       lineQr: 'Add me on LINE', qrHintLine: 'Long-press or screenshot, then scan to add',
-      mobile: 'Mobile', tel: 'Tel', wechat: 'WeChat', line: 'LINE', email: 'Email', website: 'Website', address: 'Address',
+      mobile: 'Mobile', tel: 'Tel', fax: 'Fax', wechat: 'WeChat', line: 'LINE', email: 'Email', website: 'Website', address: 'Address',
       call: 'Call', web: 'Website', wechatId: 'WeChat ID', lineId: 'LINE ID', idCopied: 'ID Copied'
     }
   };
@@ -613,6 +621,7 @@ initTheme('dghm-wechat-card-theme');
     }
     row(svgStroke('smartphone', t.c2), L.mobile, s.mobile, s.mobile ? 'tel:' + esc(s.mobile.replace(/[^0-9+]/g, '')) : '');
     row(svgStroke('phone', t.c2), L.tel, s.phone, s.phone ? 'tel:' + esc(s.phone.replace(/[^0-9+]/g, '')) : '');
+    row(svgStroke('printer', t.c2), L.fax, s.fax, '');
     row(svgBrand('wechat', t.c2), L.wechat, s.wechat, '', '', qrBtn('wechat', L.wechatQr));
     row(svgBrand('line', t.c2), L.line, s.line, '', '', lineHasQR ? qrBtn('line', L.lineQr) : '');
     row(svgStroke('mail', t.c2), L.email, s.email, s.email ? 'mailto:' + esc(s.email) : '');
@@ -724,6 +733,7 @@ initTheme('dghm-wechat-card-theme');
     if (s.title) lines.push('TITLE:' + s.title);
     if (s.mobile) lines.push('TEL;TYPE=CELL:' + s.mobile);
     if (s.phone) lines.push('TEL;TYPE=WORK:' + s.phone);
+    if (s.fax) lines.push('TEL;TYPE=FAX:' + s.fax);
     if (s.email) lines.push('EMAIL:' + s.email);
     if (s.website) lines.push('URL:' + normUrl(s.website));
     if (s.address) lines.push('ADR;TYPE=WORK:;;' + s.address + ';;;;');
