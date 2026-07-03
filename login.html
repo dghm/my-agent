@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>會員登入 · DGHM</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="dghm-ui.css">
+<style>
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 380px;
+    background: var(--surface-panel-bg);
+    border: 1px solid var(--surface-border);
+    border-radius: 14px;
+    padding: 32px 28px 28px;
+    box-shadow: 0 8px 30px rgba(13, 47, 110, .08);
+  }
+
+  .auth-head { text-align: center; margin-bottom: 6px; }
+  .auth-logo { width: 48px; height: 48px; margin: 0 auto 14px; display: block; }
+  .auth-card h1 { font-size: 20px; margin: 0 0 6px; color: var(--navy-text); }
+  .auth-card .sub {
+    font-size: 13px; color: var(--surface-text-muted);
+    margin: 0 0 24px; line-height: 1.6; text-align: center;
+  }
+
+  /* ---- Social buttons ---- */
+  .social-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 11px 14px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: filter .15s, box-shadow .15s, background .15s;
+  }
+  .social-btn:hover { filter: brightness(.97); box-shadow: 0 2px 8px rgba(0,0,0,.10); }
+  .social-btn:active { filter: brightness(.93); }
+  .social-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+  .btn-google {
+    background: #ffffff;
+    color: #3c4043;
+    border-color: #dadce0;
+  }
+  :root[data-theme="dark"] .btn-google {
+    background: #ffffff; color: #3c4043; border-color: #dadce0;
+  }
+  .btn-facebook { background: #1877F2; color: #ffffff; }
+  .btn-line     { background: #06C755; color: #ffffff; }
+
+  /* ---- Divider ---- */
+  .auth-divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: 18px 0 16px; color: var(--surface-text-muted); font-size: 12px;
+  }
+  .auth-divider::before, .auth-divider::after {
+    content: ""; flex: 1; height: 1px; background: var(--surface-border);
+  }
+
+  .auth-note {
+    font-size: 12px; color: var(--surface-text-muted);
+    line-height: 1.6; text-align: center; margin: 4px 0 0;
+  }
+
+  .auth-terms {
+    font-size: 11px; color: var(--surface-text-muted);
+    line-height: 1.6; text-align: center; margin: 20px 0 0;
+  }
+  .auth-terms a { color: var(--navy-text); text-decoration: none; }
+  .auth-terms a:hover { text-decoration: underline; }
+
+  .auth-footer {
+    margin-top: 22px; text-align: center;
+    font-size: 11px; color: var(--surface-text-muted);
+  }
+
+  /* theme toggle pinned top-right */
+  #theme-toggle { position: fixed; top: 18px; right: 18px; }
+
+  .home-link-wrap { text-align: center; margin-top: 14px; }
+</style>
+</head>
+<body>
+<button id="theme-toggle" type="button" aria-label="切換 Dark／Day 模式" title="切換深色／淺色模式">🌙</button>
+
+<div class="auth-card">
+  <div class="auth-head">
+    <img class="auth-logo" src="dghm-agent.svg" alt="DGHM">
+    <h1>登入 / 註冊會員</h1>
+    <p class="sub">使用第三方帳號快速登入，首次登入將自動建立會員資料。</p>
+  </div>
+
+  <!-- Google -->
+  <button type="button" class="social-btn btn-google" data-provider="google">
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+    </svg>
+    使用 Google 帳號登入
+  </button>
+
+  <!-- Facebook -->
+  <button type="button" class="social-btn btn-facebook" data-provider="facebook">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#ffffff" d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.89v2.25h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07z"/>
+    </svg>
+    使用 Facebook 帳號登入
+  </button>
+
+  <!-- LINE -->
+  <button type="button" class="social-btn btn-line" data-provider="line">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#ffffff" d="M12 2C6.48 2 2 5.64 2 10.13c0 4.02 3.55 7.39 8.35 8.03.32.07.77.21.88.49.1.25.06.64.03.9l-.14.85c-.04.25-.2.98.86.53s5.7-3.36 7.78-5.75c1.43-1.57 2.24-3.16 2.24-4.99C22 5.64 17.52 2 12 2zM8.09 12.79H6.1a.53.53 0 0 1-.53-.53V8.28a.53.53 0 0 1 1.06 0v3.45h1.46a.53.53 0 0 1 0 1.06zm2.08-.53a.53.53 0 0 1-1.06 0V8.28a.53.53 0 0 1 1.06 0v3.98zm4.79 0c0 .23-.15.43-.37.5a.53.53 0 0 1-.6-.19l-2.04-2.78v2.47a.53.53 0 0 1-1.06 0V8.28a.53.53 0 0 1 .96-.31l2.05 2.78V8.28a.53.53 0 0 1 1.06 0v3.98zm3.35-2.52a.53.53 0 0 1 0 1.06h-1.46v.93h1.46a.53.53 0 0 1 0 1.06h-1.99a.53.53 0 0 1-.53-.53V8.28a.53.53 0 0 1 .53-.53h1.99a.53.53 0 0 1 0 1.06h-1.46v.93h1.46z"/>
+    </svg>
+    使用 LINE 帳號登入
+  </button>
+
+  <div class="auth-divider">安全登入 · 我們不會取得你的密碼</div>
+
+  <p class="auth-note" id="auth-status">＊ 後端尚未接上，按鈕目前為 UI 展示用。</p>
+
+  <p class="auth-terms">
+    登入即表示你同意我們的
+    <a href="#" data-doc="terms">服務條款</a>
+    與
+    <a href="#" data-doc="privacy">隱私權政策</a>。
+  </p>
+
+  <div class="home-link-wrap">
+    <a class="home-link" href="index.html">← 回工具首頁</a>
+  </div>
+
+  <div class="auth-footer">萬能數維有限公司（DGHM） · help@dghm.tw</div>
+</div>
+
+<script src="dghm-ui.js"></script>
+<script>
+  initTheme('dghm-login-theme');
+
+  // Provider display names for the placeholder message.
+  var PROVIDER_NAMES = { google: 'Google', facebook: 'Facebook', line: 'LINE' };
+
+  // TODO: 接上 OAuth 後，把每個 provider 導向對應的授權網址，例如：
+  //   window.location.href = '/api/auth/login/google';
+  document.querySelectorAll('.social-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var provider = btn.getAttribute('data-provider');
+      var status = document.getElementById('auth-status');
+      status.textContent = '（示範）你點了「' + PROVIDER_NAMES[provider] + '」登入 — 後端 OAuth 尚未接上。';
+    });
+  });
+
+  document.querySelectorAll('.auth-terms a').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      var status = document.getElementById('auth-status');
+      status.textContent = '（示範）' + (a.getAttribute('data-doc') === 'terms' ? '服務條款' : '隱私權政策') + '頁面尚未建立。';
+    });
+  });
+</script>
+</body>
+</html>
