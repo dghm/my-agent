@@ -91,6 +91,26 @@
     font-size: 11px; color: var(--surface-text-muted);
   }
 
+  /* ---- Logged-in panel ---- */
+  #logged-in { text-align: center; }
+  #logged-in .li-avatar {
+    width: 56px; height: 56px; border-radius: 50%;
+    margin: 4px auto 10px; display: block;
+    border: 2px solid var(--surface-border); object-fit: cover;
+    background: var(--surface-input-bg);
+  }
+  #logged-in .li-name-line { font-size: 15px; color: var(--surface-text); margin-bottom: 2px; }
+  #logged-in .li-email { font-size: 12px; color: var(--surface-text-muted); margin-bottom: 16px; word-break: break-all; }
+  #logged-in .li-primary {
+    display: block; width: 100%; text-align: center; padding: 11px;
+    border-radius: 8px; background: var(--navy); color: #fff;
+    text-decoration: none; font-size: 14px; font-weight: 600; margin-bottom: 10px;
+  }
+  :root[data-theme="dark"] #logged-in .li-primary { background: var(--navy-text); color: #0d1117; }
+  #logged-in .li-links { font-size: 12px; color: var(--surface-text-muted); }
+  #logged-in .li-links a { color: var(--navy-text); text-decoration: none; }
+  #logged-in .li-links a:hover { text-decoration: underline; }
+
   /* theme toggle pinned top-right */
   #theme-toggle { position: fixed; top: 18px; right: 18px; }
 
@@ -107,6 +127,7 @@
     <p class="sub">使用第三方帳號快速登入，首次登入將自動建立會員資料。</p>
   </div>
 
+  <div id="login-options">
   <!-- Google -->
   <button type="button" class="social-btn btn-google" data-provider="google">
     <svg viewBox="0 0 48 48" aria-hidden="true">
@@ -135,11 +156,16 @@
   </button>
 
   <div class="auth-divider">安全登入 · 我們不會取得你的密碼</div>
+  </div><!-- /#login-options -->
 
-  <div id="logged-in" style="display:none; text-align:center; font-size:13px; color:var(--surface-text); margin:4px 0 0;">
-    已登入為 <strong id="li-name"></strong>
-    <span style="color:var(--surface-text-muted)">·</span>
-    <a href="/api/auth/logout" style="color:var(--navy-text)">登出</a>
+  <div id="logged-in" style="display:none;">
+    <img id="li-avatar" class="li-avatar" alt="" referrerpolicy="no-referrer">
+    <div class="li-name-line">已登入為 <strong id="li-name"></strong></div>
+    <div class="li-email" id="li-email"></div>
+    <a class="li-primary" href="index.html">進入工具首頁</a>
+    <div class="li-links">
+      <a href="/api/auth/logout">登出</a> · <a href="/api/auth/logout">用其他帳號登入</a>
+    </div>
   </div>
 
   <p class="auth-note" id="auth-status">Google 已可登入；Facebook／LINE 尚未接上。</p>
@@ -179,14 +205,22 @@
     });
   });
 
-  // 若已登入，顯示登入狀態
+  // 若已登入：隱藏登入按鈕，改顯示會員面板（含頭像）
   fetch('/api/auth/me')
     .then(function (r) { return r.json(); })
     .then(function (d) {
       if (d && d.user) {
-        document.getElementById('li-name').textContent = d.user.name || d.user.email || '會員';
-        document.getElementById('logged-in').style.display = 'block';
+        var u = d.user;
+        document.getElementById('li-name').textContent = u.name || u.email || '會員';
+        document.getElementById('li-email').textContent = u.email || '';
+        var avatar = document.getElementById('li-avatar');
+        if (u.avatar) { avatar.src = u.avatar; } else { avatar.style.display = 'none'; }
+
+        document.getElementById('login-options').style.display = 'none';
         document.getElementById('auth-status').style.display = 'none';
+        var terms = document.querySelector('.auth-terms');
+        if (terms) terms.style.display = 'none';
+        document.getElementById('logged-in').style.display = 'block';
       }
     })
     .catch(function () {});
