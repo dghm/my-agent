@@ -95,8 +95,9 @@
   .phone-screen {
     border-radius: 24px; overflow: hidden; background: #fff; height: 640px;
     overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative;
+    scrollbar-width: none; -ms-overflow-style: none;
   }
-  .phone-screen::-webkit-scrollbar { width: 0; }
+  .phone-screen::-webkit-scrollbar { width: 0; height: 0; }
   .preview-note { text-align: center; font-size: 11px; color: var(--surface-text-muted); margin-top: 12px; line-height: 1.6; }
 
   #status { font-size: 12px; color: var(--surface-text-muted); margin-top: 10px; min-height: 16px; }
@@ -780,10 +781,22 @@ initTheme('dghm-wechat-card-theme');
 
   /* ---------- render preview ---------- */
   var frame = document.getElementById('preview-frame');
+  // grow the iframe to its content so the card scrolls via .phone-screen (whose scrollbar is hidden),
+  // instead of the iframe showing its own always-on scrollbar on Windows/Linux
+  function fitFrame() {
+    try {
+      var d = frame.contentDocument;
+      if (d && d.body) frame.style.height = Math.max(640, d.body.scrollHeight) + 'px';
+    } catch (e) {}
+  }
   function render() {
     var html = buildCardHTML();
     var doc = frame.contentDocument || frame.contentWindow.document;
     doc.open(); doc.write(html); doc.close();
+    fitFrame();
+    // re-measure once images (avatar/cover/QR) have laid out
+    if (frame.contentWindow) frame.contentWindow.requestAnimationFrame(fitFrame);
+    setTimeout(fitFrame, 80);
   }
 
   /* ---------- status ---------- */
