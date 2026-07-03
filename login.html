@@ -136,7 +136,13 @@
 
   <div class="auth-divider">安全登入 · 我們不會取得你的密碼</div>
 
-  <p class="auth-note" id="auth-status">＊ 後端尚未接上，按鈕目前為 UI 展示用。</p>
+  <div id="logged-in" style="display:none; text-align:center; font-size:13px; color:var(--surface-text); margin:4px 0 0;">
+    已登入為 <strong id="li-name"></strong>
+    <span style="color:var(--surface-text-muted)">·</span>
+    <a href="/api/auth/logout" style="color:var(--navy-text)">登出</a>
+  </div>
+
+  <p class="auth-note" id="auth-status">Google 已可登入；Facebook／LINE 尚未接上。</p>
 
   <p class="auth-terms">
     登入即表示你同意我們的
@@ -159,15 +165,44 @@
   // Provider display names for the placeholder message.
   var PROVIDER_NAMES = { google: 'Google', facebook: 'Facebook', line: 'LINE' };
 
-  // TODO: 接上 OAuth 後，把每個 provider 導向對應的授權網址，例如：
-  //   window.location.href = '/api/auth/login/google';
   document.querySelectorAll('.social-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var provider = btn.getAttribute('data-provider');
-      var status = document.getElementById('auth-status');
-      status.textContent = '（示範）你點了「' + PROVIDER_NAMES[provider] + '」登入 — 後端 OAuth 尚未接上。';
+      if (provider === 'google') {
+        // 導向後端 OAuth 進入點，開始 Google 登入流程
+        window.location.href = '/api/auth/login/google';
+        return;
+      }
+      // Facebook / LINE 尚未接上後端
+      document.getElementById('auth-status').textContent =
+        '「' + PROVIDER_NAMES[provider] + '」登入尚未接上後端，敬請期待。';
     });
   });
+
+  // 若已登入，顯示登入狀態
+  fetch('/api/auth/me')
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d && d.user) {
+        document.getElementById('li-name').textContent = d.user.name || d.user.email || '會員';
+        document.getElementById('logged-in').style.display = 'block';
+        document.getElementById('auth-status').style.display = 'none';
+      }
+    })
+    .catch(function () {});
+
+  // 顯示回呼錯誤訊息（若有）
+  var err = new URLSearchParams(location.search).get('error');
+  if (err) {
+    var msgs = {
+      denied: '你取消了授權。',
+      state: '登入驗證失敗，請重試。',
+      config: '伺服器尚未設定完成（缺少金鑰）。',
+      token: '無法向 Google 換取權杖，請重試。',
+      userinfo: '無法取得使用者資料，請重試。',
+    };
+    document.getElementById('auth-status').textContent = msgs[err] || ('登入發生錯誤：' + err);
+  }
 
   document.querySelectorAll('.auth-terms a').forEach(function (a) {
     a.addEventListener('click', function (e) {
