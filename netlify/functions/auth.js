@@ -218,7 +218,8 @@ function facebookLogin(req) {
     client_id: appId,
     redirect_uri: `${origin}/api/auth/callback/facebook`,
     state,
-    scope: 'email,public_profile',
+    // 先只要 public_profile；email 需在 Meta 後台額外申請權限後再加回
+    scope: 'public_profile',
     response_type: 'code',
   });
 
