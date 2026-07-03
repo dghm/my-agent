@@ -202,6 +202,91 @@ async function googleCallback(req) {
   ]);
 }
 
+/* ---- Facebook Login (OAuth 2.0) ---- */
+
+function facebookLogin(req) {
+  const appId = process.env.FACEBOOK_APP_ID;
+  if (!appId) {
+    return json(500, { ok: false, error: '尚未設定 FACEBOOK_APP_ID 環境變數' });
+  }
+
+  const origin = siteOrigin(req);
+  const secure = origin.startsWith('https');
+  const state = crypto.randomBytes(16).toString('hex');
+
+  const params = new URLSearchParams({
+    client_id: appId,
+    redirect_uri: `${origin}/api/auth/callback/facebook`,
+    state,
+    scope: 'email,public_profile',
+    response_type: 'code',
+  });
+
+  return redirect(`https://www.facebook.com/v19.0/dialog/oauth?${params}`, [
+    buildCookie(STATE_COOKIE, state, STATE_MAX_AGE, secure),
+  ]);
+}
+
+async function facebookCallback(req) {
+  const origin = siteOrigin(req);
+  const secure = origin.startsWith('https');
+  const url = new URL(req.url);
+  const code = url.searchParams.get('code');
+  const state = url.searchParams.get('state');
+  const cookieState = getCookie(req, STATE_COOKIE);
+
+  if (url.searchParams.get('error')) {
+    return redirect('/login.html?error=denied');
+  }
+  if (!code || !state || !cookieState || state !== cookieState) {
+    return redirect('/login.html?error=state');
+  }
+
+  const appId = process.env.FACEBOOK_APP_ID;
+  const appSecret = process.env.FACEBOOK_APP_SECRET;
+  if (!appId || !appSecret) {
+    return redirect('/login.html?error=config');
+  }
+
+  // 1) 用 code 換 access token
+  const tokenUrl =
+    'https://graph.facebook.com/v19.0/oauth/access_token?' +
+    new URLSearchParams({
+      client_id: appId,
+      redirect_uri: `${origin}/api/auth/callback/facebook`,
+      client_secret: appSecret,
+      code,
+    });
+  const tokenRes = await fetch(tokenUrl);
+  if (!tokenRes.ok) return redirect('/login.html?error=token');
+  const token = await tokenRes.json();
+
+  // 2) 取得使用者資料（email 需使用者授權，未授權則為空）
+  const infoUrl =
+    'https://graph.facebook.com/me?' +
+    new URLSearchParams({
+      fields: 'id,name,email,picture.type(large)',
+      access_token: token.access_token,
+    });
+  const infoRes = await fetch(infoUrl);
+  if (!infoRes.ok) return redirect('/login.html?error=userinfo');
+  const info = await infoRes.json();
+
+  // 3) 建立／更新會員，發登入 cookie
+  const user = await findOrCreateUser({
+    provider: 'facebook',
+    providerId: info.id,
+    email: info.email || '',
+    name: info.name || '',
+    avatar: info.picture && info.picture.data ? info.picture.data.url : '',
+  });
+
+  return redirect('/index.html', [
+    buildCookie(SESSION_COOKIE, createSession(user), SESSION_MAX_AGE, secure),
+    buildCookie(STATE_COOKIE, '', 0, secure),
+  ]);
+}
+
 /* ---- LINE Login (OAuth 2.1 / OpenID Connect) ---- */
 
 function lineLogin(req) {
@@ -312,6 +397,8 @@ export default async (req) => {
     if (path.endsWith('/callback/google')) return googleCallback(req);
     if (path.endsWith('/login/line')) return lineLogin(req);
     if (path.endsWith('/callback/line')) return lineCallback(req);
+    if (path.endsWith('/login/facebook')) return facebookLogin(req);
+    if (path.endsWith('/callback/facebook')) return facebookCallback(req);
 
     if (path.endsWith('/me')) {
       const session = verifySession(getCookie(req, SESSION_COOKIE));

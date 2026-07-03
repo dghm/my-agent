@@ -168,7 +168,7 @@
     </div>
   </div>
 
-  <p class="auth-note" id="auth-status">Google／LINE 已可登入；Facebook 尚未接上。</p>
+  <p class="auth-note" id="auth-status">使用任一第三方帳號即可登入／註冊。</p>
 
   <p class="auth-terms">
     登入即表示你同意我們的
@@ -188,20 +188,10 @@
 <script>
   initTheme('dghm-login-theme');
 
-  // Provider display names for the placeholder message.
-  var PROVIDER_NAMES = { google: 'Google', facebook: 'Facebook', line: 'LINE' };
-
   document.querySelectorAll('.social-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      var provider = btn.getAttribute('data-provider');
-      if (provider === 'google' || provider === 'line') {
-        // 導向後端 OAuth 進入點，開始登入流程
-        window.location.href = '/api/auth/login/' + provider;
-        return;
-      }
-      // Facebook 尚未接上後端
-      document.getElementById('auth-status').textContent =
-        '「' + PROVIDER_NAMES[provider] + '」登入尚未接上後端，敬請期待。';
+      // 導向後端 OAuth 進入點，開始該平台的登入流程
+      window.location.href = '/api/auth/login/' + btn.getAttribute('data-provider');
     });
   });
 
