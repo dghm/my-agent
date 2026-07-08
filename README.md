@@ -46,6 +46,10 @@
   - 資料透過 `netlify/functions/income.js` 的 `/api/income/*` 讀寫，存於 Netlify Blobs。
   - 儲存登記後可在「附件」區上傳請款單／發票掃描檔（單檔上限 10MB），附件附加於該筆收入登記紀錄，可點擊檢視或刪除，存於獨立的 Netlify Blobs store（`income-attachments`）。
 
+- `qr-generator.html`
+  - 靜態 QR Code 產生器（完全離線，QR 編碼引擎內建於檔案中，不依賴外部服務或 CDN，產生的 QR Code 永不過期）。
+  - 支援網址／文字、Wi-Fi、名片 vCard 三種內容，可調容錯等級（L/M/Q/H）、尺寸、顏色、留白，下載 PNG／SVG 或複製圖片。
+
 - `breakdance-section-generator.html`
   - Breakdance Section 版型生成工作台（Wireframe 取向）。
   - 可設定專案資訊、Section 類型、版型數量，呼叫 `/api/sections/generate` 並顯示多版型預覽。
