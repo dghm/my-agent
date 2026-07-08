@@ -187,6 +187,11 @@
           <input type="color" id="opt-bg" value="#ffffff">
         </div>
       </div>
+      <label>圖形風格</label>
+      <select id="opt-style">
+        <option value="square" selected>標準方格</option>
+        <option value="dots">圓點風格（圓點模組＋圓角定位框）</option>
+      </select>
       <label>邊界留白（quiet zone，建議至少 4 格）</label>
       <select id="opt-margin">
         <option value="0">0（無留白，較難掃）</option>
@@ -705,11 +710,17 @@ var QR = (function () {
     var ctx = canvas.getContext('2d');
     ctx.fillStyle = $('opt-bg').value;
     ctx.fillRect(0, 0, px, px);
-    ctx.fillStyle = $('opt-fg').value;
-    for (var y = 0; y < sym.size; y++)
-      for (var x = 0; x < sym.size; x++)
-        if (sym.modules[y][x])
-          ctx.fillRect((x + margin) * ppm, (y + margin) * ppm, ppm, ppm);
+    var style = $('opt-style').value;
+    canvas.style.imageRendering = style === 'dots' ? 'auto' : 'pixelated';
+    if (style === 'dots') {
+      drawDotsStyle(ctx, sym, margin, ppm);
+    } else {
+      ctx.fillStyle = $('opt-fg').value;
+      for (var y = 0; y < sym.size; y++)
+        for (var x = 0; x < sym.size; x++)
+          if (sym.modules[y][x])
+            ctx.fillRect((x + margin) * ppm, (y + margin) * ppm, ppm, ppm);
+    }
 
     if (logoImg) drawLogo(ctx, margin * ppm, sym.size * ppm);
 
@@ -719,6 +730,45 @@ var QR = (function () {
       info += '<br>⚠ 有 LOGO 時建議容錯 H，目前為 ' + sym.eclName + '，掃描可能不穩';
     infoEl.innerHTML = info;
     setDlEnabled(true);
+  }
+
+  // 三個角落的 7×7 定位框範圍（圓點風格時另外畫成圓角框）
+  function inFinder(x, y, size) {
+    return (x < 7 && y < 7) || (x >= size - 7 && y < 7) || (x < 7 && y >= size - 7);
+  }
+
+  function drawDotsStyle(ctx, sym, margin, ppm) {
+    var fg = $('opt-fg').value, bg = $('opt-bg').value;
+    var r = ppm * 0.5; // 圓點直徑 = 1 格（相切），對比最足、通用掃描器相容性最好
+    ctx.fillStyle = fg;
+    for (var y = 0; y < sym.size; y++) {
+      for (var x = 0; x < sym.size; x++) {
+        if (!sym.modules[y][x] || inFinder(x, y, sym.size)) continue;
+        ctx.beginPath();
+        ctx.arc((x + margin + 0.5) * ppm, (y + margin + 0.5) * ppm, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    [[0, 0], [sym.size - 7, 0], [0, sym.size - 7]].forEach(function (p) {
+      drawRoundEye(ctx, (p[0] + margin) * ppm, (p[1] + margin) * ppm, ppm, fg, bg);
+    });
+  }
+
+  // 圓角定位框：外圈圓角方框 + 內圈背景色 + 圓形眼珠
+  function drawRoundEye(ctx, px, py, ppm, fg, bg) {
+    function rr(x, y, w, h, rad, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(x, y, w, h, rad);
+      else ctx.rect(x, y, w, h);
+      ctx.fill();
+    }
+    rr(px, py, 7 * ppm, 7 * ppm, 2.4 * ppm, fg);
+    rr(px + ppm, py + ppm, 5 * ppm, 5 * ppm, 1.6 * ppm, bg);
+    ctx.fillStyle = fg;
+    ctx.beginPath();
+    ctx.arc(px + 3.5 * ppm, py + 3.5 * ppm, 1.5 * ppm, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   // 計算 LOGO 置中後的位置尺寸（維持原圖長寬比，塞進正方形框）
@@ -759,11 +809,31 @@ var QR = (function () {
     var sym = currentSymbol;
     var margin = parseInt($('opt-margin').value, 10);
     var total = sym.size + margin * 2;
-    var parts = [];
-    for (var y = 0; y < sym.size; y++)
-      for (var x = 0; x < sym.size; x++)
-        if (sym.modules[y][x])
-          parts.push('M' + (x + margin) + ' ' + (y + margin) + 'h1v1h-1z');
+    var style = $('opt-style').value;
+    var fg = $('opt-fg').value, bg = $('opt-bg').value;
+
+    var body = '';
+    if (style === 'dots') {
+      var dots = [];
+      for (var y = 0; y < sym.size; y++)
+        for (var x = 0; x < sym.size; x++)
+          if (sym.modules[y][x] && !inFinder(x, y, sym.size))
+            dots.push('<circle cx="' + (x + margin + 0.5) + '" cy="' + (y + margin + 0.5) + '" r="0.5"/>');
+      body += '<g fill="' + fg + '">' + dots.join('') + '</g>\n';
+      [[0, 0], [sym.size - 7, 0], [0, sym.size - 7]].forEach(function (p) {
+        var ex = p[0] + margin, ey = p[1] + margin;
+        body += '<rect x="' + ex + '" y="' + ey + '" width="7" height="7" rx="2.4" fill="' + fg + '"/>' +
+          '<rect x="' + (ex + 1) + '" y="' + (ey + 1) + '" width="5" height="5" rx="1.6" fill="' + bg + '"/>' +
+          '<circle cx="' + (ex + 3.5) + '" cy="' + (ey + 3.5) + '" r="1.5" fill="' + fg + '"/>\n';
+      });
+    } else {
+      var parts = [];
+      for (y = 0; y < sym.size; y++)
+        for (x = 0; x < sym.size; x++)
+          if (sym.modules[y][x])
+            parts.push('M' + (x + margin) + ' ' + (y + margin) + 'h1v1h-1z');
+      body = '<path d="' + parts.join('') + '" fill="' + fg + '"/>\n';
+    }
     var logoMarkup = '';
     if (logoImg && logoDataUrl) {
       var L = logoLayout(sym.size);
@@ -777,9 +847,10 @@ var QR = (function () {
         '" width="' + L.w + '" height="' + L.h + '"/>\n';
     }
     return '<?xml version="1.0" encoding="UTF-8"?>\n' +
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + total + ' ' + total + '" shape-rendering="crispEdges">\n' +
-      '<rect width="100%" height="100%" fill="' + $('opt-bg').value + '"/>\n' +
-      '<path d="' + parts.join('') + '" fill="' + $('opt-fg').value + '"/>\n' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + total + ' ' + total + '"' +
+      (style === 'dots' ? '' : ' shape-rendering="crispEdges"') + '>\n' +
+      '<rect width="100%" height="100%" fill="' + bg + '"/>\n' +
+      body +
       logoMarkup +
       '</svg>\n';
   }
