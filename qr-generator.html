@@ -195,6 +195,30 @@
         <option value="8">8 格</option>
       </select>
     </fieldset>
+
+    <fieldset>
+      <legend>中央 LOGO（選用）</legend>
+      <label>上傳圖檔（PNG／JPG／SVG，建議正方形、背景透明）</label>
+      <input type="file" id="logo-file" accept="image/*">
+      <div class="row2" style="margin-top:10px;">
+        <div>
+          <label>LOGO 佔寬度比例</label>
+          <select id="logo-size">
+            <option value="0.15">15%（最保險）</option>
+            <option value="0.2" selected>20%（建議）</option>
+            <option value="0.25">25%（上限）</option>
+          </select>
+        </div>
+        <div>
+          <button type="button" id="logo-clear" class="secondary" style="width:100%;" disabled>移除 LOGO</button>
+        </div>
+      </div>
+      <div class="check-line">
+        <input type="checkbox" id="logo-pad" checked>
+        <label for="logo-pad" style="margin:0;">LOGO 底下墊背景色底（建議，掃描更穩）</label>
+      </div>
+      <p class="hint" style="margin:8px 0 0;">LOGO 會遮住部分圖形，靠容錯機制補回來——上傳後會自動把容錯調為 H（30%）。加了 LOGO 的 QR Code 請務必先實際掃描測試再印刷。</p>
+    </fieldset>
   </div>
 
   <div class="main-panel">
@@ -592,6 +616,8 @@ var QR = (function () {
   var canvas = $('qr-canvas');
   var currentType = 'text';
   var currentSymbol = null;
+  var logoImg = null;      // 已載入的 LOGO 影像
+  var logoDataUrl = null;  // 供 SVG 內嵌使用
 
   // ---- 各類型的內容組裝 ----
   function escapeWifi(s) {
@@ -685,9 +711,42 @@ var QR = (function () {
         if (sym.modules[y][x])
           ctx.fillRect((x + margin) * ppm, (y + margin) * ppm, ppm, ppm);
 
-    infoEl.innerHTML = '版本 ' + sym.version + '（' + sym.size + '×' + sym.size + ' 模組）· 容錯 ' +
+    if (logoImg) drawLogo(ctx, margin * ppm, sym.size * ppm);
+
+    var info = '版本 ' + sym.version + '（' + sym.size + '×' + sym.size + ' 模組）· 容錯 ' +
       sym.eclName + ' · 內容 ' + sym.byteLength + ' bytes · 輸出 ' + px + '×' + px + ' px';
+    if (logoImg && sym.eclName !== 'H')
+      info += '<br>⚠ 有 LOGO 時建議容錯 H，目前為 ' + sym.eclName + '，掃描可能不穩';
+    infoEl.innerHTML = info;
     setDlEnabled(true);
+  }
+
+  // 計算 LOGO 置中後的位置尺寸（維持原圖長寬比，塞進正方形框）
+  function logoLayout(codeLen) {
+    var box = codeLen * parseFloat($('logo-size').value);
+    var ratio = (logoImg.naturalWidth / logoImg.naturalHeight) || 1;
+    var w = box, h = box;
+    if (ratio > 1) h = box / ratio; else w = box * ratio;
+    return { w: w, h: h, pad: box * 0.1 };
+  }
+
+  function drawLogo(ctx, originPx, codePx) {
+    var L = logoLayout(codePx);
+    var cx = originPx + codePx / 2;
+    var cy = originPx + codePx / 2;
+    if ($('logo-pad').checked) {
+      ctx.fillStyle = $('opt-bg').value;
+      var rx = cx - L.w / 2 - L.pad, ry = cy - L.h / 2 - L.pad;
+      var rw = L.w + L.pad * 2, rh = L.h + L.pad * 2;
+      if (ctx.roundRect) {
+        ctx.beginPath();
+        ctx.roundRect(rx, ry, rw, rh, L.pad);
+        ctx.fill();
+      } else {
+        ctx.fillRect(rx, ry, rw, rh);
+      }
+    }
+    ctx.drawImage(logoImg, cx - L.w / 2, cy - L.h / 2, L.w, L.h);
   }
 
   function setDlEnabled(on) {
@@ -705,10 +764,23 @@ var QR = (function () {
       for (var x = 0; x < sym.size; x++)
         if (sym.modules[y][x])
           parts.push('M' + (x + margin) + ' ' + (y + margin) + 'h1v1h-1z');
+    var logoMarkup = '';
+    if (logoImg && logoDataUrl) {
+      var L = logoLayout(sym.size);
+      var c = margin + sym.size / 2;
+      if ($('logo-pad').checked) {
+        logoMarkup += '<rect x="' + (c - L.w / 2 - L.pad) + '" y="' + (c - L.h / 2 - L.pad) +
+          '" width="' + (L.w + L.pad * 2) + '" height="' + (L.h + L.pad * 2) +
+          '" rx="' + L.pad + '" fill="' + $('opt-bg').value + '"/>\n';
+      }
+      logoMarkup += '<image href="' + logoDataUrl + '" x="' + (c - L.w / 2) + '" y="' + (c - L.h / 2) +
+        '" width="' + L.w + '" height="' + L.h + '"/>\n';
+    }
     return '<?xml version="1.0" encoding="UTF-8"?>\n' +
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + total + ' ' + total + '" shape-rendering="crispEdges">\n' +
       '<rect width="100%" height="100%" fill="' + $('opt-bg').value + '"/>\n' +
       '<path d="' + parts.join('') + '" fill="' + $('opt-fg').value + '"/>\n' +
+      logoMarkup +
       '</svg>\n';
   }
 
@@ -752,6 +824,34 @@ var QR = (function () {
         setStatus('此瀏覽器不支援複製圖片，請改用下載');
       }
     }, 'image/png');
+  });
+
+  // ---- LOGO 上傳／移除 ----
+  $('logo-file').addEventListener('change', function () {
+    var f = this.files && this.files[0];
+    if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        logoImg = img;
+        logoDataUrl = reader.result;
+        $('logo-clear').disabled = false;
+        if ($('opt-ecl').value !== 'H') $('opt-ecl').value = 'H'; // 有 LOGO 自動用最高容錯
+        render();
+      };
+      img.onerror = function () { setStatus('無法讀取這個圖檔'); };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(f);
+  });
+
+  $('logo-clear').addEventListener('click', function () {
+    logoImg = null;
+    logoDataUrl = null;
+    $('logo-file').value = '';
+    $('logo-clear').disabled = true;
+    render();
   });
 
   // ---- 類型切換 ----

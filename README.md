@@ -48,7 +48,7 @@
 
 - `qr-generator.html`
   - 靜態 QR Code 產生器（完全離線，QR 編碼引擎內建於檔案中，不依賴外部服務或 CDN，產生的 QR Code 永不過期）。
-  - 支援網址／文字、Wi-Fi、名片 vCard 三種內容，可調容錯等級（L/M/Q/H）、尺寸、顏色、留白，下載 PNG／SVG 或複製圖片。
+  - 支援網址／文字、Wi-Fi、名片 vCard 三種內容，可調容錯等級（L/M/Q/H）、尺寸、顏色、留白，可加中央 LOGO（自動切換 H 容錯），下載 PNG／SVG 或複製圖片。
 
 - `breakdance-section-generator.html`
   - Breakdance Section 版型生成工作台（Wireframe 取向）。
