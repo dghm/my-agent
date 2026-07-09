@@ -218,9 +218,23 @@
           <button type="button" id="logo-clear" class="secondary" style="width:100%;" disabled>移除 LOGO</button>
         </div>
       </div>
-      <div class="check-line">
-        <input type="checkbox" id="logo-pad" checked>
-        <label for="logo-pad" style="margin:0;">LOGO 底下墊背景色底（建議，掃描更穩）</label>
+      <div class="row2" style="margin-top:10px;">
+        <div>
+          <label>墊片形狀（LOGO 底下的背景色底）</label>
+          <select id="logo-pad-shape">
+            <option value="rounded" selected>圓角方形</option>
+            <option value="circle">圓形（適合圓形 LOGO）</option>
+            <option value="none">不墊（LOGO 直接壓在圖形上）</option>
+          </select>
+        </div>
+        <div>
+          <label>墊片留邊</label>
+          <select id="logo-pad-size">
+            <option value="0.06">窄</option>
+            <option value="0.1" selected>標準</option>
+            <option value="0.16">寬</option>
+          </select>
+        </div>
       </div>
       <p class="hint" style="margin:8px 0 0;">LOGO 會遮住部分圖形，靠容錯機制補回來——上傳後會自動把容錯調為 H（30%）。加了 LOGO 的 QR Code 請務必先實際掃描測試再印刷。</p>
     </fieldset>
@@ -728,6 +742,8 @@ var QR = (function () {
       sym.eclName + ' · 內容 ' + sym.byteLength + ' bytes · 輸出 ' + px + '×' + px + ' px';
     if (logoImg && sym.eclName !== 'H')
       info += '<br>⚠ 有 LOGO 時建議容錯 H，目前為 ' + sym.eclName + '，掃描可能不穩';
+    if (logoImg && logoCoverage() > 0.11)
+      info += '<br>⚠ LOGO＋墊片遮蔽面積偏大（約 ' + Math.round(logoCoverage() * 100) + '%），建議縮小 LOGO 或改窄留邊';
     infoEl.innerHTML = info;
     setDlEnabled(true);
   }
@@ -777,24 +793,36 @@ var QR = (function () {
     var ratio = (logoImg.naturalWidth / logoImg.naturalHeight) || 1;
     var w = box, h = box;
     if (ratio > 1) h = box / ratio; else w = box * ratio;
-    return { w: w, h: h, pad: box * 0.1 };
+    return { w: w, h: h, pad: box * parseFloat($('logo-pad-size').value) };
+  }
+
+  // 墊片（含 LOGO）佔整個 QR Code 的面積比例，用來提醒遮蔽過量
+  function logoCoverage() {
+    var L = logoLayout(1); // 以 QR 邊長 = 1 計算
+    var shape = $('logo-pad-shape').value;
+    if (shape === 'circle') {
+      var r = Math.max(L.w, L.h) / 2 + L.pad;
+      return Math.PI * r * r;
+    }
+    return (L.w + L.pad * 2) * (L.h + L.pad * 2);
   }
 
   function drawLogo(ctx, originPx, codePx) {
     var L = logoLayout(codePx);
     var cx = originPx + codePx / 2;
     var cy = originPx + codePx / 2;
-    if ($('logo-pad').checked) {
+    var shape = $('logo-pad-shape').value;
+    if (shape !== 'none') {
       ctx.fillStyle = $('opt-bg').value;
-      var rx = cx - L.w / 2 - L.pad, ry = cy - L.h / 2 - L.pad;
-      var rw = L.w + L.pad * 2, rh = L.h + L.pad * 2;
-      if (ctx.roundRect) {
-        ctx.beginPath();
-        ctx.roundRect(rx, ry, rw, rh, L.pad);
-        ctx.fill();
+      ctx.beginPath();
+      if (shape === 'circle') {
+        ctx.arc(cx, cy, Math.max(L.w, L.h) / 2 + L.pad, 0, Math.PI * 2);
+      } else if (ctx.roundRect) {
+        ctx.roundRect(cx - L.w / 2 - L.pad, cy - L.h / 2 - L.pad, L.w + L.pad * 2, L.h + L.pad * 2, L.pad);
       } else {
-        ctx.fillRect(rx, ry, rw, rh);
+        ctx.rect(cx - L.w / 2 - L.pad, cy - L.h / 2 - L.pad, L.w + L.pad * 2, L.h + L.pad * 2);
       }
+      ctx.fill();
     }
     ctx.drawImage(logoImg, cx - L.w / 2, cy - L.h / 2, L.w, L.h);
   }
@@ -838,10 +866,14 @@ var QR = (function () {
     if (logoImg && logoDataUrl) {
       var L = logoLayout(sym.size);
       var c = margin + sym.size / 2;
-      if ($('logo-pad').checked) {
+      var padShape = $('logo-pad-shape').value;
+      if (padShape === 'circle') {
+        logoMarkup += '<circle cx="' + c + '" cy="' + c + '" r="' + (Math.max(L.w, L.h) / 2 + L.pad) +
+          '" fill="' + bg + '"/>\n';
+      } else if (padShape === 'rounded') {
         logoMarkup += '<rect x="' + (c - L.w / 2 - L.pad) + '" y="' + (c - L.h / 2 - L.pad) +
           '" width="' + (L.w + L.pad * 2) + '" height="' + (L.h + L.pad * 2) +
-          '" rx="' + L.pad + '" fill="' + $('opt-bg').value + '"/>\n';
+          '" rx="' + L.pad + '" fill="' + bg + '"/>\n';
       }
       logoMarkup += '<image href="' + logoDataUrl + '" x="' + (c - L.w / 2) + '" y="' + (c - L.h / 2) +
         '" width="' + L.w + '" height="' + L.h + '"/>\n';
