@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- ▼▼ 換專案時改這裡：標題 ▼▼ -->
+<title>登入 / 註冊</title>
+<style>
+  /* ▼▼ 品牌設定：改這幾個變數就能換色 ▼▼ */
+  :root {
+    --brand:        #0d2f6e;   /* 主色（按鈕、標題） */
+    --brand-ink:    #0d2f6e;   /* 主色文字（深色模式下方會覆寫） */
+    --bg:           #f4f6f8;
+    --panel:        #ffffff;
+    --border:       #e1e5ea;
+    --text:         #1f2933;
+    --muted:        #667085;
+    --input-bg:     #ffffff;
+  }
+  :root[data-theme="dark"], html[data-theme="dark"] {
+    --bg: #161b22; --panel: #1f2530; --border: #323a47;
+    --text: #e6e9ef; --muted: #9aa4b2; --input-bg: #2a313d; --brand-ink: #7fa8e8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161b22; --panel: #1f2530; --border: #323a47;
+      --text: #e6e9ef; --muted: #9aa4b2; --input-bg: #2a313d; --brand-ink: #7fa8e8;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 24px; background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  }
+  .auth-card {
+    width: 100%; max-width: 380px; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 14px; padding: 32px 28px 28px;
+    box-shadow: 0 8px 30px rgba(13, 47, 110, .08);
+  }
+  .auth-head { text-align: center; margin-bottom: 24px; }
+  .auth-logo {
+    width: 48px; height: 48px; margin: 0 auto 14px; border-radius: 12px;
+    background: var(--brand); display: grid; place-items: center;
+  }
+  .auth-logo svg { width: 26px; height: 26px; }
+  .auth-card h1 { font-size: 20px; margin: 0 0 6px; color: var(--brand-ink); }
+  .auth-card .sub { font-size: 13px; color: var(--muted); margin: 0; line-height: 1.6; }
+
+  .social-btn {
+    width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 11px 14px; margin-bottom: 12px; border-radius: 8px;
+    font-size: 14px; font-weight: 600; font-family: inherit; text-decoration: none;
+    cursor: pointer; border: 1px solid transparent;
+    transition: filter .15s, box-shadow .15s;
+  }
+  .social-btn:hover { filter: brightness(.97); box-shadow: 0 2px 8px rgba(0,0,0,.10); }
+  .social-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+  .btn-google   { background: #ffffff; color: #3c4043; border-color: #dadce0; }
+  .btn-facebook { background: #1877F2; color: #ffffff; }
+  .btn-line     { background: #06C755; color: #ffffff; }
+
+  .auth-divider { display: flex; align-items: center; gap: 10px; margin: 18px 0 16px; color: var(--muted); font-size: 12px; }
+  .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+  .auth-note { font-size: 12px; color: var(--muted); line-height: 1.6; text-align: center; margin: 4px 0 0; }
+  .auth-footer { margin-top: 22px; text-align: center; font-size: 11px; color: var(--muted); }
+
+  #logged-in { text-align: center; }
+  #logged-in .li-avatar { width: 56px; height: 56px; border-radius: 50%; margin: 4px auto 10px; display: block; border: 2px solid var(--border); object-fit: cover; background: var(--input-bg); }
+  #logged-in .li-name-line { font-size: 15px; color: var(--text); margin-bottom: 2px; }
+  #logged-in .li-email { font-size: 12px; color: var(--muted); margin-bottom: 16px; word-break: break-all; }
+  #logged-in .li-primary { display: block; width: 100%; text-align: center; padding: 11px; border-radius: 8px; background: var(--brand); color: #fff; text-decoration: none; font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+  #logged-in .li-links { font-size: 12px; color: var(--muted); }
+  #logged-in .li-links a { color: var(--brand-ink); text-decoration: none; }
+  #logged-in .li-links a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="auth-card">
+  <div class="auth-head">
+    <!-- ▼▼ 換專案時改這裡：logo 與文字 ▼▼ -->
+    <div class="auth-logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 2 4 6v6c0 5 3.5 8 8 8s8-3 8-8V6l-8-4Z" fill="#fff" opacity=".95"/><circle cx="12" cy="11" r="2.4" fill="var(--brand)"/><rect x="11" y="12.5" width="2" height="4" rx="1" fill="var(--brand)"/></svg>
+    </div>
+    <h1>登入 / 註冊</h1>
+    <p class="sub">使用第三方帳號快速登入，首次登入將自動建立會員資料。</p>
+  </div>
+
+  <div id="login-options"></div>
+
+  <div class="auth-divider">安全登入 · 我們不會取得你的密碼</div>
+
+  <div id="logged-in" style="display:none;">
+    <img id="li-avatar" class="li-avatar" alt="" referrerpolicy="no-referrer">
+    <div class="li-name-line">已登入為 <strong id="li-name"></strong></div>
+    <div class="li-email" id="li-email"></div>
+    <a class="li-primary" href="/">進入首頁</a>
+    <div class="li-links">
+      <a href="/api/auth/logout">登出</a> · <a href="/api/auth/logout">用其他帳號登入</a>
+    </div>
+  </div>
+
+  <p class="auth-note" id="auth-status">使用任一第三方帳號即可登入／註冊。</p>
+
+  <!-- ▼▼ 換專案時改這裡：頁尾 ▼▼ -->
+  <div class="auth-footer">你的公司名稱 · hello@example.com</div>
+</div>
+
+<script>
+  // ▼▼ 換專案時改這裡：要顯示哪些登入按鈕（需與 config.js 的 enabledProviders 一致）▼▼
+  var ENABLED = ['google', 'line'];
+
+  // 各 provider 的按鈕外觀（品牌色與 logo）
+  var UI = {
+    google: { label: '使用 Google 帳號登入', cls: 'btn-google',
+      svg: '<svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>' },
+    facebook: { label: '使用 Facebook 帳號登入', cls: 'btn-facebook',
+      svg: '<svg viewBox="0 0 24 24"><path fill="#fff" d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.89v2.25h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07z"/></svg>' },
+    line: { label: '使用 LINE 帳號登入', cls: 'btn-line',
+      svg: '<svg viewBox="0 0 24 24"><path fill="#fff" d="M12 2C6.48 2 2 5.64 2 10.13c0 4.02 3.55 7.39 8.35 8.03.32.07.77.21.88.49.1.25.06.64.03.9l-.14.85c-.04.25-.2.98.86.53s5.7-3.36 7.78-5.75c1.43-1.57 2.24-3.16 2.24-4.99C22 5.64 17.52 2 12 2zM8.09 12.79H6.1a.53.53 0 0 1-.53-.53V8.28a.53.53 0 0 1 1.06 0v3.45h1.46a.53.53 0 0 1 0 1.06zm2.08-.53a.53.53 0 0 1-1.06 0V8.28a.53.53 0 0 1 1.06 0v3.98zm4.79 0c0 .23-.15.43-.37.5a.53.53 0 0 1-.6-.19l-2.04-2.78v2.47a.53.53 0 0 1-1.06 0V8.28a.53.53 0 0 1 .96-.31l2.05 2.78V8.28a.53.53 0 0 1 1.06 0v3.98zm3.35-2.52a.53.53 0 0 1 0 1.06h-1.46v.93h1.46a.53.53 0 0 1 0 1.06h-1.99a.53.53 0 0 1-.53-.53V8.28a.53.53 0 0 1 .53-.53h1.99a.53.53 0 0 1 0 1.06h-1.46v.93h1.46z"/></svg>' },
+  };
+
+  // 依 ENABLED 產生登入按鈕（用 <a> 直接導向後端進入點，免 JS 也可點）
+  var box = document.getElementById('login-options');
+  ENABLED.forEach(function (id) {
+    var def = UI[id];
+    if (!def) return;
+    var a = document.createElement('a');
+    a.className = 'social-btn ' + def.cls;
+    a.href = '/api/auth/login/' + id;
+    a.innerHTML = def.svg + '<span>' + def.label + '</span>';
+    box.appendChild(a);
+  });
+
+  // 已登入：隱藏按鈕，顯示會員面板
+  fetch('/api/auth/me')
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d && d.user) {
+        var u = d.user;
+        document.getElementById('li-name').textContent = u.name || u.email || '會員';
+        document.getElementById('li-email').textContent = u.email || '';
+        var avatar = document.getElementById('li-avatar');
+        if (u.avatar) { avatar.src = u.avatar; } else { avatar.style.display = 'none'; }
+        document.getElementById('login-options').style.display = 'none';
+        document.getElementById('auth-status').style.display = 'none';
+        document.getElementById('logged-in').style.display = 'block';
+      }
+    })
+    .catch(function () {});
+
+  // 顯示錯誤訊息
+  var err = new URLSearchParams(location.search).get('error');
+  if (err) {
+    var msgs = {
+      denied: '你取消了授權。',
+      state: '登入驗證失敗，請重試。',
+      config: '伺服器尚未設定完成（缺少金鑰）。',
+      token: '無法換取權杖，請重試。',
+      userinfo: '無法取得使用者資料，請重試。',
+      unauthorized: '你的帳號尚未被授權，請聯絡管理員。',
+    };
+    document.getElementById('auth-status').textContent = msgs[err] || ('登入發生錯誤：' + err);
+  }
+</script>
+</body>
+</html>
