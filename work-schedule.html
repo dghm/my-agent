@@ -158,14 +158,21 @@ document.getElementById('dghm-rows').appendChild(makeDghmRow({ desc: '秋節/聖
 updatePctTotal('client');
 updatePctTotal('dghm');
 
-// 預設週次起始日：下週一
+function localDateStr(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+// 預設週次起始日：下週一（本地時間，避免 toISOString 回傳 UTC 日期偏移）
 (function setDefaultWeekStart() {
   const today = new Date();
   const day = today.getDay();
   const diffToNextMon = (8 - day) % 7 || 7;
   const nextMon = new Date(today);
   nextMon.setDate(today.getDate() + diffToNextMon);
-  document.getElementById('week-start').value = nextMon.toISOString().slice(0, 10);
+  document.getElementById('week-start').value = localDateStr(nextMon);
 })();
 
 function largestRemainderAllocate(items, total) {
@@ -210,7 +217,7 @@ function assignSlots(items, slotList) {
 function formatDate(weekStart, dayIndex) {
   const d = new Date(weekStart + 'T00:00:00');
   d.setDate(d.getDate() + dayIndex);
-  return d.toISOString().slice(0, 10);
+  return localDateStr(d);
 }
 
 document.getElementById('generate-btn').addEventListener('click', () => {
