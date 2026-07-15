@@ -119,8 +119,8 @@
         <input type="text" id="client-full-name" value="TailorMed International Courier LTD.">
 
         <label>CSS 變數前綴</label>
-        <input type="text" id="css-prefix" value="brand" placeholder="brand">
-        <p class="hint" style="margin:4px 0 0;">輸出的 CSS 變數名稱會是 <code>--{前綴}-navy</code> 等，例如 <code>--brand-navy</code>。建議改成客戶英文簡稱（如 <code>acme</code>），避免沿用 TailorMed 專案的 <code>tm</code>。僅可使用小寫英文、數字與「-」。</p>
+        <input type="text" id="css-prefix" value="brand" readonly style="background:#F3F4F6;cursor:default;color:#6B7280;">
+        <p class="hint" style="margin:4px 0 0;">固定為 <code>brand</code>，輸出的 CSS 變數名稱格式為 <code>--brand-primary</code>、<code>--brand-secondary</code> 等，供 Claude Skill 統一引用。</p>
 
         <div class="grid2">
           <div>
