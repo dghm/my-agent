@@ -578,9 +578,18 @@ ${paletteVarsBlock}
   /* ---- Semantic mapping（對應官方色，已確認） ---- */
   --tm-bg-heading: var(--tm-heading);
   --tm-border: var(--tm-heading);
-  --tm-text-heading: var(--tm-primary);
+  --tm-text-heading: var(--tm-heading);
   --tm-text-body: var(--tm-ink);
   --tm-text-muted: var(--tm-secondary);
+
+  /* ---- Document semantic mapping（User Guide 文件系統專屬，與網站語意層分開） ---- */
+  --tm-doc-text-heading: var(--tm-heading);
+  --tm-doc-text-body: var(--tm-ink);
+  --tm-doc-caption-text: var(--tm-gray);
+  --tm-doc-table-stripe: var(--tm-primary-mid);
+  --tm-doc-table-border: var(--tm-primary-light);
+  --tm-doc-node-decision-bg: var(--tm-primary-light);
+  --tm-doc-radius: 4px; /* 固定值，不對應輸入欄位，不受客戶網站圓角設定影響 */
 
   /* ---- Semantic（通用語意色，與品牌無關，維持不變） ---- */
   --tm-note-bg: #FFF8E1;
