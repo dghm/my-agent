@@ -457,7 +457,7 @@ let logoFullDataURL = null, logoFullFileName = null;
 let logoMarkDataURL = null, logoMarkFileName = null;
 
 /* ============================================================
-   CSS 變數前綴（取代原 TailorMed 專案的 --tm- 前綴）
+   CSS 變數前綴（原始碼佔位前綴為 --tok-，輸出時由 applyCssPrefix 替換成此前綴）
    ============================================================ */
 function getCssPrefix() {
   const raw = val('css-prefix').trim().toLowerCase();
@@ -465,7 +465,7 @@ function getCssPrefix() {
   return cleaned || 'brand';
 }
 function applyCssPrefix(text) {
-  return text.replace(/--tm-/g, '--' + getCssPrefix() + '-');
+  return text.replace(/--tok-/g, '--' + getCssPrefix() + '-');
 }
 
 /* ============================================================
@@ -545,7 +545,7 @@ function buildTokensCSS() {
 
   const paletteEntries = getPaletteEntries();
   const paletteVarsBlock = paletteEntries.length
-    ? '\n  /* ---- Palette（自訂色票） ---- */\n' + paletteEntries.map(p => `  --tm-${p.slug}: ${p.hex};   /* ${p.name} */`).join('\n') + '\n'
+    ? '\n  /* ---- Palette（自訂色票） ---- */\n' + paletteEntries.map(p => `  --tok-${p.slug}: ${p.hex};   /* ${p.name} */`).join('\n') + '\n'
     : '';
 
   return applyCssPrefix(`/* ============================================================
@@ -559,46 +559,55 @@ function buildTokensCSS() {
 
 :root {
   /* ---- Primary（官方確認） ---- */
-  --tm-primary: ${val('navy-hex')};        /* ${val('navy-name')} */
-  --tm-secondary: ${val('accent-hex')};      /* ${val('accent-name')} */
-  --tm-heading: ${val('pale-hex')};        /* ${val('pale-name')} */
-  --tm-link: ${val('link-hex')};        /* ${val('link-name')} */
+  --tok-primary: ${val('navy-hex')};        /* ${val('navy-name')} */
+  --tok-secondary: ${val('accent-hex')};      /* ${val('accent-name')} */
+  --tok-heading: ${val('pale-hex')};        /* ${val('pale-name')} */
+  --tok-link: ${val('link-hex')};        /* ${val('link-name')} */
 
   /* ---- Neutral（官方確認） ---- */
-  --tm-ink: ${val('ink-hex')};         /* ${val('ink-name')} */
-  --tm-gray: ${val('gray-hex')};        /* ${val('gray-name')} */
-  --tm-white: ${val('white-hex')};
-  --tm-shadow: ${val('shadow-hex')};   /* ${val('shadow-name')} */
+  --tok-text-base: ${val('ink-hex')};         /* ${val('ink-name')} */
+  --tok-text-dark: ${val('gray-hex')};        /* ${val('gray-name')} */
+  --tok-surface: ${val('white-hex')};
+  --tok-shadow-base:${val('shadow-hex')};   /* ${val('shadow-name')} */
 
   /* ---- Derived（依官方色衍生，待確認） ---- */
-  --tm-primary-light: ${val('navylight-hex')};   /* ${val('navylight-name')} */
-  --tm-primary-dark: ${val('accentdark-hex')};  /* ${val('accentdark-name')} */
-  --tm-primary-mid: ${val('rowstripe-hex')};   /* ${val('rowstripe-name')} */
+  --tok-primary-light: ${val('navylight-hex')};   /* ${val('navylight-name')} */
+  --tok-primary-dark: ${val('accentdark-hex')};  /* ${val('accentdark-name')} */
+  --tok-primary-mid: ${val('rowstripe-hex')};   /* ${val('rowstripe-name')} */
 ${paletteVarsBlock}
   /* ---- Semantic mapping（對應官方色，已確認） ---- */
-  --tm-bg-heading: var(--tm-heading);
-  --tm-border: var(--tm-heading);
-  --tm-text-heading: var(--tm-primary);
-  --tm-text-body: var(--tm-ink);
-  --tm-text-muted: var(--tm-secondary);
+  --tok-bg-heading: var(--tok-heading);
+  --tok-border: var(--tok-heading);
+  --tok-text-heading: var(--tok-heading);
+  --tok-text-body: var(--tok-text-base);
+  --tok-text-muted: var(--tok-secondary);
+
+  /* ---- Document semantic mapping（User Guide 文件系統專屬，與網站語意層分開） ---- */
+  --tok-doc-text-heading: var(--tok-heading);
+  --tok-doc-text-body: var(--tok-text-base);
+  --tok-doc-caption-text: var(--tok-text-dark);
+  --tok-doc-table-stripe: var(--tok-primary-mid);
+  --tok-doc-table-border: var(--tok-primary-light);
+  --tok-doc-node-decision-bg: var(--tok-primary-light);
+  --tok-doc-radius: 4px; /* 固定值，不對應輸入欄位，不受客戶網站圓角設定影響 */
 
   /* ---- Semantic（通用語意色，與品牌無關，維持不變） ---- */
-  --tm-note-bg: #FFF8E1;
-  --tm-note-border: #F0AD4E;
-  --tm-todo-bg: #FDECEA;
-  --tm-todo-border: #E07B6E;
-  --tm-todo-text: #C0392B;
+  --tok-note-bg: #FFF8E1;
+  --tok-note-border: #F0AD4E;
+  --tok-todo-bg: #FDECEA;
+  --tok-todo-border: #E07B6E;
+  --tok-todo-text: #C0392B;
 
   /* ---- Typography ---- */
-  --tm-font: ${val('font-stack')};
-  --tm-heading-font: ${val('heading-font-stack').trim() || val('font-stack')};
+  --tok-font: ${val('font-stack')};
+  --tok-heading-font: ${val('heading-font-stack').trim() || val('font-stack')};
 
   /* ---- Visual Style（每客戶可自訂） ---- */
-  --tm-radius-sm: ${val('radius-sm')}px;    /* 按鈕、輸入框圓角 */
-  --tm-radius-lg: ${val('radius-lg')}px;    /* 卡片圓角 */
-  --tm-shadow-card: 0 5px 10px 0 rgba(${rgbStr(val('shadow-hex'))}, ${val('shadow-opacity')});  /* 卡片陰影（取自中性色 Shadow） */
-  --tm-overlay-dark: rgba(${rgbStr(val('overlay-hex'))}, ${val('overlay-opacity')});             /* Hero 圖片深色疊層 */
-  --tm-tint-heading-15: rgba(${rgbStr(val('pale-hex'))}, ${val('tint-opacity')});          /* 淡色疊色（表單區塊底色） */
+  --tok-radius-sm: ${val('radius-sm')}px;    /* 按鈕、輸入框圓角 */
+  --tok-radius-lg: ${val('radius-lg')}px;    /* 卡片圓角 */
+  --tok-shadow-card: 0 5px 10px 0 rgba(${rgbStr(val('shadow-hex'))}, ${val('shadow-opacity')});  /* 卡片陰影（取自中性色 Shadow） */
+  --tok-overlay-dark: rgba(${rgbStr(val('overlay-hex'))}, ${val('overlay-opacity')});             /* Hero 圖片深色疊層 */
+  --tok-tint-heading-15: rgba(${rgbStr(val('pale-hex'))}, ${val('tint-opacity')});          /* 淡色疊色（表單區塊底色） */
 }
 `);
 }
@@ -641,21 +650,21 @@ function buildGuidelineHTML() {
   const year = esc(val('year'));
 
   const paletteSwatches = getPaletteEntries()
-    .map(p => swatchHTML('--tm-' + p.slug, p.hex, p.name, USAGE_DEFAULTS.palette, 'palette'));
+    .map(p => swatchHTML('--tok-' + p.slug, p.hex, p.name, USAGE_DEFAULTS.palette, 'palette'));
 
   const primarySwatches = [
-    swatchHTML('--tm-primary', val('navy-hex'), val('navy-name'), USAGE_DEFAULTS.navy, 'confirmed'),
-    swatchHTML('--tm-secondary', val('accent-hex'), val('accent-name'), USAGE_DEFAULTS.accent, 'confirmed'),
-    swatchHTML('--tm-heading', val('pale-hex'), val('pale-name'), USAGE_DEFAULTS.pale, 'confirmed'),
-    swatchHTML('--tm-link', val('link-hex'), val('link-name'), USAGE_DEFAULTS.link, 'confirmed'),
+    swatchHTML('--tok-primary', val('navy-hex'), val('navy-name'), USAGE_DEFAULTS.navy, 'confirmed'),
+    swatchHTML('--tok-secondary', val('accent-hex'), val('accent-name'), USAGE_DEFAULTS.accent, 'confirmed'),
+    swatchHTML('--tok-heading', val('pale-hex'), val('pale-name'), USAGE_DEFAULTS.pale, 'confirmed'),
+    swatchHTML('--tok-link', val('link-hex'), val('link-name'), USAGE_DEFAULTS.link, 'confirmed'),
     ...paletteSwatches
   ].join('\n');
 
   const neutralSwatches = [
-    swatchHTML('--tm-ink', val('ink-hex'), val('ink-name'), USAGE_DEFAULTS.ink, 'confirmed'),
-    swatchHTML('--tm-gray', val('gray-hex'), val('gray-name'), USAGE_DEFAULTS.gray, 'confirmed'),
+    swatchHTML('--tok-text-base', val('ink-hex'), val('ink-name'), USAGE_DEFAULTS.ink, 'confirmed'),
+    swatchHTML('--tok-text-dark', val('gray-hex'), val('gray-name'), USAGE_DEFAULTS.gray, 'confirmed'),
     `      <div class="swatch">
-        <div class="color-block" style="background: var(--tm-white); border: 1px solid var(--tm-border);" data-hex="${esc(val('white-hex'))}" title="點擊複製 HEX 色碼"></div>
+        <div class="color-block" style="background: var(--tok-surface); border: 1px solid var(--tok-border);" data-hex="${esc(val('white-hex'))}" title="點擊複製 HEX 色碼"></div>
         <div class="info">
           <div class="name">${esc(val('white-name'))}</div>
           <div class="hex">${esc(val('white-hex'))}</div>
@@ -663,13 +672,13 @@ function buildGuidelineHTML() {
           <span class="src-tag src-confirmed">官方確認</span>
         </div>
       </div>`,
-    swatchHTML('--tm-shadow', val('shadow-hex'), val('shadow-name'), USAGE_DEFAULTS.shadow, 'confirmed')
+    swatchHTML('--tok-shadow-base', val('shadow-hex'), val('shadow-name'), USAGE_DEFAULTS.shadow, 'confirmed')
   ].join('\n');
 
   const derivedSwatches = [
-    swatchHTML('--tm-primary-light', val('navylight-hex'), val('navylight-name'), USAGE_DEFAULTS.navylight, 'derived'),
-    swatchHTML('--tm-primary-dark', val('accentdark-hex'), val('accentdark-name'), USAGE_DEFAULTS.accentdark, 'derived'),
-    swatchHTML('--tm-primary-mid', val('rowstripe-hex'), val('rowstripe-name'), USAGE_DEFAULTS.rowstripe, 'derived')
+    swatchHTML('--tok-primary-light', val('navylight-hex'), val('navylight-name'), USAGE_DEFAULTS.navylight, 'derived'),
+    swatchHTML('--tok-primary-dark', val('accentdark-hex'), val('accentdark-name'), USAGE_DEFAULTS.accentdark, 'derived'),
+    swatchHTML('--tok-primary-mid', val('rowstripe-hex'), val('rowstripe-name'), USAGE_DEFAULTS.rowstripe, 'derived')
   ].join('\n');
 
   const logoFullSrc = esc(logoFullDataURL || val('logo-full'));
@@ -694,16 +703,16 @@ ${val('font-import-url').trim() ? `<link rel="stylesheet" href="${esc(val('font-
   :root {
     --surface-page: #ffffff;
     --surface-card: #ffffff;
-    --surface-card-alt: var(--tm-bg-heading);
-    --surface-text: var(--tm-text-body);
-    --surface-text-muted: var(--tm-text-muted);
-    --surface-heading: var(--tm-text-heading);
-    --surface-border: var(--tm-border);
+    --surface-card-alt: var(--tok-bg-heading);
+    --surface-text: var(--tok-text-body);
+    --surface-text-muted: var(--tok-text-muted);
+    --surface-heading: var(--tok-text-heading);
+    --surface-border: var(--tok-border);
     --surface-do-bg: #F2FAFC;
-    --surface-dont-bg: var(--tm-todo-bg);
+    --surface-dont-bg: var(--tok-todo-bg);
     --surface-dont-border: #f3d4d0;
-    --surface-dont-text: var(--tm-todo-text);
-    --surface-accent-text: var(--tm-secondary);
+    --surface-dont-text: var(--tok-todo-text);
+    --surface-accent-text: var(--tok-secondary);
   }
   :root[data-theme="dark"] {
     --surface-page: #14181f;
@@ -719,11 +728,11 @@ ${val('font-import-url').trim() ? `<link rel="stylesheet" href="${esc(val('font-
     --surface-dont-text: #e08e85;
     /* Text（主色）在 Dark 模式下與深色 surface 背景混合提亮，
        避免品牌色本身偏深時在深色底被吃掉；Day 模式維持原色 */
-    --surface-accent-text: color-mix(in srgb, var(--tm-secondary) 65%, #ffffff 35%);
+    --surface-accent-text: color-mix(in srgb, var(--tok-secondary) 65%, #ffffff 35%);
   }
 
   body {
-    font-family: var(--tm-font);
+    font-family: var(--tok-font);
     color: var(--surface-text);
     background: var(--surface-page);
     margin: 0;
@@ -756,7 +765,7 @@ ${val('font-import-url').trim() ? `<link rel="stylesheet" href="${esc(val('font-
   /* ---- Hero ---- */
   .hero {
     position: relative;
-    background: var(--tm-primary);
+    background: var(--tok-primary);
     color: #fff;
     padding: 48px 40px;
     border-radius: 12px;
@@ -784,13 +793,13 @@ ${val('font-import-url').trim() ? `<link rel="stylesheet" href="${esc(val('font-
     display: inline-block;
     font-size: 11px;
     font-weight: 700;
-    color: var(--tm-primary-dark);
+    color: var(--tok-primary-dark);
     letter-spacing: 1px;
     margin-bottom: 4px;
   }
   h2 {
     color: var(--surface-heading);
-    font-family: var(--tm-heading-font);
+    font-family: var(--tok-heading-font);
     font-size: 20px;
     margin: 0 0 6px;
     border-bottom: 2px solid var(--surface-border);
@@ -835,7 +844,7 @@ ${val('font-import-url').trim() ? `<link rel="stylesheet" href="${esc(val('font-
   }
   .swatch .info { padding: 12px 14px; }
   .swatch .name { font-weight: 700; color: var(--surface-heading); font-size: 13px; margin-bottom: 2px; }
-  .swatch .hex { font-family: "SF Mono", Menlo, monospace; font-size: 12px; color: var(--tm-link); }
+  .swatch .hex { font-family: "SF Mono", Menlo, monospace; font-size: 12px; color: var(--tok-link); }
   .swatch .usage { font-size: 11px; color: var(--surface-text-muted); margin-top: 6px; }
   .swatch .src-tag {
     display: inline-block;
@@ -846,8 +855,8 @@ ${val('font-import-url').trim() ? `<link rel="stylesheet" href="${esc(val('font-
     border-radius: 3px;
     margin-top: 8px;
   }
-  .src-confirmed { background: #E5F4FA; color: var(--tm-primary); }
-  .src-derived { background: var(--tm-note-bg); color: #9a6b1e; }
+  .src-confirmed { background: #E5F4FA; color: var(--tok-primary); }
+  .src-derived { background: var(--tok-note-bg); color: #9a6b1e; }
 
   /* ---- Logo usage ---- */
   .logo-grid {
@@ -885,11 +894,11 @@ ${val('font-import-url').trim() ? `<link rel="stylesheet" href="${esc(val('font-
   }
   .type-demo .label-row {
     display: flex; justify-content: space-between; align-items: baseline;
-    font-size: 11px; color: var(--tm-gray); margin-bottom: 6px;
+    font-size: 11px; color: var(--tok-text-dark); margin-bottom: 6px;
   }
-  .type-demo h3 { margin: 0; color: var(--tm-heading); font-family: var(--tm-heading-font); }
-  .type-demo .h1-demo { font-size: 32px; font-weight: 700; color: var(--tm-heading); margin: 0; font-family: var(--tm-heading-font); }
-  .type-demo .body-demo { font-size: 14px; color: var(--tm-secondary); margin: 0; font-family: var(--tm-font); }
+  .type-demo h3 { margin: 0; color: var(--tok-heading); font-family: var(--tok-heading-font); }
+  .type-demo .h1-demo { font-size: 32px; font-weight: 700; color: var(--tok-heading); margin: 0; font-family: var(--tok-heading-font); }
+  .type-demo .body-demo { font-size: 14px; color: var(--tok-secondary); margin: 0; font-family: var(--tok-font); }
   .type-demo + .type-demo { margin-top: 12px; }
 
   /* ---- Do/Don't ---- */
@@ -910,7 +919,7 @@ ${val('font-import-url').trim() ? `<link rel="stylesheet" href="${esc(val('font-
   /* ---- Provenance / footer ---- */
   .provenance {
     background: var(--surface-card-alt);
-    border-left: 4px solid var(--tm-primary-dark);
+    border-left: 4px solid var(--tok-primary-dark);
     padding: 16px 20px;
     font-size: 12px;
     color: var(--surface-text);
@@ -951,21 +960,21 @@ ${val('font-import-url').trim() ? `<link rel="stylesheet" href="${esc(val('font-
      固定白底，不隨 Dark / Day 模式變色 */
   .demo-box {
     display: flex; align-items: center; justify-content: center;
-    height: 64px; font-size: 12px; color: var(--tm-primary); font-weight: 600;
+    height: 64px; font-size: 12px; color: var(--tok-primary); font-weight: 600;
     font-family: "SF Mono", Menlo, monospace;
     background: #fff;
   }
-  .radius-sm-box { border-radius: var(--tm-radius-sm); background: var(--tm-heading); }
-  .radius-lg-box { border-radius: var(--tm-radius-lg); background: var(--tm-heading); }
-  .shadow-box { border-radius: var(--tm-radius-lg); background: #fff; box-shadow: var(--tm-shadow-card); }
-  .tint-box { background: var(--tm-tint-heading-15); border: 1px solid var(--tm-border); }
+  .radius-sm-box { border-radius: var(--tok-radius-sm); background: var(--tok-heading); }
+  .radius-lg-box { border-radius: var(--tok-radius-lg); background: var(--tok-heading); }
+  .shadow-box { border-radius: var(--tok-radius-lg); background: #fff; box-shadow: var(--tok-shadow-card); }
+  .tint-box { background: var(--tok-tint-heading-15); border: 1px solid var(--tok-border); }
   .overlay-box {
     position: relative; height: 64px;
-    border-radius: var(--tm-radius-lg);
-    background: linear-gradient(135deg, var(--tm-primary-light), var(--tm-primary));
+    border-radius: var(--tok-radius-lg);
+    background: linear-gradient(135deg, var(--tok-primary-light), var(--tok-primary));
     overflow: hidden;
   }
-  .overlay-box::after { content: ""; position: absolute; inset: 0; background: var(--tm-overlay-dark); }
+  .overlay-box::after { content: ""; position: absolute; inset: 0; background: var(--tok-overlay-dark); }
   .overlay-box span {
     position: relative; z-index: 1; color: #fff; font-size: 11px;
     display: flex; align-items: center; justify-content: center; height: 100%;
@@ -973,17 +982,17 @@ ${val('font-import-url').trim() ? `<link rel="stylesheet" href="${esc(val('font-
   }
   .badge-demo {
     display: inline-block;
-    background: var(--tm-secondary);
-    color: var(--tm-primary);
+    background: var(--tok-secondary);
+    color: var(--tok-primary);
     font-weight: 700;
     font-size: 12px;
     padding: 6px 14px;
-    border-radius: var(--tm-radius-sm);
+    border-radius: var(--tok-radius-sm);
   }
   .dark-card-demo {
-    background: var(--tm-primary);
+    background: var(--tok-primary);
     color: #fff;
-    border-radius: var(--tm-radius-lg);
+    border-radius: var(--tok-radius-lg);
     padding: 16px;
     height: 64px;
     box-sizing: border-box;
@@ -991,13 +1000,13 @@ ${val('font-import-url').trim() ? `<link rel="stylesheet" href="${esc(val('font-
   .dark-card-demo .label { font-size: 10px; letter-spacing: 1px; opacity: 0.7; }
   .dark-card-demo .value { font-size: 16px; font-weight: 700; margin-top: 4px; }
   .footer-bar-demo {
-    background: var(--tm-primary);
+    background: var(--tok-primary);
     color: #fff;
     text-align: center;
     font-size: 12px;
     padding: 0 12px;
     height: 64px;
-    border-radius: var(--tm-radius-sm);
+    border-radius: var(--tok-radius-sm);
     display: flex; align-items: center; justify-content: center;
   }
 
@@ -1030,8 +1039,8 @@ ${val('font-import-url').trim() ? `<link rel="stylesheet" href="${esc(val('font-
     border-radius: 3px;
     white-space: nowrap;
   }
-  .scope-apply { background: #E5F4FA; color: var(--tm-primary); }
-  .scope-internal { background: var(--tm-note-bg); color: #9a6b1e; }
+  .scope-apply { background: #E5F4FA; color: var(--tok-primary); }
+  .scope-internal { background: var(--tok-note-bg); color: #9a6b1e; }
 </style>
 </head>
 <body>
@@ -1135,23 +1144,23 @@ ${listItems('dont-list')}
     <div class="style-grid">
       <div class="style-card">
         <div class="demo-label">圓角 · 按鈕／輸入框 ${esc(val('radius-sm'))}px</div>
-        <div class="demo-box radius-sm-box">--tm-radius-sm</div>
+        <div class="demo-box radius-sm-box">--tok-radius-sm</div>
       </div>
       <div class="style-card">
         <div class="demo-label">圓角 · 卡片 ${esc(val('radius-lg'))}px</div>
-        <div class="demo-box radius-lg-box">--tm-radius-lg</div>
+        <div class="demo-box radius-lg-box">--tok-radius-lg</div>
       </div>
       <div class="style-card">
         <div class="demo-label">卡片陰影（主色調柔陰影）</div>
-        <div class="demo-box shadow-box">--tm-shadow-card</div>
+        <div class="demo-box shadow-box">--tok-shadow-card</div>
       </div>
       <div class="style-card">
         <div class="demo-label">Hero 圖片深色疊層</div>
-        <div class="overlay-box"><span>--tm-overlay-dark</span></div>
+        <div class="overlay-box"><span>--tok-overlay-dark</span></div>
       </div>
       <div class="style-card">
         <div class="demo-label">表單區塊底色（淡色疊色）</div>
-        <div class="demo-box tint-box radius-sm-box">--tm-tint-heading-15</div>
+        <div class="demo-box tint-box radius-sm-box">--tok-tint-heading-15</div>
       </div>
       <div class="style-card">
         <div class="demo-label">狀態徽章（輔助強調色底 + 主色字）</div>
@@ -1188,26 +1197,26 @@ ${listItems('dont-list')}
         <tr>
           <td>卡片陰影 + 圓角<br><span class="scope-tag scope-apply">套用</span></td>
           <td>截圖說明卡 <code>.screenshot</code></td>
-          <td><code>--tm-radius-lg</code><br><code>--tm-shadow-card</code></td>
+          <td><code>--tok-radius-lg</code><br><code>--tok-shadow-card</code></td>
           <td>截圖卡片加上圓角與柔陰影，呼應網站卡片質感，提升文件質感。</td>
         </tr>
         <tr>
           <td>深色資訊卡 / 頁尾色條<br><span class="scope-tag scope-apply">套用</span></td>
           <td>文件頁首／頁尾 <code>.doc-header</code> <code>.doc-footer</code></td>
-          <td><code>--tm-primary</code> 底 + 白字</td>
+          <td><code>--tok-primary</code> 底 + 白字</td>
           <td>頁首頁尾沿用主色底色，與網站頁尾色條一致，強化品牌識別。</td>
         </tr>
         <tr>
           <td>狀態徽章（輔助強調色底 + 主色字）<br><span class="scope-tag scope-apply">套用</span></td>
           <td>重點／必填標籤 <code>.badge-required</code></td>
-          <td><code>--tm-secondary</code> 底<br><code>--tm-primary</code> 字 + <code>--tm-radius-sm</code></td>
+          <td><code>--tok-secondary</code> 底<br><code>--tok-primary</code> 字 + <code>--tok-radius-sm</code></td>
           <td>正式標籤改用品牌徽章樣式，取代目前的警示紅。</td>
         </tr>
         <tr>
           <td>表單底色疊色<br><span class="scope-tag scope-apply">套用（可選）</span></td>
           <td>補充說明區塊（如有）</td>
-          <td><code>--tm-tint-heading-15</code></td>
-          <td>需要比 <code>--tm-heading</code> 更輕量的提示底色時可選用。</td>
+          <td><code>--tok-tint-heading-15</code></td>
+          <td>需要比 <code>--tok-heading</code> 更輕量的提示底色時可選用。</td>
         </tr>
         <tr>
           <td>—</td>
