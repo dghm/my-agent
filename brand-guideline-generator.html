@@ -565,10 +565,10 @@ function buildTokensCSS() {
   --tm-link: ${val('link-hex')};        /* ${val('link-name')} */
 
   /* ---- Neutral（官方確認） ---- */
-  --tm-ink: ${val('ink-hex')};         /* ${val('ink-name')} */
-  --tm-gray: ${val('gray-hex')};        /* ${val('gray-name')} */
-  --tm-white: ${val('white-hex')};
-  --tm-shadow: ${val('shadow-hex')};   /* ${val('shadow-name')} */
+  --tm-text-base: ${val('ink-hex')};         /* ${val('ink-name')} */
+  --tm-text-dark: ${val('gray-hex')};        /* ${val('gray-name')} */
+  --tm-surface: ${val('white-hex')};
+  --tm-shadow-base:${val('shadow-hex')};   /* ${val('shadow-name')} */
 
   /* ---- Derived（依官方色衍生，待確認） ---- */
   --tm-primary-light: ${val('navylight-hex')};   /* ${val('navylight-name')} */
@@ -579,13 +579,13 @@ ${paletteVarsBlock}
   --tm-bg-heading: var(--tm-heading);
   --tm-border: var(--tm-heading);
   --tm-text-heading: var(--tm-heading);
-  --tm-text-body: var(--tm-ink);
+  --tm-text-body: var(--tm-text-base);
   --tm-text-muted: var(--tm-secondary);
 
   /* ---- Document semantic mapping（User Guide 文件系統專屬，與網站語意層分開） ---- */
   --tm-doc-text-heading: var(--tm-heading);
-  --tm-doc-text-body: var(--tm-ink);
-  --tm-doc-caption-text: var(--tm-gray);
+  --tm-doc-text-body: var(--tm-text-base);
+  --tm-doc-caption-text: var(--tm-text-dark);
   --tm-doc-table-stripe: var(--tm-primary-mid);
   --tm-doc-table-border: var(--tm-primary-light);
   --tm-doc-node-decision-bg: var(--tm-primary-light);
@@ -661,10 +661,10 @@ function buildGuidelineHTML() {
   ].join('\n');
 
   const neutralSwatches = [
-    swatchHTML('--tm-ink', val('ink-hex'), val('ink-name'), USAGE_DEFAULTS.ink, 'confirmed'),
-    swatchHTML('--tm-gray', val('gray-hex'), val('gray-name'), USAGE_DEFAULTS.gray, 'confirmed'),
+    swatchHTML('--tm-text-base', val('ink-hex'), val('ink-name'), USAGE_DEFAULTS.ink, 'confirmed'),
+    swatchHTML('--tm-text-dark', val('gray-hex'), val('gray-name'), USAGE_DEFAULTS.gray, 'confirmed'),
     `      <div class="swatch">
-        <div class="color-block" style="background: var(--tm-white); border: 1px solid var(--tm-border);" data-hex="${esc(val('white-hex'))}" title="點擊複製 HEX 色碼"></div>
+        <div class="color-block" style="background: var(--tm-surface); border: 1px solid var(--tm-border);" data-hex="${esc(val('white-hex'))}" title="點擊複製 HEX 色碼"></div>
         <div class="info">
           <div class="name">${esc(val('white-name'))}</div>
           <div class="hex">${esc(val('white-hex'))}</div>
@@ -672,7 +672,7 @@ function buildGuidelineHTML() {
           <span class="src-tag src-confirmed">官方確認</span>
         </div>
       </div>`,
-    swatchHTML('--tm-shadow', val('shadow-hex'), val('shadow-name'), USAGE_DEFAULTS.shadow, 'confirmed')
+    swatchHTML('--tm-shadow-base', val('shadow-hex'), val('shadow-name'), USAGE_DEFAULTS.shadow, 'confirmed')
   ].join('\n');
 
   const derivedSwatches = [
@@ -894,7 +894,7 @@ ${val('font-import-url').trim() ? `<link rel="stylesheet" href="${esc(val('font-
   }
   .type-demo .label-row {
     display: flex; justify-content: space-between; align-items: baseline;
-    font-size: 11px; color: var(--tm-gray); margin-bottom: 6px;
+    font-size: 11px; color: var(--tm-text-dark); margin-bottom: 6px;
   }
   .type-demo h3 { margin: 0; color: var(--tm-heading); font-family: var(--tm-heading-font); }
   .type-demo .h1-demo { font-size: 32px; font-weight: 700; color: var(--tm-heading); margin: 0; font-family: var(--tm-heading-font); }
