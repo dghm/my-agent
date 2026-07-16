@@ -194,6 +194,13 @@ h1 { font-size: 18px; margin: 0 0 4px; }
         </span>
         <span class="nav-item-badge">套客戶品牌</span>
       </button>
+      <button type="button" class="nav-item" data-target="uat">
+        <span class="nav-item-top">
+          <span class="nav-item-title">UAT 產線</span>
+          <span class="nav-item-count" data-for="uat"></span>
+        </span>
+        <span class="nav-item-badge">內容依三軸調整</span>
+      </button>
     </nav>
 
     <div class="nav-group-label">單件與支援</div>
@@ -321,6 +328,32 @@ h1 { font-size: 18px; margin: 0 0 4px; }
       </ul>
     </section>
 
+    <!-- ============ UAT 產線 ============ -->
+    <section class="pane" id="pane-uat">
+      <div class="pane-head"><h2>UAT 產線</h2><span class="badge">兩段式 · 依三軸調整</span></div>
+      <p class="when">啟動時機：<strong>專案接近完成，要準備驗收文件時。</strong></p>
+      <ol class="steps">
+        <li class="manual">
+          <span class="step-tool">人工判斷：確認三軸</span>
+          <div class="step-desc">① 用途情境——這份文件除了客戶還會給誰看，決定骨架份量；② 受眾樣態——驗收操作的人是專業窗口還是一般使用者，決定用詞語氣；③ 系統類型——這次驗收的系統是什麼。三軸互相獨立，判斷完建議先跟使用者確認過再往下走。</div>
+        </li>
+        <li>
+          <span class="step-tool">尚無正式 Skill，先用自然語言請 Claude 整理草稿</span>
+          <div class="step-desc">附上 UAT-Knowledge-Template、UAT-Template、UAT-Checklist-Bank 三份參考文件，Claude 會依三軸判斷結果、從 Checklist Bank 挑對應模組，產出 MD 草稿。</div>
+          <span class="trigger" data-copy="幫我整理〔專案名稱〕的 UAT 草稿">幫我整理〔專案名稱〕的 UAT 草稿</span>
+        </li>
+        <li class="manual">
+          <span class="step-tool">人工確認草稿</span>
+          <div class="step-desc">核對骨架份量與語氣是否符合三軸判斷，測試案例有無遺漏邊界情況。</div>
+        </li>
+      </ol>
+      <div class="prep-head"><h3>備料清單<span class="prep-count" data-for="uat"></span></h3><button class="secondary small reset-card" data-group="uat" type="button">重設</button></div>
+      <ul class="checklist" data-group="uat">
+        <li><label><input type="checkbox" data-key="uat.0"><span>三軸判斷結果（用途情境／受眾樣態／系統類型）</span></label></li>
+        <li><label><input type="checkbox" data-key="uat.1"><span>系統類型對應的既有測試材料（如有既有規格文件）</span></label></li>
+      </ul>
+    </section>
+
     <!-- ============ 單件輸出 ============ -->
     <section class="pane" id="pane-single">
       <div class="pane-head"><h2>單件輸出</h2><span class="badge">一步到位</span></div>
@@ -387,8 +420,8 @@ h1 { font-size: 18px; margin: 0 0 4px; }
 (function () {
   'use strict';
 
-  var SECTIONS = ['quote', 'contract', 'userguide', 'single', 'utility', 'maintain'];
-  var CHECK_GROUPS = ['quote', 'contract', 'userguide'];
+  var SECTIONS = ['quote', 'contract', 'userguide', 'uat', 'single', 'utility', 'maintain'];
+  var CHECK_GROUPS = ['quote', 'contract', 'userguide', 'uat'];
 
   /* ---- Theme ---- */
   initTheme('dghm-toolbox-theme');
