@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>客戶網站需求訪談工作台</title>
+  <link rel="stylesheet" href="dghm-ui.css" />
+  <link rel="stylesheet" href="app-shell.css" />
   <style>
     :root {
       --primary: #1f2f8f;
@@ -266,7 +268,7 @@
     }
   </style>
 </head>
-<body>
+<body data-tool="brief">
   <script>
     (function syncTheme() {
       const THEME_KEY = 'my-agent-theme';
@@ -294,6 +296,7 @@
       }
     })();
   </script>
+  <div id="tool-workspace">
   <div class="wrap">
     <a href="index.html" style="color:inherit;font-size:13px;text-decoration:underline;display:inline-block;margin-bottom:10px;">← 回首頁</a>
     <div class="page-header">
@@ -736,7 +739,14 @@
     <h2>📄 輸出結果</h2>
     <pre id="out">按「產生 Brief」後，輸出內容會顯示在這裡。</pre>
   </div>
+  </div>
 
+  <script src="tool-registry.js"></script>
+  <script src="project-context.js"></script>
+  <script src="app-shell.js"></script>
+  <script>mountAppShell({ activeTool: 'brief' });</script>
+  <script src="dghm-ui.js"></script>
+  <script>initTheme('my-agent-theme');</script>
   <script>
     const STORAGE_KEY = "client-brief-form-v2";
     const PAGE_IDS = [
@@ -1430,6 +1440,28 @@ ${successBlock}${refBlock}${seoKeywordBlock}${payBlock}
       row.innerHTML = '<input class="ref-url" placeholder="https://…" /><input class="ref-like" placeholder="喜歡的地方" /><input class="ref-dislike" placeholder="不喜歡的地方" />';
       list.appendChild(row);
     }
+  </script>
+  <script>
+    (function bindProjectContextToBrief() {
+      var appliedProject = window.DGHMProjects && window.DGHMProjects.getCurrent();
+
+      function applyProject(project, previousProject) {
+        if (!project) return;
+        var projectInput = document.getElementById('project');
+        var companyInput = document.getElementById('company');
+        var projectCanUpdate = projectInput &&
+          (!projectInput.value || (previousProject && projectInput.value === previousProject.projectName));
+        var companyCanUpdate = companyInput &&
+          (!companyInput.value || (previousProject && companyInput.value === previousProject.clientName));
+        if (projectCanUpdate) projectInput.value = project.projectName;
+        if (companyCanUpdate) companyInput.value = project.clientName;
+      }
+      applyProject(appliedProject, null);
+      window.addEventListener('dghm:project-change', function (event) {
+        applyProject(event.detail.project, appliedProject);
+        appliedProject = event.detail.project;
+      });
+    })();
   </script>
 </body>
 </html>

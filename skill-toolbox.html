@@ -3,550 +3,70 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>開工索引 — DGHM Skill Toolbox</title>
+<title>AI Skill 總覽 — DGHM</title>
 <link rel="icon" href="favicon.svg">
 <link rel="stylesheet" href="dghm-ui.css">
-<style>
-.app { min-height: 100vh; }
-.form-panel {
-  width: 300px;
-  flex-shrink: 0;
-  overflow-y: auto;
-  padding: 20px;
-  background: var(--surface-panel-bg);
-  border-right: 1px solid var(--surface-border);
-}
-.main-panel { flex: 1; overflow-y: auto; padding: 24px; }
-h1 { font-size: 18px; margin: 0 0 4px; }
-
-/* ---- 側欄導覽 ---- */
-.nav-group-label {
-  font-size: 11px; font-weight: 700; letter-spacing: .04em;
-  color: var(--surface-text-muted); text-transform: uppercase;
-  margin: 18px 0 6px; padding: 0 2px;
-}
-.nav-group-label:first-of-type { margin-top: 4px; }
-.toolbox-nav { display: flex; flex-direction: column; gap: 6px; }
-.nav-item {
-  display: flex; flex-direction: column; gap: 3px;
-  width: 100%; text-align: left;
-  background: var(--surface-bg); color: var(--surface-text);
-  border: 1px solid transparent; border-radius: 10px;
-  padding: 9px 12px; font-size: 13px; font-family: inherit;
-}
-.nav-item:hover { border-color: var(--surface-border); }
-.nav-item.active { background: var(--navy); color: #fff; }
-:root[data-theme="dark"] .nav-item.active { background: var(--navy-text); color: #0d1117; }
-.nav-item-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; }
-.nav-item-title { font-weight: 700; }
-.nav-item-badge { font-size: 10.5px; color: var(--orange); }
-.nav-item.active .nav-item-badge { color: rgba(255, 255, 255, .85); }
-:root[data-theme="dark"] .nav-item.active .nav-item-badge { color: rgba(13, 17, 23, .7); }
-.nav-item-count { font-size: 11px; color: var(--surface-text-muted); }
-.nav-item.active .nav-item-count { color: rgba(255, 255, 255, .85); }
-:root[data-theme="dark"] .nav-item.active .nav-item-count { color: rgba(13, 17, 23, .7); }
-.nav-item-count.done { font-weight: 700; }
-
-.reset-all-btn { width: 100%; margin-top: 20px; }
-
-/* ---- 內容區塊（右側） ---- */
-.pane { display: none; }
-.pane.active {
-  display: block;
-  background: var(--surface-panel-bg);
-  border: 1px solid var(--surface-border);
-  border-radius: 16px;
-  box-shadow: 0 2px 14px rgba(13, 47, 110, 0.07);
-  padding: 22px 24px;
-  max-width: 760px;
-}
-:root[data-theme="dark"] .pane.active { box-shadow: 0 2px 14px rgba(0, 0, 0, 0.35); }
-.pane-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 2px; }
-.pane-head h2 { margin: 0; font-size: 18px; color: var(--navy-text); }
-.badge {
-  font-size: 11px; font-weight: 700; letter-spacing: .04em;
-  color: var(--orange); background: rgba(229, 98, 42, 0.10);
-  border-radius: 999px; padding: 3px 10px;
-}
-.when { font-size: 12.5px; color: var(--surface-text-muted); margin: 6px 0 14px; line-height: 1.7; }
-.when strong { color: var(--orange); font-weight: 600; }
-
-/* ---- Steps ---- */
-.steps { list-style: none; margin: 0 0 4px; padding: 0; counter-reset: step; }
-.steps li {
-  counter-increment: step;
-  position: relative;
-  padding: 10px 12px 10px 44px;
-  border-radius: 12px;
-  margin-bottom: 8px;
-  background: var(--surface-bg);
-}
-.steps li::before {
-  content: counter(step);
-  position: absolute; left: 12px; top: 12px;
-  width: 22px; height: 22px; border-radius: 50%;
-  background: var(--navy); color: #fff;
-  font-size: 12px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-}
-:root[data-theme="dark"] .steps li::before { background: #35507e; }
-.steps li.manual::before { content: "✓"; background: transparent; color: var(--orange); border: 1.5px solid var(--orange); }
-.step-tool { font-weight: 700; font-size: 13.5px; color: var(--surface-text); }
-.step-tool code {
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: 12.5px; color: var(--navy-text);
-  background: var(--surface-panel-bg); border: 1px solid var(--surface-border);
-  border-radius: 6px; padding: 1px 6px;
-}
-.step-desc { font-size: 12.5px; color: var(--surface-text-muted); margin-top: 3px; line-height: 1.7; }
-
-/* ---- Trigger phrase chip（點一下複製）---- */
-.trigger {
-  display: inline-flex; align-items: center; gap: 6px;
-  margin: 6px 6px 0 0;
-  font-size: 12.5px; cursor: pointer; user-select: none;
-  color: var(--navy-text);
-  background: var(--surface-panel-bg);
-  border: 1px dashed var(--surface-input-border);
-  border-radius: 999px; padding: 4px 12px;
-  transition: background .15s, color .15s;
-}
-.trigger:hover { border-style: solid; border-color: var(--orange); color: var(--orange); }
-.trigger.copied { background: var(--orange); border-color: var(--orange); color: #fff; }
-.trigger::before { content: "💬"; font-size: 11px; }
-.trigger.copied::before { content: "✓"; }
-
-/* ---- Checklist ---- */
-.prep-head { display: flex; justify-content: space-between; align-items: center; margin: 16px 0 8px; }
-.prep-head h3 { margin: 0; font-size: 13px; color: var(--navy-text); }
-.prep-count { font-size: 12px; color: var(--surface-text-muted); margin-left: 8px; font-weight: 400; }
-.prep-count.done { color: var(--orange); font-weight: 700; }
-.checklist { list-style: none; margin: 0; padding: 0; }
-.checklist li { margin-bottom: 2px; }
-.checklist label {
-  display: flex; align-items: flex-start; gap: 10px;
-  font-size: 13px; color: var(--surface-text);
-  margin: 0; padding: 7px 10px; border-radius: 10px; cursor: pointer;
-  line-height: 1.6;
-}
-.checklist label:hover { background: var(--surface-bg); }
-.checklist input[type="checkbox"] {
-  width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0;
-  accent-color: var(--orange); cursor: pointer;
-}
-.checklist input:checked + span { color: var(--surface-text-muted); text-decoration: line-through; }
-
-/* ---- Single-shot tools grid ---- */
-.tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-@media (max-width: 620px) { .tool-grid { grid-template-columns: 1fr; } }
-.tool-item { background: var(--surface-bg); border-radius: 12px; padding: 14px 14px 12px; }
-.tool-item .step-tool { display: block; margin-bottom: 2px; }
-.tool-item .step-desc { margin-bottom: 4px; }
-
-/* ---- Maintenance table ---- */
-.maint { width: 100%; border-collapse: collapse; font-size: 13px; }
-.maint th, .maint td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--surface-border); vertical-align: top; line-height: 1.7; }
-.maint th { color: var(--navy-text); font-size: 12px; white-space: nowrap; }
-.maint tr:last-child td { border-bottom: none; }
-
-.foot-note { font-size: 12px; color: var(--surface-text-muted); margin-top: 28px; line-height: 1.8; }
-
-@media (max-width: 800px) {
-  .app { flex-direction: column; }
-  .form-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--surface-border); }
-  .pane.active { max-width: 100%; }
-}
-</style>
+<link rel="stylesheet" href="app-shell.css">
+<link rel="stylesheet" href="skill-overview.css?v=20260727-2">
 </head>
-<body>
-<div class="app">
-
-  <div class="form-panel">
-    <div class="form-head">
-      <h1>開工索引</h1>
-      <div class="form-head-actions">
-        <a href="index.html" class="home-link">← 回首頁</a>
-        <button id="theme-toggle" type="button" aria-label="切換深淺色">🌙</button>
-      </div>
+<body data-tool="skills">
+<div id="tool-workspace" class="skill-page">
+  <header class="skill-page-head">
+    <div>
+      <p class="skill-eyebrow">AI WORKSPACE</p>
+      <h1>AI Skill 總覽</h1>
+      <p>看懂一個 Skill 能做什麼、何時使用，以及會產出什麼結果。</p>
     </div>
-    <p class="hint">開工前先看這裡：這個案子走哪條產線、每一步用什麼 Skill、對 Claude 說什麼、要備齊什麼料。觸發語點一下即可複製，備料勾選狀態會自動記住。</p>
+    <label class="skill-import-button" for="skill-file">
+      <span aria-hidden="true">＋</span> 選擇 .skill
+    </label>
+    <input id="skill-file" type="file" accept=".skill,application/zip" multiple>
+  </header>
 
-    <div class="nav-group-label">產線（兩段式）</div>
-    <nav class="toolbox-nav">
-      <button type="button" class="nav-item" data-target="quote">
-        <span class="nav-item-top">
-          <span class="nav-item-title">報價產線</span>
-          <span class="nav-item-count" data-for="quote"></span>
-        </span>
-        <span class="nav-item-badge">新案報價 → 印刷</span>
-      </button>
-      <button type="button" class="nav-item" data-target="contract">
-        <span class="nav-item-top">
-          <span class="nav-item-title">合約產線</span>
-          <span class="nav-item-count" data-for="contract"></span>
-        </span>
-        <span class="nav-item-badge">報價確認後 → 印刷</span>
-      </button>
-      <button type="button" class="nav-item" data-target="userguide">
-        <span class="nav-item-top">
-          <span class="nav-item-title">User Guide 產線</span>
-          <span class="nav-item-count" data-for="userguide"></span>
-        </span>
-        <span class="nav-item-badge">套客戶品牌</span>
-      </button>
-      <button type="button" class="nav-item" data-target="uat">
-        <span class="nav-item-top">
-          <span class="nav-item-title">UAT 產線</span>
-          <span class="nav-item-count" data-for="uat"></span>
-        </span>
-        <span class="nav-item-badge">內容依三軸調整</span>
-      </button>
-    </nav>
+  <section id="skill-dropzone" class="skill-dropzone" tabindex="0" role="button"
+    aria-controls="skill-file" aria-label="選擇或拖入 Skill 套件">
+    <span class="skill-drop-icon" aria-hidden="true">↓</span>
+    <div>
+      <strong>將 .skill 檔拖到這裡</strong>
+      <span>套件只在這個瀏覽器分頁內解析，不會上傳伺服器</span>
+    </div>
+  </section>
 
-    <div class="nav-group-label">單件與支援</div>
-    <nav class="toolbox-nav">
-      <button type="button" class="nav-item" data-target="single">
-        <span class="nav-item-top"><span class="nav-item-title">單件輸出</span></span>
-        <span class="nav-item-badge">一步到位</span>
-      </button>
-      <button type="button" class="nav-item" data-target="utility">
-        <span class="nav-item-top"><span class="nav-item-title">工具箱</span></span>
-        <span class="nav-item-badge">支援型</span>
-      </button>
-    </nav>
+  <div id="skill-message" class="skill-message" role="status" aria-live="polite" hidden></div>
 
-    <div class="nav-group-label">維護</div>
-    <nav class="toolbox-nav">
-      <button type="button" class="nav-item" data-target="maintain">
-        <span class="nav-item-top"><span class="nav-item-title">Skill 維護</span></span>
-        <span class="nav-item-badge">新增／修改／刪除</span>
-      </button>
-    </nav>
-
-    <button id="reset-all" class="secondary reset-all-btn" type="button">全部重設備料勾選</button>
-  </div>
-
-  <div class="main-panel">
-
-    <!-- ============ 報價產線 ============ -->
-    <section class="pane" id="pane-quote">
-      <div class="pane-head"><h2>報價產線</h2><span class="badge">兩段式 + 印刷</span></div>
-      <p class="when">啟動時機：<strong>新案需求討論完成，要對客戶提出服務報價。</strong></p>
-      <ol class="steps">
-        <li>
-          <span class="step-tool">Skill：<code>quote-step1-md</code> — 整理需求成報價草稿 MD</span>
-          <div class="step-desc">Claude 會把討論內容整理成標準化報價草稿。</div>
-          <span class="trigger" data-copy="新客戶要報價，幫我整理報價草稿">新客戶要報價，幫我整理報價草稿</span>
-        </li>
-        <li class="manual">
-          <span class="step-tool">人工確認 MD</span>
-          <div class="step-desc">核對金額、範圍界定、付款條件、報價有效期限。</div>
-        </li>
-        <li>
-          <span class="step-tool">Skill：<code>quote-step2-html</code> — 套 DGHM CI 出正式報價單</span>
-          <div class="step-desc">鎖定版樣式：Header Banner、深藍頁尾條、淺橘提示框，不重新設計。</div>
-          <span class="trigger" data-copy="報價 MD 確認了，出報價單 HTML">MD 確認了，出報價單 HTML</span>
-        </li>
-        <li>
-          <span class="step-tool">Skill：<code>tools-pagination</code> — A4 分頁 → 瀏覽器另存 PDF</span>
-          <span class="trigger" data-copy="套分頁，要印 PDF">套分頁，要印 PDF</span>
-        </li>
-      </ol>
-      <div class="prep-head"><h3>備料清單<span class="prep-count" data-for="quote"></span></h3><button class="secondary small reset-card" data-group="quote" type="button">重設</button></div>
-      <ul class="checklist" data-group="quote">
-        <li><label><input type="checkbox" data-key="quote.0"><span>客戶名稱、窗口與聯絡方式</span></label></li>
-        <li><label><input type="checkbox" data-key="quote.1"><span>需求討論記錄（會議紀錄或 client-brief 匯出的 MD）</span></label></li>
-        <li><label><input type="checkbox" data-key="quote.2"><span>服務項目與範圍界定（做什麼、不做什麼）</span></label></li>
-        <li><label><input type="checkbox" data-key="quote.3"><span>金額與工時估算基準（參考 quote-pricing-guide）</span></label></li>
-        <li><label><input type="checkbox" data-key="quote.4"><span>是否含持續性費用（主機代管、網站維護）</span></label></li>
-        <li><label><input type="checkbox" data-key="quote.5"><span>付款條件與報價有效期限</span></label></li>
-      </ul>
-    </section>
-
-    <!-- ============ 合約產線 ============ -->
-    <section class="pane" id="pane-contract">
-      <div class="pane-head"><h2>合約產線</h2><span class="badge">兩段式 + 印刷</span></div>
-      <p class="when">啟動條件：報價單已確認，且 <strong>金額超過 NT$30,000 或工期超過 10 個工作天</strong>。</p>
-      <ol class="steps">
-        <li>
-          <span class="step-tool">Skill：<code>contract-step1-md</code> — 依報價單生成合約草稿 MD</span>
-          <span class="trigger" data-copy="報價單確認了，依報價單生成合約草稿">依報價單生成合約草稿</span>
-        </li>
-        <li class="manual">
-          <span class="step-tool">人工確認草稿</span>
-          <div class="step-desc">核對付款期程、交付項目、驗收條件、違約與智財條款。</div>
-        </li>
-        <li>
-          <span class="step-tool">Skill：<code>contract-step2-html</code> — 出 DGHM CI 正式合約書</span>
-          <span class="trigger" data-copy="合約 MD 確認了，出 HTML">合約 MD 確認了，出 HTML</span>
-        </li>
-        <li>
-          <span class="step-tool">Skill：<code>tools-pagination</code> — A4 分頁 → PDF（一式兩份用印）</span>
-          <span class="trigger" data-copy="套分頁，要印 PDF">套分頁，要印 PDF</span>
-        </li>
-      </ol>
-      <div class="prep-head"><h3>備料清單<span class="prep-count" data-for="contract"></span></h3><button class="secondary small reset-card" data-group="contract" type="button">重設</button></div>
-      <ul class="checklist" data-group="contract">
-        <li><label><input type="checkbox" data-key="contract.0"><span>已確認的報價單（編號與版本）</span></label></li>
-        <li><label><input type="checkbox" data-key="contract.1"><span>客戶公司全名、統一編號、負責人</span></label></li>
-        <li><label><input type="checkbox" data-key="contract.2"><span>付款條件與期程（訂金／期中款／尾款）</span></label></li>
-        <li><label><input type="checkbox" data-key="contract.3"><span>交付項目與驗收條件</span></label></li>
-        <li><label><input type="checkbox" data-key="contract.4"><span>開發時程（可先用 gantt-html 排出）</span></label></li>
-      </ul>
-    </section>
-
-    <!-- ============ User Guide 產線 ============ -->
-    <section class="pane" id="pane-userguide">
-      <div class="pane-head"><h2>User Guide 產線</h2><span class="badge">兩段式 · 套客戶品牌</span></div>
-      <p class="when">啟動時機：要為客戶的系統／模組產出操作手冊或 SOP 文件（如 hs128）。<strong>注意：這條線套的是客戶品牌 tokens.css，不是 DGHM CI。</strong></p>
-      <ol class="steps">
-        <li>
-          <span class="step-tool">Skill：<code>user-guide-step1-md</code> — 整理內容大綱 MD</span>
-          <div class="step-desc">章節結構、步驟教學、欄位說明、截圖位置。</div>
-          <span class="trigger" data-copy="幫我做這個系統的使用手冊，先出大綱">幫我做使用手冊，先出大綱</span>
-        </li>
-        <li class="manual">
-          <span class="step-tool">人工確認大綱</span>
-          <div class="step-desc">核對章節順序、功能覆蓋是否完整、截圖是否備齊。</div>
-        </li>
-        <li>
-          <span class="step-tool">Skill：<code>user-guide-step2-html</code> — 出 A4 正式操作手冊</span>
-          <div class="step-desc">套客戶 --brand-* 變數與固定版型元件庫。</div>
-          <span class="trigger" data-copy="大綱確認了，出 User Guide HTML">大綱確認了，出 User Guide HTML</span>
-        </li>
-        <li>
-          <span class="step-tool">要印刷再走 <code>tools-pagination</code>（DGHM 對外文件時）</span>
-        </li>
-      </ol>
-      <div class="prep-head"><h3>備料清單<span class="prep-count" data-for="userguide"></span></h3><button class="secondary small reset-card" data-group="userguide" type="button">重設</button></div>
-      <ul class="checklist" data-group="userguide">
-        <li><label><input type="checkbox" data-key="userguide.0"><span>客戶品牌 tokens.css（--brand-* 變數）</span></label></li>
-        <li><label><input type="checkbox" data-key="userguide.1"><span>系統／模組清單與功能範圍</span></label></li>
-        <li><label><input type="checkbox" data-key="userguide.2"><span>各功能操作流程說明（自己先走一遍）</span></label></li>
-        <li><label><input type="checkbox" data-key="userguide.3"><span>系統畫面截圖（依章節命名整理）</span></label></li>
-        <li><label><input type="checkbox" data-key="userguide.4"><span>目標使用者與使用情境（寫給誰看）</span></label></li>
-      </ul>
-    </section>
-
-    <!-- ============ UAT 產線 ============ -->
-    <section class="pane" id="pane-uat">
-      <div class="pane-head"><h2>UAT 產線</h2><span class="badge">兩段式 · 依三軸調整</span></div>
-      <p class="when">啟動時機：<strong>專案接近完成，要準備驗收文件時。</strong></p>
-      <ol class="steps">
-        <li class="manual">
-          <span class="step-tool">人工判斷：確認三軸</span>
-          <div class="step-desc">① 用途情境——這份文件除了客戶還會給誰看，決定骨架份量；② 受眾樣態——驗收操作的人是專業窗口還是一般使用者，決定用詞語氣；③ 系統類型——這次驗收的系統是什麼。三軸互相獨立，判斷完建議先跟使用者確認過再往下走。</div>
-        </li>
-        <li>
-          <span class="step-tool">尚無正式 Skill，先用自然語言請 Claude 整理草稿</span>
-          <div class="step-desc">附上 UAT-Knowledge-Template、UAT-Template、UAT-Checklist-Bank 三份參考文件，Claude 會依三軸判斷結果、從 Checklist Bank 挑對應模組，產出 MD 草稿。</div>
-          <span class="trigger" data-copy="幫我整理〔專案名稱〕的 UAT 草稿">幫我整理〔專案名稱〕的 UAT 草稿</span>
-        </li>
-        <li class="manual">
-          <span class="step-tool">人工確認草稿</span>
-          <div class="step-desc">核對骨架份量與語氣是否符合三軸判斷，測試案例有無遺漏邊界情況。</div>
-        </li>
-      </ol>
-      <div class="prep-head"><h3>備料清單<span class="prep-count" data-for="uat"></span></h3><button class="secondary small reset-card" data-group="uat" type="button">重設</button></div>
-      <ul class="checklist" data-group="uat">
-        <li><label><input type="checkbox" data-key="uat.0"><span>三軸判斷結果（用途情境／受眾樣態／系統類型）</span></label></li>
-        <li><label><input type="checkbox" data-key="uat.1"><span>系統類型對應的既有測試材料（如有既有規格文件）</span></label></li>
-      </ul>
-    </section>
-
-    <!-- ============ 單件輸出 ============ -->
-    <section class="pane" id="pane-single">
-      <div class="pane-head"><h2>單件輸出</h2><span class="badge">一步到位</span></div>
-      <p class="when">不走產線、單獨產出一份文件時用。備料齊了直接說觸發語。</p>
-      <div class="tool-grid">
-        <div class="tool-item">
-          <span class="step-tool">Skill：<code>gantt-html</code></span>
-          <div class="step-desc">專案時程表／甘特圖，可列印 HTML。<br>備料：專案階段清單、各階段起訖或工作天數、里程碑。</div>
-          <span class="trigger" data-copy="幫我做時程表">幫我做時程表</span>
+  <section class="skill-content" aria-label="Skill 清單與內容">
+    <aside class="skill-catalog" aria-labelledby="skill-list-title">
+      <div class="skill-section-title">
+        <div>
+          <span>已開啟</span>
+          <h2 id="skill-list-title">Skill 清單</h2>
         </div>
-        <div class="tool-item">
-          <span class="step-tool">Skill：<code>ppt-html</code></span>
-          <div class="step-desc">提案簡報樣板（封面＋內頁＋結尾）。<br>備料：客戶名稱與品牌色、提案大綱、各頁重點。</div>
-          <span class="trigger" data-copy="幫我做〔客戶名〕的提案簡報">幫我做〔客戶名〕簡報</span>
-        </div>
-        <div class="tool-item">
-          <span class="step-tool">Skill：<code>meeting-notes-en-html</code></span>
-          <div class="step-desc">英文會議記錄正式版（DGHM CI）。<br>備料：英文會議記錄 MD 草稿、與會者與日期。</div>
-          <span class="trigger" data-copy="幫我出英文會議記錄 HTML">出英文會議記錄 HTML</span>
-        </div>
-        <div class="tool-item">
-          <span class="step-tool">Skill：<code>seo-audit</code></span>
-          <div class="step-desc">SEO 網站健檢報告（接新客戶前）。<br>備料：網站網址；有 GA／GSC 資料更好、目標關鍵字。</div>
-          <span class="trigger" data-copy="接新客戶前，幫我做這個網站的 SEO 健檢">幫我做網站健檢</span>
+        <span id="skill-count" class="skill-count">0</span>
+      </div>
+      <div id="skill-list" class="skill-list">
+        <div class="skill-empty">
+          <strong>尚未加入 Skill</strong>
+          <p>先選擇或拖入一個本機 .skill 套件。</p>
         </div>
       </div>
-    </section>
+    </aside>
 
-    <!-- ============ 工具箱 ============ -->
-    <section class="pane" id="pane-utility">
-      <div class="pane-head"><h2>工具箱</h2><span class="badge">支援型</span></div>
-      <div class="tool-grid">
-        <div class="tool-item">
-          <span class="step-tool">Skill：<code>tools-pagination</code></span>
-          <div class="step-desc">所有 DGHM CI 文件 HTML 的最後一關：A4 直式分頁 → 列印 PDF。任何對外文件要輸出前都走這裡。</div>
-          <span class="trigger" data-copy="套分頁，要印 PDF">套分頁，要印 PDF</span>
-        </div>
-        <div class="tool-item">
-          <span class="step-tool">Skill：<code>online-form</code></span>
-          <div class="step-desc">客戶線上填單頁 + Email 通知（Bluehost PHP + Google Workspace SMTP）。<br>備料：表單欄位清單、收件信箱、主機與網域資訊、Cloudflare 設定。</div>
-          <span class="trigger" data-copy="幫客戶建一個線上填單頁面">幫客戶建線上表單</span>
-        </div>
+    <article id="skill-detail" class="skill-detail">
+      <div class="skill-detail-empty">
+        <span aria-hidden="true">✦</span>
+        <h2>選擇一個 Skill 查看說明</h2>
+        <p>你會在這裡看到用途、使用時機、輸出結果與原始 SKILL.md。</p>
       </div>
-    </section>
-
-    <!-- ============ Skill 維護 ============ -->
-    <section class="pane" id="pane-maintain">
-      <div class="pane-head"><h2>Skill 維護</h2><span class="badge">新增 · 修改 · 刪除</span></div>
-      <table class="maint">
-        <tr><th>新增</th><td>對 Claude 說「用 <code>skill-creator</code> 幫我建一個 ×× 的 Skill」。先想好：什麼情境用、會說什麼話觸發、要吃什麼 input、產出長什麼樣。</td></tr>
-        <tr><th>修改</th><td>「用 <code>skill-creator</code> 幫我改 ×× Skill 的觸發語／範本」。description 就是觸發器——觸發不準，九成是 description 要修。</td></tr>
-        <tr><th>刪除／停用</th><td>Claude 桌面版 <strong>Settings → Capabilities</strong> 操作（對話中無法刪）。</td></tr>
-        <tr><th>維護節奏</th><td>每次產出不如預期（觸發錯、格式跑掉、內容缺欄位），當下記一筆；累積幾筆後用 skill-creator 一次修正，並更新本頁對應內容。</td></tr>
-      </table>
-    </section>
-
-    <p class="foot-note">DGHM 萬能數維有限公司 · 內部工作索引 · Skill 有異動時記得同步更新此頁</p>
-  </div>
-
+    </article>
+  </section>
 </div>
 
+<script src="tool-registry.js"></script>
+<script src="project-context.js"></script>
+<script src="app-shell.js"></script>
+<script>mountAppShell({ activeTool: 'skills' });</script>
 <script src="dghm-ui.js"></script>
-<script>
-(function () {
-  'use strict';
-
-  var SECTIONS = ['quote', 'contract', 'userguide', 'uat', 'single', 'utility', 'maintain'];
-  var CHECK_GROUPS = ['quote', 'contract', 'userguide', 'uat'];
-
-  /* ---- Theme ---- */
-  initTheme('dghm-toolbox-theme');
-
-  /* ---- 分頁切換 ---- */
-  var navItems = Array.prototype.slice.call(document.querySelectorAll('.nav-item'));
-  var panes = Array.prototype.slice.call(document.querySelectorAll('.pane'));
-
-  function activate(target, updateHash) {
-    if (SECTIONS.indexOf(target) === -1) target = SECTIONS[0];
-    navItems.forEach(function (btn) { btn.classList.toggle('active', btn.getAttribute('data-target') === target); });
-    panes.forEach(function (p) { p.classList.toggle('active', p.id === 'pane-' + target); });
-    document.querySelector('.main-panel').scrollTop = 0;
-    if (updateHash) history.replaceState(null, '', '#' + target);
-  }
-
-  navItems.forEach(function (btn) {
-    btn.addEventListener('click', function () { activate(btn.getAttribute('data-target'), true); });
-  });
-
-  activate((location.hash || '').replace('#', ''), false);
-
-  /* ---- Checklist 狀態（localStorage）---- */
-  var CHECK_KEY = 'dghm-toolbox-check-v1';
-
-  function loadState() {
-    try {
-      var raw = localStorage.getItem(CHECK_KEY);
-      var parsed = raw ? JSON.parse(raw) : {};
-      return (parsed && typeof parsed === 'object') ? parsed : {};
-    } catch (e) { return {}; }
-  }
-  function saveState(state) {
-    try { localStorage.setItem(CHECK_KEY, JSON.stringify(state)); } catch (e) {}
-  }
-
-  var state = loadState();
-  var boxes = Array.prototype.slice.call(document.querySelectorAll('.checklist input[type="checkbox"]'));
-
-  function updateCounts() {
-    CHECK_GROUPS.forEach(function (group) {
-      var groupBoxes = document.querySelectorAll('.checklist[data-group="' + group + '"] input[type="checkbox"]');
-      var done = 0;
-      Array.prototype.forEach.call(groupBoxes, function (b) { if (b.checked) done++; });
-      var isDone = done === groupBoxes.length;
-      var label = done + ' / ' + groupBoxes.length + (isDone ? ' 備妥 ✓' : '');
-
-      var paneCount = document.querySelector('.prep-count[data-for="' + group + '"]');
-      if (paneCount) {
-        paneCount.textContent = ' ' + label;
-        paneCount.classList.toggle('done', isDone);
-      }
-      var navCount = document.querySelector('.nav-item-count[data-for="' + group + '"]');
-      if (navCount) {
-        navCount.textContent = label;
-        navCount.classList.toggle('done', isDone);
-      }
-    });
-  }
-
-  boxes.forEach(function (box) {
-    var key = box.getAttribute('data-key');
-    box.checked = state[key] === true;
-    box.addEventListener('change', function () {
-      if (box.checked) { state[key] = true; } else { delete state[key]; }
-      saveState(state);
-      updateCounts();
-    });
-  });
-
-  /* ---- 重設（單卡 / 全部）---- */
-  Array.prototype.forEach.call(document.querySelectorAll('.reset-card'), function (btn) {
-    btn.addEventListener('click', function () {
-      var group = btn.getAttribute('data-group');
-      Array.prototype.forEach.call(
-        document.querySelectorAll('.checklist[data-group="' + group + '"] input[type="checkbox"]'),
-        function (b) { b.checked = false; delete state[b.getAttribute('data-key')]; }
-      );
-      saveState(state);
-      updateCounts();
-    });
-  });
-
-  document.getElementById('reset-all').addEventListener('click', function () {
-    if (!window.confirm('確定要清除所有備料勾選狀態嗎？')) return;
-    boxes.forEach(function (b) { b.checked = false; });
-    state = {};
-    saveState(state);
-    updateCounts();
-  });
-
-  updateCounts();
-
-  /* ---- 觸發語點擊複製 ---- */
-  function copyText(text) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      return navigator.clipboard.writeText(text);
-    }
-    return new Promise(function (resolve, reject) {
-      var ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand('copy'); resolve(); } catch (e) { reject(e); }
-      document.body.removeChild(ta);
-    });
-  }
-
-  Array.prototype.forEach.call(document.querySelectorAll('.trigger'), function (chip) {
-    chip.setAttribute('title', '點一下複製觸發語');
-    chip.addEventListener('click', function () {
-      copyText(chip.getAttribute('data-copy')).then(function () {
-        var original = chip.textContent;
-        chip.classList.add('copied');
-        chip.textContent = '已複製';
-        setTimeout(function () {
-          chip.classList.remove('copied');
-          chip.textContent = original;
-        }, 1200);
-      });
-    });
-  });
-})();
-</script>
+<script>initTheme('my-agent-theme');</script>
+<script src="skill-overview.js"></script>
 </body>
 </html>
