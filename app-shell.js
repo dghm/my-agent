@@ -93,7 +93,9 @@
     shell.className = 'dghm-shell';
     shell.innerHTML =
       '<aside class="dghm-rail" aria-label="主要功能">' +
-        '<a class="dghm-rail-brand" href="index.html" aria-label="DGHM 工作台">D</a>' +
+        '<a class="dghm-rail-brand" href="index.html" aria-label="DGHM 工作台">' +
+          '<img src="favicon.svg" alt="">' +
+        '</a>' +
         renderRail(registry.groups, match.group) +
       '</aside>' +
       '<aside class="dghm-menu" aria-label="' + escapeHtml(match.group.label) + '功能選單">' +

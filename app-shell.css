@@ -33,12 +33,16 @@ body.has-app-shell {
   width: 40px;
   height: 40px;
   margin-bottom: 14px;
-  border: 1px solid rgba(255,255,255,.35);
-  border-radius: 11px;
   color: #fff;
   font-size: 15px;
   font-weight: 800;
   text-decoration: none;
+}
+
+.dghm-rail-brand img {
+  display: block;
+  width: 30px;
+  height: 30px;
 }
 
 .dghm-rail-link {
@@ -307,3 +311,24 @@ body.has-app-shell {
   }
   .dghm-topbar { padding-left: 14px; padding-right: 14px; }
 }
+
+/* Readability baseline for the shared three-column shell. */
+.dghm-menu-heading { font-size: 19px; }
+.dghm-menu-description,
+.dghm-menu-project p,
+.dghm-project-control label,
+.dghm-project-meta span {
+  color: color-mix(in srgb, var(--surface-text) 74%, var(--surface-panel-bg));
+  font-size: 13px;
+  line-height: 1.6;
+}
+.dghm-menu-label {
+  color: color-mix(in srgb, var(--surface-text) 74%, var(--surface-panel-bg));
+  font-size: 12px;
+}
+.dghm-tool-link { font-size: 14px; }
+.dghm-tool-status { font-size: 11px; }
+.dghm-menu-project strong,
+.dghm-project-meta strong,
+.dghm-login-link,
+.dghm-top-actions .user-chip { font-size: 13px; }
