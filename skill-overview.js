@@ -6,11 +6,11 @@
   var skills = [];
   var activeId = '';
   var fileInput = document.getElementById('skill-file');
-  var dropzone = document.getElementById('skill-dropzone');
   var message = document.getElementById('skill-message');
   var list = document.getElementById('skill-list');
   var count = document.getElementById('skill-count');
   var detail = document.getElementById('skill-detail');
+  var storageAvailable = true;
 
   function escapeHtml(value) {
     return String(value == null ? '' : value)
@@ -204,6 +204,9 @@
     return {
       id: id,
       filename: file.name,
+      file: file,
+      size: file.size,
+      saved: false,
       source: source,
       files: entries.filter(function (entry) { return !entry.directory; }),
       summary: deriveSummary(parsed, file.name),
@@ -212,22 +215,43 @@
 
   function renderList() {
     count.textContent = skills.length;
-    if (!skills.length) return;
+    if (!skills.length) {
+      list.innerHTML =
+        '<div class="skill-empty"><strong>尚未加入 Skill</strong>' +
+        '<p>請從本機選擇一個 .skill 套件。</p></div>';
+      return;
+    }
     list.innerHTML = skills.map(function (skill) {
       return '<button class="skill-card' + (skill.id === activeId ? ' is-active' : '') +
         '" type="button" data-skill-id="' + escapeHtml(skill.id) + '">' +
         '<strong>' + escapeHtml(skill.summary.name) + '</strong>' +
-        '<span>' + escapeHtml(skill.summary.purpose) + '</span></button>';
+        '<span>' + escapeHtml(skill.summary.purpose) + '</span>' +
+        '<span class="skill-card-meta' + (skill.saved ? ' is-saved' : '') + '">' +
+          (skill.saved ? '● 已保存' : '○ 僅在本機') +
+        '</span></button>';
     }).join('');
   }
 
   function renderDetail() {
     var skill = skills.find(function (item) { return item.id === activeId; });
     if (!skill) return;
+    var actions = skill.saved
+      ? '<div class="skill-detail-actions">' +
+          '<span class="skill-format-badge is-saved">已保存</span>' +
+          '<a class="skill-download-link" href="/api/skills/download?id=' +
+            encodeURIComponent(skill.id) + '">下載 .skill</a>' +
+          '<button class="skill-action-button is-danger" type="button" data-delete-skill="' +
+            escapeHtml(skill.id) + '">刪除</button></div>'
+      : '<div class="skill-detail-actions">' +
+          '<span class="skill-format-badge">本機解析</span>' +
+          '<button class="skill-action-button is-primary" type="button" data-save-skill="' +
+            escapeHtml(skill.id) + '">' +
+            (storageAvailable ? '儲存到工作台' : '雲端保存不可用') +
+          '</button></div>';
     detail.innerHTML =
       '<div class="skill-detail-head"><div><p class="skill-package-name">' +
         escapeHtml(skill.filename) + '</p><h2>' + escapeHtml(skill.summary.name) +
-        '</h2></div><span class="skill-format-badge">本機解析</span></div>' +
+        '</h2></div>' + actions + '</div>' +
       '<div class="skill-summary-grid">' +
         summaryCard('可以幫我完成什麼', skill.summary.purpose) +
         summaryCard('何時適合使用', skill.summary.when) +
@@ -272,31 +296,115 @@
     renderList();
     renderDetail();
     if (errors.length) showMessage(errors.join(' '), true);
-    else showMessage('已在本機開啟 ' + added + ' 個 Skill；重新整理頁面後資料會清除。', false);
+    else showMessage(
+      '已在本機開啟 ' + added + ' 個 Skill。確認內容後，可按「儲存到工作台」永久保存。',
+      false
+    );
     fileInput.value = '';
   }
 
-  fileInput.addEventListener('change', function () { addFiles(fileInput.files); });
-  dropzone.addEventListener('click', function () { fileInput.click(); });
-  dropzone.addEventListener('keydown', function (event) {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      fileInput.click();
+  function remoteSkill(record) {
+    return {
+      id: record.id,
+      filename: record.filename,
+      size: record.size,
+      source: record.source || '',
+      files: Array.isArray(record.files) ? record.files : [],
+      summary: record.summary || {},
+      saved: true,
+      uploadedAt: record.uploadedAt,
+    };
+  }
+
+  async function loadSavedSkills() {
+    try {
+      var response = await fetch('/api/skills/list', {
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) {
+        storageAvailable = false;
+        return;
+      }
+      var data = await response.json();
+      var saved = Array.isArray(data.skills) ? data.skills.map(remoteSkill) : [];
+      saved.forEach(function (skill) {
+        if (!skills.some(function (item) { return item.id === skill.id; })) skills.push(skill);
+      });
+      if (saved.length && !activeId) activeId = saved[0].id;
+      renderList();
+      if (activeId) renderDetail();
+    } catch (error) {
+      storageAvailable = false;
     }
-  });
-  ['dragenter', 'dragover'].forEach(function (name) {
-    dropzone.addEventListener(name, function (event) {
-      event.preventDefault();
-      dropzone.classList.add('is-dragging');
-    });
-  });
-  ['dragleave', 'drop'].forEach(function (name) {
-    dropzone.addEventListener(name, function (event) {
-      event.preventDefault();
-      dropzone.classList.remove('is-dragging');
-    });
-  });
-  dropzone.addEventListener('drop', function (event) { addFiles(event.dataTransfer.files); });
+  }
+
+  async function saveSkill(skill, button) {
+    if (!skill.file) {
+      showMessage('這個 Skill 沒有可上傳的本機原始檔，請重新選擇 .skill。', true);
+      return;
+    }
+    button.disabled = true;
+    button.textContent = '儲存中…';
+    var form = new FormData();
+    form.append('file', skill.file, skill.filename);
+    form.append('metadata', JSON.stringify({
+      filename: skill.filename,
+      source: skill.source,
+      files: skill.files.map(function (entry) {
+        return { name: entry.name, size: entry.size };
+      }),
+      summary: skill.summary,
+    }));
+    try {
+      var response = await fetch('/api/skills/upload', { method: 'POST', body: form });
+      var data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Skill 儲存失敗。');
+      var saved = remoteSkill(data.skill);
+      var index = skills.findIndex(function (item) { return item.id === skill.id; });
+      if (index >= 0) skills[index] = saved;
+      activeId = saved.id;
+      storageAvailable = true;
+      renderList();
+      renderDetail();
+      showMessage('已將 ' + saved.summary.name + ' 保存到 DGHM 工作台。', false);
+    } catch (error) {
+      button.disabled = false;
+      button.textContent = '儲存到工作台';
+      showMessage(error.message || 'Skill 儲存失敗。', true);
+    }
+  }
+
+  async function deleteSkill(skill, button) {
+    if (!window.confirm('確定要從工作台刪除「' + skill.summary.name + '」嗎？')) return;
+    button.disabled = true;
+    button.textContent = '刪除中…';
+    try {
+      var response = await fetch('/api/skills/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: skill.id }),
+      });
+      var data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Skill 刪除失敗。');
+      skills = skills.filter(function (item) { return item.id !== skill.id; });
+      activeId = skills.length ? skills[0].id : '';
+      renderList();
+      if (activeId) renderDetail();
+      else {
+        detail.innerHTML =
+          '<div class="skill-detail-empty"><span aria-hidden="true">✦</span>' +
+          '<h2>選擇一個 Skill 查看說明</h2>' +
+          '<p>你會在這裡看到用途、使用時機、輸出結果與原始 SKILL.md。</p></div>';
+      }
+      showMessage('Skill 已從工作台刪除。', false);
+    } catch (error) {
+      button.disabled = false;
+      button.textContent = '刪除';
+      showMessage(error.message || 'Skill 刪除失敗。', true);
+    }
+  }
+
+  fileInput.addEventListener('change', function () { addFiles(fileInput.files); });
   list.addEventListener('click', function (event) {
     var card = event.target.closest('[data-skill-id]');
     if (!card) return;
@@ -305,6 +413,22 @@
     renderDetail();
   });
   detail.addEventListener('click', function (event) {
+    var saveButton = event.target.closest('[data-save-skill]');
+    if (saveButton) {
+      var localSkill = skills.find(function (item) {
+        return item.id === saveButton.dataset.saveSkill;
+      });
+      if (localSkill) saveSkill(localSkill, saveButton);
+      return;
+    }
+    var deleteButton = event.target.closest('[data-delete-skill]');
+    if (deleteButton) {
+      var savedSkill = skills.find(function (item) {
+        return item.id === deleteButton.dataset.deleteSkill;
+      });
+      if (savedSkill) deleteSkill(savedSkill, deleteButton);
+      return;
+    }
     var toggle = event.target.closest('#skill-raw-toggle');
     if (!toggle) return;
     var raw = document.getElementById('skill-raw');
@@ -313,4 +437,5 @@
     toggle.lastElementChild.textContent = expanded ? '＋' : '−';
     raw.hidden = expanded;
   });
+  loadSavedSkills();
 })();

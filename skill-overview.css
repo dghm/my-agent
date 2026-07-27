@@ -54,56 +54,6 @@
   cursor: pointer;
 }
 
-.skill-dropzone {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 13px;
-  min-height: 88px;
-  margin-bottom: 18px;
-  padding: 18px;
-  border: 1px dashed color-mix(in srgb, var(--navy-text) 45%, var(--surface-border));
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--navy) 4%, var(--surface-panel-bg));
-  outline: none;
-  cursor: pointer;
-  transition: border-color .15s, background .15s;
-}
-
-.skill-dropzone:hover,
-.skill-dropzone:focus-visible,
-.skill-dropzone.is-dragging {
-  border-color: var(--orange);
-  background: color-mix(in srgb, var(--orange) 7%, var(--surface-panel-bg));
-}
-
-.skill-drop-icon {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: var(--navy);
-  color: #fff;
-  font-size: 18px;
-}
-
-.skill-dropzone strong,
-.skill-dropzone span {
-  display: block;
-}
-
-.skill-dropzone strong {
-  margin-bottom: 3px;
-  color: var(--surface-text);
-  font-size: 13px;
-}
-
-.skill-dropzone div > span {
-  color: var(--surface-text-muted);
-  font-size: 11px;
-}
-
 .skill-message {
   margin-bottom: 16px;
   padding: 10px 12px;
@@ -202,6 +152,17 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.skill-card-meta {
+  display: flex !important;
+  align-items: center;
+  gap: 5px;
+  margin-top: 7px;
+  color: var(--surface-text-muted);
+  font-size: 9px;
+}
+
+.skill-card-meta.is-saved { color: #237a4b; }
 .skill-card strong { margin-bottom: 5px; font-size: 12px; }
 .skill-card span {
   color: var(--surface-text-muted);
@@ -254,6 +215,52 @@
   color: var(--orange);
   font-size: 10px;
   font-weight: 700;
+}
+
+.skill-format-badge.is-saved {
+  background: color-mix(in srgb, #237a4b 12%, var(--surface-panel-bg));
+  color: #237a4b;
+}
+
+.skill-detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.skill-action-button,
+.skill-download-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 1px solid var(--navy-text);
+  border-radius: 6px;
+  background: var(--surface-panel-bg);
+  color: var(--navy-text);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.skill-action-button.is-primary {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: #fff;
+}
+
+.skill-action-button.is-danger {
+  border-color: #b7352d;
+  color: #b7352d;
+}
+
+.skill-action-button:disabled {
+  cursor: wait;
+  opacity: .6;
 }
 
 .skill-summary-grid {
@@ -342,3 +349,32 @@
   .skill-page { padding: 22px; }
   .skill-content { grid-template-columns: 230px minmax(0, 1fr); }
 }
+
+/* Readability baseline: keep secondary information legible in desktop tool panels. */
+.skill-page-head { margin-bottom: 24px; }
+.skill-eyebrow { font-size: 12px !important; }
+.skill-page-head h1 { font-size: 26px; }
+.skill-page-head p { font-size: 14px; line-height: 1.6; }
+.skill-import-button { font-size: 14px; }
+.skill-message { font-size: 14px; line-height: 1.55; }
+.skill-section-title span:first-child { font-size: 12px; }
+.skill-section-title h2 { font-size: 17px; }
+.skill-count { font-size: 12px; }
+.skill-card strong { font-size: 14px; }
+.skill-card span { font-size: 13px; line-height: 1.6; }
+.skill-card-meta { font-size: 12px; line-height: 1.55; }
+.skill-empty strong { font-size: 14px; }
+.skill-empty p { font-size: 12px; line-height: 1.6; }
+.skill-detail-empty h2 { font-size: 18px; }
+.skill-detail-empty p { font-size: 13px; }
+.skill-detail-head h2 { font-size: 23px; }
+.skill-package-name,
+.skill-action-button,
+.skill-download-link { font-size: 13px; }
+.skill-format-badge { font-size: 12px; }
+.skill-summary-card h3 { font-size: 13px; }
+.skill-summary-card p { font-size: 14px; line-height: 1.7; }
+.skill-subsection h3 { font-size: 15px; }
+.skill-files li { font-size: 13px; line-height: 1.55; }
+.skill-raw-toggle { font-size: 14px; }
+.skill-raw { font-size: 13px; line-height: 1.7; }

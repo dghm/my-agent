@@ -14,7 +14,7 @@
   --surface-panel-bg:   #ffffff;
   --surface-border:     #E1E5EA;
   --surface-text:       #1f2933;
-  --surface-text-muted: #667085;
+  --surface-text-muted: #4B5565;
   --surface-input-bg:   #ffffff;
   --surface-input-border: #D0D5DD;
 }
@@ -24,7 +24,7 @@
   --surface-panel-bg:     #1f2530;
   --surface-border:       #323a47;
   --surface-text:         #e6e9ef;
-  --surface-text-muted:   #9aa4b2;
+  --surface-text-muted:   #B8C0CC;
   --surface-input-bg:     #2a313d;
   --surface-input-border: #3d4654;
   --navy-text:            #7FA8E8;   /* navy shifted to a readable light-blue in dark mode */
@@ -38,6 +38,8 @@ body {
   margin: 0;
   background: var(--surface-bg);
   color: var(--surface-text);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 /* ---- Layout shell ---- */
@@ -59,7 +61,7 @@ body {
 
 /* ---- Back link ---- */
 .home-link {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--surface-text-muted);
   text-decoration: none;
 }
@@ -70,7 +72,7 @@ a[href="index.html"] { }
 
 /* ---- Typography ---- */
 h1 { color: var(--navy-text); }
-.hint { font-size: 12px; color: var(--surface-text-muted); margin: 0 0 16px; line-height: 1.6; }
+.hint { font-size: 14px; color: var(--surface-text-muted); margin: 0 0 16px; line-height: 1.65; }
 
 /* ---- Theme toggle ---- */
 #theme-toggle {
@@ -103,7 +105,7 @@ legend {
 
 label {
   display: block;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--surface-text-muted);
   margin: 10px 0 4px;
 }
@@ -116,7 +118,7 @@ select,
 textarea {
   width: 100%;
   padding: 6px 8px;
-  font-size: 13px;
+  font-size: 14px;
   border: 1px solid var(--surface-input-border);
   border-radius: 6px;
   font-family: inherit;
@@ -135,7 +137,7 @@ button {
   color: #fff;
   border-radius: 6px;
   padding: 8px 12px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 button.secondary {

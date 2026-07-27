@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI Skill 總覽 — DGHM</title>
 <link rel="icon" href="favicon.svg">
-<link rel="stylesheet" href="dghm-ui.css">
-<link rel="stylesheet" href="app-shell.css">
-<link rel="stylesheet" href="skill-overview.css?v=20260727-2">
+<link rel="stylesheet" href="dghm-ui.css?v=20260727-5">
+<link rel="stylesheet" href="app-shell.css?v=20260727-6">
+<link rel="stylesheet" href="skill-overview.css?v=20260727-6">
 </head>
 <body data-tool="skills">
 <div id="tool-workspace" class="skill-page">
@@ -23,15 +23,6 @@
     <input id="skill-file" type="file" accept=".skill,application/zip" multiple>
   </header>
 
-  <section id="skill-dropzone" class="skill-dropzone" tabindex="0" role="button"
-    aria-controls="skill-file" aria-label="選擇或拖入 Skill 套件">
-    <span class="skill-drop-icon" aria-hidden="true">↓</span>
-    <div>
-      <strong>將 .skill 檔拖到這裡</strong>
-      <span>套件只在這個瀏覽器分頁內解析，不會上傳伺服器</span>
-    </div>
-  </section>
-
   <div id="skill-message" class="skill-message" role="status" aria-live="polite" hidden></div>
 
   <section class="skill-content" aria-label="Skill 清單與內容">
@@ -46,7 +37,7 @@
       <div id="skill-list" class="skill-list">
         <div class="skill-empty">
           <strong>尚未加入 Skill</strong>
-          <p>先選擇或拖入一個本機 .skill 套件。</p>
+          <p>請從本機選擇一個 .skill 套件。</p>
         </div>
       </div>
     </aside>
@@ -67,6 +58,6 @@
 <script>mountAppShell({ activeTool: 'skills' });</script>
 <script src="dghm-ui.js"></script>
 <script>initTheme('my-agent-theme');</script>
-<script src="skill-overview.js"></script>
+<script src="skill-overview.js?v=20260727-5"></script>
 </body>
 </html>
