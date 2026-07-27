@@ -1,0 +1,309 @@
+:root {
+  --shell-rail-width: 68px;
+  --shell-menu-width: 238px;
+  --shell-topbar-height: 66px;
+}
+
+body.has-app-shell {
+  min-width: 980px;
+  overflow: hidden;
+}
+
+.dghm-shell {
+  display: grid;
+  grid-template-columns: var(--shell-rail-width) var(--shell-menu-width) minmax(0, 1fr);
+  width: 100%;
+  height: 100vh;
+  background: var(--surface-bg);
+}
+
+.dghm-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 9px;
+  background: var(--navy);
+  color: #fff;
+}
+
+.dghm-rail-brand {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 11px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.dghm-rail-link {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  color: rgba(255,255,255,.7);
+  text-decoration: none;
+  transition: background .15s, color .15s;
+}
+
+.dghm-rail-link:hover,
+.dghm-rail-link.is-active {
+  background: #fff;
+  color: var(--navy);
+}
+
+.dghm-rail-link svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dghm-rail-link::after {
+  content: attr(data-label);
+  position: absolute;
+  left: 52px;
+  top: 50%;
+  z-index: 50;
+  transform: translateY(-50%);
+  display: none;
+  width: max-content;
+  max-width: 160px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--surface-text);
+  color: var(--surface-panel-bg);
+  font-size: 11px;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(0,0,0,.16);
+}
+
+.dghm-rail-link:hover::after { display: block; }
+
+.dghm-menu {
+  min-width: 0;
+  padding: 20px 16px;
+  overflow-y: auto;
+  border-right: 1px solid var(--surface-border);
+  background: var(--surface-panel-bg);
+}
+
+.dghm-menu-heading {
+  margin: 0 0 5px;
+  color: var(--navy-text);
+  font-size: 17px;
+}
+
+.dghm-menu-description {
+  margin: 0 0 22px;
+  color: var(--surface-text-muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.dghm-menu-label {
+  margin: 0 8px 7px;
+  color: var(--surface-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+.dghm-tool-nav {
+  display: grid;
+  gap: 4px;
+}
+
+.dghm-tool-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 40px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: var(--surface-text);
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.dghm-tool-link:hover { background: var(--surface-bg); }
+
+.dghm-tool-link.is-active {
+  background: color-mix(in srgb, var(--navy) 10%, var(--surface-panel-bg));
+  color: var(--navy-text);
+  font-weight: 700;
+}
+
+.dghm-tool-link.is-disabled {
+  cursor: not-allowed;
+  opacity: .62;
+}
+
+.dghm-tool-status {
+  flex-shrink: 0;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: var(--surface-bg);
+  color: var(--surface-text-muted);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.dghm-tool-link.is-active .dghm-tool-status {
+  background: var(--orange);
+  color: #fff;
+}
+
+.dghm-menu-project {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--surface-border);
+}
+
+.dghm-menu-project strong {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--surface-text);
+  font-size: 11px;
+}
+
+.dghm-menu-project p {
+  margin: 0;
+  color: var(--surface-text-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.dghm-main {
+  display: grid;
+  grid-template-rows: var(--shell-topbar-height) minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+
+.dghm-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 0 22px;
+  border-bottom: 1px solid var(--surface-border);
+  background: var(--surface-panel-bg);
+}
+
+.dghm-project-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.dghm-project-control label {
+  flex-shrink: 0;
+  margin: 0;
+  color: var(--surface-text-muted);
+  font-size: 10px;
+}
+
+.dghm-project-control select {
+  width: auto;
+  max-width: 260px;
+  min-width: 180px;
+  margin: 0;
+  padding: 7px 28px 7px 9px;
+}
+
+.dghm-project-meta {
+  min-width: 0;
+  padding-left: 11px;
+  border-left: 1px solid var(--surface-border);
+}
+
+.dghm-project-meta strong,
+.dghm-project-meta span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dghm-project-meta strong {
+  color: var(--surface-text);
+  font-size: 11px;
+}
+
+.dghm-project-meta span {
+  margin-top: 2px;
+  color: var(--surface-text-muted);
+  font-size: 10px;
+}
+
+.dghm-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-shrink: 0;
+}
+
+.dghm-top-actions #user-area { position: relative; }
+
+.dghm-login-link,
+.dghm-top-actions .user-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid var(--surface-border);
+  border-radius: 999px;
+  color: var(--surface-text);
+  text-decoration: none;
+  font-size: 11px;
+}
+
+.dghm-login-link:hover,
+.dghm-top-actions .user-chip:hover {
+  border-color: var(--navy-text);
+  color: var(--navy-text);
+}
+
+.dghm-workspace {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: var(--surface-bg);
+}
+
+.has-app-shell #tool-workspace { min-height: 100%; }
+.has-app-shell #tool-workspace > .app { min-height: 100%; }
+.has-app-shell #tool-workspace > .wrap { margin-top: 20px; margin-bottom: 20px; }
+.has-app-shell #tool-workspace a[href="index.html"] { display: none !important; }
+
+@media (max-width: 1100px) {
+  :root { --shell-menu-width: 210px; }
+  .dghm-project-meta { display: none; }
+}
+
+@media (max-width: 900px) {
+  body.has-app-shell { min-width: 0; }
+  .dghm-shell {
+    grid-template-columns: 58px minmax(0, 1fr);
+  }
+  .dghm-rail { padding-left: 7px; padding-right: 7px; }
+  .dghm-menu { display: none; }
+  .dghm-project-control select {
+    min-width: 0;
+    max-width: min(54vw, 260px);
+  }
+  .dghm-topbar { padding-left: 14px; padding-right: 14px; }
+}

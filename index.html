@@ -6,6 +6,7 @@
 <title>DGHM Tools Dashboard</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="dghm-ui.css">
+<link rel="stylesheet" href="app-shell.css">
 <style>
   .wrap { max-width: 1120px; margin: 0 auto; padding: 32px 24px 48px; }
   .top {
@@ -136,28 +137,15 @@
   }
 </style>
 </head>
-<body>
-<div class="wrap">
-  <div class="top">
-    <div class="brand">
-      <span class="brand-mark" aria-hidden="true">D</span>
-      <div>
-        <h1>DGHM 工作台</h1>
-        <p class="sub">萬能數維有限公司 · 內部工具箱</p>
-      </div>
-    </div>
-    <div class="top-right">
-      <div id="user-area"></div>
-      <button id="theme-toggle" type="button" aria-label="切換 Dark／Day 模式" title="切換深色／淺色模式">🌙</button>
-    </div>
-  </div>
+<body data-tool="home">
+<div id="tool-workspace" class="wrap">
 
   <section class="hero" aria-label="主要入口">
     <div class="hero-main">
       <div class="hero-kicker">✦ 今天從這裡開始</div>
-      <h2>開工索引 · Skill Toolbox</h2>
-      <p>選擇案件類型，找到正確產線、備料清單與下一個要使用的工具。</p>
-      <a class="primary-btn" href="skill-toolbox.html">開始一項工作 <span aria-hidden="true">→</span></a>
+      <h2>AI Skill 總覽</h2>
+      <p>從本機開啟 Skill 套件，快速看懂用途、啟動時機與輸出結果。</p>
+      <a class="primary-btn" href="skill-toolbox.html">查看 AI Skill <span aria-hidden="true">→</span></a>
     </div>
     <nav class="quick-links" aria-label="快速入口">
       <a class="quick-link" href="client-brief.html"><span>建立新客戶專案</span><strong aria-hidden="true">＋</strong></a>
@@ -202,58 +190,13 @@
   <footer>萬能數維有限公司（DGHM） · help@dghm.tw</footer>
 </div>
 
+<script src="tool-registry.js"></script>
+<script src="project-context.js"></script>
+<script src="app-shell.js"></script>
+<script>mountAppShell({ activeTool: 'home' });</script>
 <script src="dghm-ui.js"></script>
 <script>
-initTheme('dghm-tools-dashboard-theme');
-
-// 顯示登入狀態：已登入顯示頭像＋名字（可展開登出）；未登入顯示「登入」按鈕
-(function () {
-  var area = document.getElementById('user-area');
-  fetch('/api/auth/me')
-    .then(function (r) { return r.json(); })
-    .then(function (d) {
-      if (d && d.user) {
-        var u = d.user;
-        var chip = document.createElement('div');
-        chip.className = 'user-chip';
-        if (u.avatar) {
-          var img = document.createElement('img');
-          img.src = u.avatar; img.referrerPolicy = 'no-referrer'; img.alt = '';
-          chip.appendChild(img);
-        }
-        var name = document.createElement('span');
-        name.textContent = u.name || u.email || '會員';
-        chip.appendChild(name);
-        var caret = document.createElement('span');
-        caret.textContent = '▾'; caret.style.color = 'var(--surface-text-muted)';
-        chip.appendChild(caret);
-
-        var menu = document.createElement('div');
-        menu.className = 'user-menu';
-        if (u.email) {
-          var em = document.createElement('div');
-          em.className = 'um-email'; em.textContent = u.email;
-          menu.appendChild(em);
-        }
-        var logout = document.createElement('a');
-        logout.href = '/api/auth/logout'; logout.textContent = '登出';
-        menu.appendChild(logout);
-
-        area.appendChild(chip);
-        area.appendChild(menu);
-        chip.addEventListener('click', function (e) {
-          e.stopPropagation();
-          menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-        });
-        document.addEventListener('click', function () { menu.style.display = 'none'; });
-      } else {
-        var a = document.createElement('a');
-        a.className = 'login-btn'; a.href = 'login.html'; a.textContent = '登入';
-        area.appendChild(a);
-      }
-    })
-    .catch(function () {});
-})();
+initTheme('my-agent-theme');
 </script>
 </body>
 </html>
