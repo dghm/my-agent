@@ -20,18 +20,23 @@
 
   /* ---- Tool-specific layout ---- */
   .quote-page {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    display: flex;
     width: 100%;
     height: 100%;
     min-height: 0;
   }
-  .quote-page-head {
+  .quote-editor-column {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 24px;
-    padding: 22px 26px 18px;
+    flex: 0 0 500px;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    border-right: 1px solid var(--surface-border);
+    background: var(--surface-panel-bg);
+  }
+  .quote-page-head {
+    flex-shrink: 0;
+    padding: 22px 20px 18px;
     border-bottom: 1px solid var(--surface-border);
     background: var(--surface-bg);
   }
@@ -44,23 +49,12 @@
   }
   .quote-page-head h1 { margin: 0 0 5px; font-size: 24px; }
   .quote-page-head .hint { margin: 0; font-size: 12px; line-height: 1.55; }
-  .quote-page-status {
-    flex-shrink: 0;
-    padding: 6px 10px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--orange) 12%, var(--surface-panel-bg));
-    color: var(--orange);
-    font-size: 10px;
-    font-weight: 700;
-  }
-  .app { min-height: 0; }
   .form-panel {
-    width: 500px;
-    flex-shrink: 0;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding: 20px;
     background: var(--surface-panel-bg);
-    border-right: 1px solid var(--surface-border);
   }
   h1 { font-size: 18px; margin: 0 0 4px; }
   .draft-actions { display: flex; gap: 8px; margin: 0 0 16px; flex-wrap: wrap; }
@@ -245,16 +239,14 @@ __PAGES__
 </script>
 
 <div id="tool-workspace" class="quote-page">
+  <div class="quote-editor-column">
   <header class="quote-page-head">
     <div>
       <p class="quote-eyebrow">BUSINESS WORKSPACE</p>
       <h1>服務報價單</h1>
       <p class="hint">編輯報價內容、即時檢查 A4 成品，完成後可複製、下載或列印。</p>
     </div>
-    <span class="quote-page-status">即時預覽</span>
   </header>
-
-<div class="app">
 
   <!-- ============ FORM PANEL ============ -->
   <div class="form-panel">
@@ -426,6 +418,7 @@ __PAGES__
 
     </form>
   </div>
+  </div>
 
   <!-- ============ OUTPUT PANEL ============ -->
   <div class="output-panel">
@@ -447,7 +440,6 @@ __PAGES__
     </div>
   </div>
 
-</div>
 </div>
 
 <script src="tool-registry.js"></script>
