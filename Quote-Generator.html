@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DGHM 服務報價單產生器</title>
-<link rel="stylesheet" href="dghm-ui.css">
+<link rel="icon" href="favicon.svg">
+<link rel="stylesheet" href="dghm-ui.css?v=20260729-1">
+<link rel="stylesheet" href="app-shell.css?v=20260729-1">
 <style>
   /* ---- Tool-specific tokens (tab surface) ---- */
   :root {
@@ -17,7 +19,41 @@
   }
 
   /* ---- Tool-specific layout ---- */
-  .app { height: 100vh; }
+  .quote-page {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+  .quote-page-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 22px 26px 18px;
+    border-bottom: 1px solid var(--surface-border);
+    background: var(--surface-bg);
+  }
+  .quote-eyebrow {
+    margin: 0 0 5px;
+    color: var(--orange);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .14em;
+  }
+  .quote-page-head h1 { margin: 0 0 5px; font-size: 24px; }
+  .quote-page-head .hint { margin: 0; font-size: 12px; line-height: 1.55; }
+  .quote-page-status {
+    flex-shrink: 0;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--orange) 12%, var(--surface-panel-bg));
+    color: var(--orange);
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .app { min-height: 0; }
   .form-panel {
     width: 500px;
     flex-shrink: 0;
@@ -99,7 +135,7 @@
   #preview-frame { flex: 1; width: 100%; border: 1px solid var(--surface-border); border-radius: 8px; background: #fff; }
 </style>
 </head>
-<body>
+<body data-tool="quote">
 <script type="text/template" id="qtTpl">
 <!DOCTYPE html>
 <html lang="zh-TW">
@@ -208,17 +244,24 @@ __PAGES__
 </html>
 </script>
 
+<div id="tool-workspace" class="quote-page">
+  <header class="quote-page-head">
+    <div>
+      <p class="quote-eyebrow">BUSINESS WORKSPACE</p>
+      <h1>服務報價單</h1>
+      <p class="hint">編輯報價內容、即時檢查 A4 成品，完成後可複製、下載或列印。</p>
+    </div>
+    <span class="quote-page-status">即時預覽</span>
+  </header>
+
 <div class="app">
 
   <!-- ============ FORM PANEL ============ -->
   <div class="form-panel">
     <div class="form-head">
       <div>
-        <a href="index.html" class="home-link">← 返回首頁</a>
-        <h1>服務報價單產生器</h1>
-        <p class="hint">填寫報價資訊，右側會即時產生 A4 列印用的服務報價單 HTML，可直接預覽、複製或下載。各區塊右上角的「頁」欄位決定該區塊落在第幾頁。</p>
+        <p class="hint">填寫報價資訊；各區塊右上角的「頁」欄位可決定內容落在第幾頁。</p>
       </div>
-      <button id="theme-toggle" type="button" aria-label="切換 Dark／Day 模式" title="切換深色／淺色模式">🌙</button>
     </div>
 
     <div class="draft-actions">
@@ -405,7 +448,12 @@ __PAGES__
   </div>
 
 </div>
+</div>
 
+<script src="tool-registry.js"></script>
+<script src="project-context.js"></script>
+<script src="app-shell.js"></script>
+<script>mountAppShell({ activeTool: 'quote' });</script>
 <script src="dghm-ui.js"></script>
 <script>
 /* Dark / Day 模式（僅編輯介面，產出的報價單文件樣式不受影響） */

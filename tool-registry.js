@@ -42,7 +42,7 @@
       description: '報價、分期請款與收入追蹤',
       defaultTool: 'quote',
       tools: [
-        { id: 'quote', label: '服務報價單', href: 'Quote-Generator.html', status: 'legacy' },
+        { id: 'quote', label: '服務報價單', href: 'Quote-Generator.html', status: 'integrated' },
         { id: 'invoice', label: '應收帳款通知', href: 'Invoice-Generator.html', status: 'legacy' },
         { id: 'income', label: '收入登記', href: 'income-tracker.html', status: 'legacy' },
       ],
