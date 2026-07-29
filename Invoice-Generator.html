@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DGHM 應收帳款通知產生器</title>
-<link rel="stylesheet" href="dghm-ui.css">
+<link rel="icon" href="favicon.svg">
+<link rel="stylesheet" href="dghm-ui.css?v=20260729-1">
+<link rel="stylesheet" href="app-shell.css?v=20260729-1">
 <style>
   /* ---- Tool-specific tokens (tab surface) ---- */
   :root {
@@ -17,21 +19,67 @@
   }
 
   /* ---- Tool-specific layout ---- */
-  .app { height: 100vh; }
-  .form-panel {
-    width: 460px;
+  .invoice-page {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+  .invoice-editor-column {
+    display: flex;
+    flex: 0 0 500px;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    border-right: 1px solid var(--surface-border);
+    background: var(--surface-panel-bg);
+  }
+  .invoice-page-head {
     flex-shrink: 0;
+    padding: 22px 20px 18px;
+    border-bottom: 1px solid var(--surface-border);
+    background: var(--surface-bg);
+  }
+  .invoice-eyebrow {
+    margin: 0 0 5px;
+    color: var(--orange);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .14em;
+  }
+  .invoice-page-head h1 { margin: 0 0 5px; font-size: 24px; }
+  .invoice-page-head .hint { margin: 0; font-size: 12px; line-height: 1.55; }
+  .form-panel {
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding: 20px;
     background: var(--surface-panel-bg);
-    border-right: 1px solid var(--surface-border);
   }
   h1 { font-size: 18px; margin: 0 0 4px; }
-  .draft-actions { display: flex; gap: 8px; margin: 0 0 16px; flex-wrap: wrap; }
-  .draft-actions button { font-size: 12px; padding: 6px 10px; }
+  .draft-actions { display: flex; align-items: center; gap: 8px; margin: 0 0 16px; flex-wrap: wrap; }
+  .draft-actions button { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; padding: 6px 10px; }
+  .draft-actions #accordion-toggle-all {
+    width: 32px; height: 32px; margin-left: auto; padding: 6px; justify-content: center;
+  }
   .home-link { display: inline-block; margin-bottom: 8px; }
   textarea { min-height: 54px; }
   button { padding: 6px 12px; font-size: 12px; }
+
+  /* ---- Form section accordions ---- */
+  #form > fieldset.form-section { overflow: hidden; padding: 0; }
+  .form-section-header { width: 100%; }
+  .form-section-toggle {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    width: 100%; padding: 11px 14px; border: 0; border-radius: 0;
+    background: transparent; color: var(--navy-text); font-size: 12px;
+    font-weight: 700; text-align: left;
+  }
+  .form-section-toggle:hover { background: color-mix(in srgb, var(--navy) 6%, var(--surface-panel-bg)); }
+  .form-section-toggle .section-chevron { transition: transform .18s ease; }
+  .form-section.is-collapsed .section-chevron { transform: rotate(180deg); }
+  .form-section-content { padding: 0 14px 12px; }
+  .form-section.is-collapsed .form-section-content { display: none; }
 
   /* ---- Items table (form side) ---- */
   .items-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 8px; }
@@ -72,13 +120,31 @@
 
   /* ---- Output panel ---- */
   .output-panel { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow: hidden; }
-  .tabs { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .output-toolbar {
+    display: flex; justify-content: safe flex-end; gap: 8px; margin-bottom: 8px;
+    overflow-x: auto; flex-wrap: nowrap; scrollbar-width: thin;
+  }
   .tab-btn {
-    padding: 6px 14px; border-radius: 6px; border: 1px solid var(--surface-border);
+    display: inline-flex; align-items: center; flex-shrink: 0; gap: 7px;
+    white-space: nowrap; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--surface-border);
     background: var(--surface-tab-bg); font-size: 13px; cursor: pointer; color: var(--surface-tab-text);
   }
   .tab-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
-  .output-actions { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; align-items: center; }
+  .output-toolbar button.secondary {
+    display: inline-flex; align-items: center; flex-shrink: 0; gap: 7px; white-space: nowrap;
+  }
+  .output-toolbar .tab-btn, .output-toolbar button.secondary {
+    justify-content: center; width: 34px; height: 32px; padding: 6px;
+  }
+  .action-icon {
+    display: inline-block; flex: 0 0 16px; width: 16px; height: 16px;
+    background: currentColor; -webkit-mask: var(--action-icon) center / contain no-repeat;
+    mask: var(--action-icon) center / contain no-repeat;
+  }
+  svg.action-icon {
+    background: none; fill: none; stroke: currentColor; stroke-width: 2;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
   .copy-status { font-size: 12px; color: #1a7f4b; font-weight: 600; }
   .output-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
   .output-view.hidden { display: none; }
@@ -90,7 +156,7 @@
   #preview-frame { flex: 1; width: 100%; border: 1px solid var(--surface-border); border-radius: 8px; background: #fff; }
 </style>
 </head>
-<body>
+<body data-tool="invoice">
 <script type="text/template" id="invTpl">
 <!DOCTYPE html>
 <html lang="zh-TW">
@@ -246,22 +312,36 @@ __TERMS_LI__
 </html>
 </script>
 
-<div class="app">
+<div id="tool-workspace" class="invoice-page">
+  <div class="invoice-editor-column">
+  <header class="invoice-page-head">
+    <div>
+      <p class="invoice-eyebrow">BUSINESS WORKSPACE</p>
+      <h1>應收帳款通知</h1>
+      <p class="hint">編輯請款資訊、即時檢查 A4 成品，完成後可複製、下載或列印。</p>
+    </div>
+  </header>
 
   <!-- ============ FORM PANEL ============ -->
   <div class="form-panel">
     <div class="form-head">
       <div>
-        <a href="index.html" class="home-link">← 返回首頁</a>
-        <h1>應收帳款通知產生器</h1>
-        <p class="hint">填寫請款資訊，右側會即時產生 A4 列印用的應收帳款通知 HTML，可直接預覽、複製或下載。</p>
+        <p class="hint">填寫請款資訊；各區塊可個別展開或收合，右側會即時更新文件。</p>
       </div>
-      <button id="theme-toggle" type="button" aria-label="切換 Dark／Day 模式" title="切換深色／淺色模式">🌙</button>
     </div>
 
     <div class="draft-actions">
-      <button type="button" class="secondary" id="save-draft-btn">💾 下載草稿 JSON</button>
-      <button type="button" class="secondary" id="load-draft-btn">📂 載入草稿 JSON</button>
+      <button type="button" class="secondary" id="load-draft-btn">
+        <span class="action-icon" style="--action-icon:url('https://cdn.jsdelivr.net/npm/lucide-static@0.552.0/icons/file-up.svg')" aria-hidden="true"></span>
+        <span>載入草稿 JSON</span>
+      </button>
+      <button type="button" class="secondary" id="save-draft-btn">
+        <span class="action-icon" style="--action-icon:url('https://cdn.jsdelivr.net/npm/lucide-static@0.552.0/icons/file-down.svg')" aria-hidden="true"></span>
+        <span>下載草稿 JSON</span>
+      </button>
+      <button type="button" class="secondary" id="accordion-toggle-all" aria-label="全部收合" title="全部收合">
+        <span class="action-icon" style="--action-icon:url('https://cdn.jsdelivr.net/npm/lucide-static@0.552.0/icons/list-chevrons-down-up.svg')" aria-hidden="true"></span>
+      </button>
       <input type="file" id="load-draft-input" accept="application/json" style="display:none">
     </div>
 
@@ -388,17 +468,29 @@ __TERMS_LI__
 
     </form>
   </div>
+  </div>
 
   <!-- ============ OUTPUT PANEL ============ -->
   <div class="output-panel">
-    <div class="tabs">
-      <button type="button" class="tab-btn active" data-tab="preview">即時預覽</button>
-      <button type="button" class="tab-btn" data-tab="html">HTML 原始碼</button>
-    </div>
-    <div class="output-actions">
-      <button type="button" class="secondary" id="copy-btn">複製 HTML</button>
-      <button type="button" class="secondary" id="download-btn">下載 HTML</button>
-      <button type="button" class="secondary" id="open-btn">在新視窗開啟／列印</button>
+    <div class="output-toolbar">
+      <button type="button" class="tab-btn active" data-tab="preview" aria-label="即時預覽" title="即時預覽">
+        <span class="action-icon" style="--action-icon:url('https://cdn.jsdelivr.net/npm/remixicon@4.9.1/icons/System/eye-line.svg')" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="html" aria-label="HTML 原始碼" title="HTML 原始碼">
+        <span class="action-icon" style="--action-icon:url('https://cdn.jsdelivr.net/npm/remixicon@4.9.1/icons/Development/code-s-slash-fill.svg')" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="secondary" id="copy-btn" aria-label="複製 HTML" title="複製 HTML">
+        <span class="action-icon" style="--action-icon:url('https://cdn.jsdelivr.net/npm/remixicon@4.9.1/icons/Document/file-copy-2-line.svg')" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="secondary" id="download-btn" aria-label="下載 HTML" title="下載 HTML">
+        <span class="action-icon" style="--action-icon:url('https://cdn.jsdelivr.net/npm/remixicon@4.9.1/icons/Document/file-download-line.svg')" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="secondary" id="open-btn" aria-label="在新視窗開啟／列印" title="在新視窗開啟／列印">
+        <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M15 3h6v6"></path><path d="m10 14 11-11"></path>
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+        </svg>
+      </button>
       <span class="copy-status" id="copy-status"></span>
     </div>
     <div class="output-view" id="view-preview">
@@ -411,6 +503,10 @@ __TERMS_LI__
 
 </div>
 
+<script src="tool-registry.js?v=20260729-1"></script>
+<script src="project-context.js"></script>
+<script src="app-shell.js"></script>
+<script>mountAppShell({ activeTool: 'invoice' });</script>
 <script src="dghm-ui.js"></script>
 <script>
 /* Dark / Day 模式（僅編輯介面，產出的應收帳款通知文件樣式不受影響） */
@@ -427,6 +523,88 @@ document.querySelectorAll('.tab-btn').forEach(function (btn) {
     document.getElementById('view-' + btn.dataset.tab).classList.remove('hidden');
   });
 });
+
+/* ============================================================
+   表單分區手風琴
+   ============================================================ */
+function initFormAccordions() {
+  var fieldsets = Array.from(document.querySelectorAll('#form > fieldset'));
+  var toggleAll = document.getElementById('accordion-toggle-all');
+  var collapseIcon = "url('https://cdn.jsdelivr.net/npm/lucide-static@0.552.0/icons/list-chevrons-down-up.svg')";
+  var expandIcon = "url('https://cdn.jsdelivr.net/npm/lucide-static@0.552.0/icons/list-chevrons-up-down.svg')";
+
+  function setSectionCollapsed(fieldset, collapsed) {
+    var button = fieldset.querySelector('.form-section-toggle');
+    var content = fieldset.querySelector('.form-section-content');
+    fieldset.classList.toggle('is-collapsed', collapsed);
+    button.setAttribute('aria-expanded', String(!collapsed));
+    content.hidden = collapsed;
+  }
+
+  function updateToggleAll() {
+    var anyExpanded = fieldsets.some(function (fieldset) {
+      return !fieldset.classList.contains('is-collapsed');
+    });
+    var label = anyExpanded ? '全部收合' : '全部展開';
+    toggleAll.setAttribute('aria-label', label);
+    toggleAll.title = label;
+    toggleAll.querySelector('.action-icon').style.setProperty(
+      '--action-icon', anyExpanded ? collapseIcon : expandIcon
+    );
+  }
+
+  fieldsets.forEach(function (fieldset, index) {
+    var legend = fieldset.querySelector('legend');
+    var label = legend.textContent.trim();
+    var header = document.createElement('div');
+    var content = document.createElement('div');
+    var button = document.createElement('button');
+    var title = document.createElement('span');
+    var chevron = document.createElement('span');
+    var contentId = 'form-section-' + (index + 1);
+
+    fieldset.classList.add('form-section');
+    header.className = 'form-section-header';
+    content.className = 'form-section-content';
+    content.id = contentId;
+    while (legend.nextSibling) content.appendChild(legend.nextSibling);
+    legend.remove();
+    fieldset.appendChild(header);
+    fieldset.appendChild(content);
+
+    button.type = 'button';
+    button.className = 'form-section-toggle';
+    button.setAttribute('aria-expanded', 'true');
+    button.setAttribute('aria-controls', contentId);
+    title.textContent = label;
+    chevron.className = 'action-icon section-chevron';
+    chevron.setAttribute('aria-hidden', 'true');
+    chevron.style.setProperty(
+      '--action-icon',
+      "url('https://cdn.jsdelivr.net/npm/lucide-static@0.552.0/icons/chevron-up.svg')"
+    );
+    button.appendChild(title);
+    button.appendChild(chevron);
+    header.appendChild(button);
+
+    button.addEventListener('click', function () {
+      setSectionCollapsed(fieldset, !fieldset.classList.contains('is-collapsed'));
+      updateToggleAll();
+    });
+  });
+
+  toggleAll.addEventListener('click', function () {
+    var shouldCollapse = fieldsets.some(function (fieldset) {
+      return !fieldset.classList.contains('is-collapsed');
+    });
+    fieldsets.forEach(function (fieldset) {
+      setSectionCollapsed(fieldset, shouldCollapse);
+    });
+    updateToggleAll();
+  });
+
+  updateToggleAll();
+}
 
 /* ============================================================
    請款明細項目
@@ -727,6 +905,7 @@ document.getElementById('load-draft-input').addEventListener('change', function 
 addItem();
 addTerm();
 addTerm();
+initFormAccordions();
 refreshOutput();
 
 /* ============================================================
