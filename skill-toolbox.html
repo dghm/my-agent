@@ -7,29 +7,28 @@
 <link rel="icon" href="favicon.svg">
 <link rel="stylesheet" href="dghm-ui.css?v=20260727-5">
 <link rel="stylesheet" href="app-shell.css?v=20260727-6">
-<link rel="stylesheet" href="skill-overview.css?v=20260727-6">
+<link rel="stylesheet" href="skill-overview.css?v=20260729-2">
 </head>
 <body data-tool="skills">
 <div id="tool-workspace" class="skill-page">
-  <header class="skill-page-head">
-    <div>
+  <section class="skill-library-column" aria-labelledby="skill-page-title">
+    <header class="skill-page-head">
       <p class="skill-eyebrow">AI WORKSPACE</p>
-      <h1>AI Skill 總覽</h1>
-      <p>看懂一個 Skill 能做什麼、何時使用，以及會產出什麼結果。</p>
-    </div>
-    <label class="skill-import-button" for="skill-file">
-      <span aria-hidden="true">＋</span> 選擇 .skill
-    </label>
-    <input id="skill-file" type="file" accept=".skill,application/zip" multiple>
-  </header>
+      <h1 id="skill-page-title">AI Skill 總覽</h1>
+      <p>從本機加入 Skill，快速看懂用途、使用時機與輸出結果。</p>
+    </header>
 
-  <div id="skill-message" class="skill-message" role="status" aria-live="polite" hidden></div>
+    <div class="skill-library-body">
+      <label class="skill-import-button" for="skill-file">
+        <span aria-hidden="true">＋</span> 選擇 .skill
+      </label>
+      <input id="skill-file" type="file" accept=".skill,application/zip" multiple>
 
-  <section class="skill-content" aria-label="Skill 清單與內容">
-    <aside class="skill-catalog" aria-labelledby="skill-list-title">
+      <div id="skill-message" class="skill-message" role="status" aria-live="polite" hidden></div>
+
       <div class="skill-section-title">
         <div>
-          <span>已開啟</span>
+          <span>SKILL LIBRARY</span>
           <h2 id="skill-list-title">Skill 清單</h2>
         </div>
         <span id="skill-count" class="skill-count">0</span>
@@ -40,8 +39,10 @@
           <p>請從本機選擇一個 .skill 套件。</p>
         </div>
       </div>
-    </aside>
+    </div>
+  </section>
 
+  <section class="skill-output-panel" aria-label="Skill 內容預覽">
     <article id="skill-detail" class="skill-detail">
       <div class="skill-detail-empty">
         <span aria-hidden="true">✦</span>
@@ -58,6 +59,6 @@
 <script>mountAppShell({ activeTool: 'skills' });</script>
 <script src="dghm-ui.js"></script>
 <script>initTheme('my-agent-theme');</script>
-<script src="skill-overview.js?v=20260727-5"></script>
+<script src="skill-overview.js?v=20260729-1"></script>
 </body>
 </html>
