@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DGHM 合約文件產生器</title>
+<link rel="icon" href="favicon.svg">
+<link rel="stylesheet" href="dghm-ui.css?v=20260729-1">
+<link rel="stylesheet" href="app-shell.css?v=20260729-1">
+<style>
+  /* ---- Tool-specific tokens (tab surface) ---- */
+  :root {
+    --surface-tab-bg:   #ffffff;
+    --surface-tab-text: #475467;
+  }
+  :root[data-theme="dark"] {
+    --surface-tab-bg:   #2a313d;
+    --surface-tab-text: #c4cbd6;
+  }
+
+  /* ---- Tool-specific layout ---- */
+  .quote-page {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+  .quote-editor-column {
+    display: flex;
+    flex: 0 0 500px;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    border-right: 1px solid var(--surface-border);
+    background: var(--surface-panel-bg);
+  }
+  .quote-page-head {
+    flex-shrink: 0;
+    padding: 22px 20px 18px;
+    border-bottom: 1px solid var(--surface-border);
+    background: var(--surface-bg);
+  }
+  .quote-eyebrow {
+    margin: 0 0 5px;
+    color: var(--orange);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .14em;
+  }
+  .quote-page-head h1 { margin: 0 0 5px; font-size: 24px; }
+  .quote-page-head .hint { margin: 0; font-size: 12px; line-height: 1.55; }
+  .form-panel {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 20px;
+    background: var(--surface-panel-bg);
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .draft-actions { display: flex; align-items: center; gap: 8px; margin: 0 0 16px; flex-wrap: wrap; }
+  .draft-actions button {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+  .draft-actions .draft-status {
+    font-size: 12px;
+    color: var(--surface-text-muted);
+    white-space: nowrap;
+  }
+  .draft-actions #accordion-toggle-all {
+    width: 32px;
+    height: 32px;
+    margin-left: auto;
+    padding: 6px;
+    justify-content: center;
+  }
+  .home-link { display: inline-block; margin-bottom: 8px; }
+  textarea { min-height: 54px; }
+  button { padding: 6px 12px; font-size: 12px; }
+
+  /* ---- Form section accordions ---- */
+  #form > fieldset.form-section {
+    overflow: hidden;
+    padding: 0;
+  }
+  .form-section-header { width: 100%; }
+  .form-section-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 11px 14px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--navy-text);
+    font-size: 12px;
+    font-weight: 700;
+    text-align: left;
+  }
+  .form-section-toggle:hover {
+    background: color-mix(in srgb, var(--navy) 6%, var(--surface-panel-bg));
+  }
+  .form-section-toggle .section-chevron {
+    transition: transform .18s ease;
+  }
+  .form-section.is-collapsed .section-chevron {
+    transform: rotate(180deg);
+  }
+  .form-section-content {
+    padding: 0 14px 12px;
+  }
+  .form-section.is-collapsed .form-section-content {
+    display: none;
+  }
+
+  /* ---- Dynamic block cards (form side) ---- */
+  .blk {
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: var(--surface-input-bg);
+  }
+  .blk-head { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+  .blk-head .blk-tag {
+    flex-shrink: 0; font-size: 11px; font-weight: 700; color: var(--navy-text);
+    background: var(--surface-tab-bg); border: 1px solid var(--surface-border);
+    border-radius: 4px; padding: 2px 6px;
+  }
+  .blk-head .spacer { flex: 1; }
+  .page-pick { display: flex; align-items: center; gap: 4px; flex-shrink: 0; font-size: 11px; color: var(--surface-text-muted); }
+  .page-pick input { width: 44px; text-align: center; padding: 3px 4px; font-size: 12px; }
+  .btn-del { background: none; border: none; color: #ccc; cursor: pointer; font-size: 1rem; padding: 2px 4px; }
+  .btn-del:hover { color: #e53935; }
+
+  /* ---- Rows table (form side) ---- */
+  .items-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 6px; }
+  .items-table th { background: var(--navy); color: #fff; padding: 5px 6px; text-align: left; font-size: 0.68rem; }
+  .items-table td { padding: 4px 4px; border-bottom: 1px solid var(--surface-border); vertical-align: middle; }
+  .items-table td input, .items-table td textarea {
+    width: 100%; border: 1px solid var(--surface-input-border); border-radius: 4px;
+    padding: 4px 6px; font-family: inherit; font-size: 12px;
+    background: var(--surface-input-bg); color: var(--surface-text);
+  }
+  .items-table td textarea { resize: vertical; min-height: 30px; line-height: 1.4; }
+  .items-table td.td-del { text-align: center; width: 26px; }
+  .btn-add {
+    display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
+    background: none; border: 1px dashed var(--surface-input-border); color: var(--surface-text-muted);
+    border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer;
+  }
+  .btn-add:hover { border-color: var(--navy-text); color: var(--navy-text); }
+  .btn-add.sm { width: auto; padding: 4px 10px; }
+  .blk label { font-size: 11px; margin-top: 6px; }
+  .totals-live { text-align: right; font-size: 12px; color: var(--surface-text-muted); margin-top: 2px; }
+  .totals-live strong { color: var(--navy-text); }
+
+  /* ---- Button overrides ---- */
+  button.secondary { border-color: var(--surface-border); }
+  button.secondary:hover { border-color: var(--navy-text); }
+
+  /* ---- Output panel ---- */
+  .output-panel { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow: hidden; }
+  .output-toolbar {
+    display: flex;
+    justify-content: safe flex-end;
+    gap: 8px;
+    margin-bottom: 8px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: thin;
+  }
+  .tab-btn {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 7px;
+    white-space: nowrap;
+    padding: 6px 14px; border-radius: 6px; border: 1px solid var(--surface-border);
+    background: var(--surface-tab-bg); font-size: 13px; cursor: pointer; color: var(--surface-tab-text);
+  }
+  .tab-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .output-toolbar button.secondary {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 7px;
+    white-space: nowrap;
+  }
+  .output-toolbar .tab-btn,
+  .output-toolbar button.secondary {
+    justify-content: center;
+    width: 34px;
+    height: 32px;
+    padding: 6px;
+  }
+  .output-toolbar .copy-status { flex-shrink: 0; }
+  .action-icon {
+    display: inline-block;
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+    background: currentColor;
+    -webkit-mask: var(--action-icon) center / contain no-repeat;
+    mask: var(--action-icon) center / contain no-repeat;
+  }
+  svg.action-icon {
+    background: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .copy-status { font-size: 12px; color: #1a7f4b; font-weight: 600; }
+  .output-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .output-view.hidden { display: none; }
+  #out-html {
+    flex: 1; width: 100%; font-family: "SF Mono", Menlo, monospace; font-size: 12px;
+    border: 1px solid var(--surface-input-border); border-radius: 8px; padding: 12px; resize: none;
+    background: var(--surface-input-bg); color: var(--surface-text);
+  }
+  #preview-frame { flex: 1; width: 100%; border: 1px solid var(--surface-border); border-radius: 8px; background: #fff; }
+</style>
+</head>
+<body data-tool="contract">
+<script type="text/template" id="qtTpl">
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>合約書 — {Client Company} {Doc Title Plain}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=K2D:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #0D2F6E; --navy-light: #1A4494; --orange: #E5622A;
+    --orange-dark: #C04E1E; --bg: #F4F7FB; --ink: #1A1E2E;
+    --gray: #5A6580; --border: #E8ECF5;
+  }
+  body { font-family: 'K2D','Noto Sans TC',sans-serif; background: var(--ink); color: var(--ink); font-size: 14px; line-height: 1.6; }
+  .a4-page { width: 210mm; height: 297mm; background: #fff; margin: 0 auto; position: relative; overflow: hidden; }
+  @media screen { .a4-page { margin-bottom: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); } }
+  @media print {
+    @page { size: A4; margin: 0; }
+    body { background: #fff; }
+    .a4-page { page-break-after: always; box-shadow: none; margin: 0; width: 100%; height: 297mm; }
+    .a4-page:last-child { page-break-after: avoid; }
+  }
+  .page-mini-header { display: flex; justify-content: space-between; align-items: center; padding: 6mm 14mm 4mm; border-bottom: 1px solid var(--border); margin-bottom: 2mm; }
+  .mini-doc-id { font-size: 0.72rem; color: var(--gray); font-weight: 600; letter-spacing: 0.5px; }
+  .mini-page-num { font-size: 0.72rem; color: var(--gray); }
+  .doc-header-banner { width: 100%; height: 26mm; background: url('data:image/png;base64,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aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82N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') center / 100% 100% no-repeat; background-color: var(--navy); position: relative; }
+  .banner-label { position: absolute; right: 6%; top: 72%; transform: translateY(-50%); color: #fff; font-weight: 400; font-size: 1.6rem; letter-spacing: 2px; white-space: nowrap; }
+  .doc-header-body { background: white; color: var(--navy); padding: 7mm 14mm 8mm; position: relative; }
+  .doc-header-body h1 { font-size: 1.6rem; font-weight: 700; line-height: 1.25; margin-bottom: 4px; }
+  .doc-header-body .subtitle { font-size: 0.85rem; opacity: 0.7; }
+  .header-meta { position: absolute; top: 7mm; right: 14mm; font-size: 0.78rem; line-height: 1.8; color: var(--navy); }
+  .meta-item .label { color: var(--gray); font-weight: 400; }
+  .meta-item .value { font-weight: 600; color: var(--navy); }
+  .parties { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 14mm 6mm; }
+  .party-box .role { width: fit-content; font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase; color: var(--orange); font-weight: 700; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 2px solid var(--orange); display: inline-block; }
+  .party-box .company { font-size: 1rem; font-weight: 700; color: var(--navy); margin-bottom: 2px; }
+  .party-box .brand { font-size: 0.78rem; color: var(--gray); margin-bottom: 3px; }
+  .party-box .detail { font-size: 0.78rem; color: var(--gray); line-height: 1.7; }
+  .section { padding: 2mm 14mm 4mm; }
+  .section-title { font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase; color: var(--orange); font-weight: 700; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 2px solid var(--orange); display: inline-block; }
+  .cat-header { display: flex; align-items: baseline; gap: 10px; padding: 5mm 14mm 2mm; }
+  .cat-header-title { font-size: 0.9rem; font-weight: 700; letter-spacing: 2px; color: var(--orange); padding-bottom: 4px; border-bottom: 2px solid var(--orange); white-space: nowrap; }
+  .cat-header-desc { font-size: 0.75rem; color: var(--gray); line-height: 1.4; }
+  .feat-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 2mm; }
+  .feat-table thead tr { background: var(--navy); color: #fff; }
+  .feat-table thead th { padding: 5px 10px; text-align: left; font-weight: 600; font-size: 0.75rem; }
+  .feat-table tbody tr:nth-child(even) { background: var(--bg); }
+  .feat-table td { padding: 5px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; text-align: left; }
+  .feat-table td.item-name { font-weight: 600; color: var(--navy); width: 22%; }
+  .feat-table td.spec { color: var(--gray); font-size: 0.78rem; width: 23%; }
+  .feat-table td.desc { color: var(--ink); font-size: 0.78rem; }
+  .opt-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 2mm; }
+  .opt-table thead tr { background: var(--navy-light); color: #fff; }
+  .opt-table thead th { padding: 5px 10px; text-align: left; font-weight: 600; font-size: 0.75rem; }
+  .opt-table tbody tr:nth-child(even) { background: var(--bg); }
+  .opt-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; text-align: left; }
+  .opt-table td.item-name { font-weight: 600; color: var(--navy); width: 26%; }
+  .opt-table td.desc { color: var(--ink); font-size: 0.78rem; }
+  .opt-table td.price { text-align: right; font-weight: 600; color: var(--navy); white-space: nowrap; width: 18%; }
+  .opt-table td.chk { text-align: center; width: 8%; font-size: 1rem; }
+  .totals-wrap { display: flex; justify-content: flex-end; margin-top: 3px; padding: 0 14mm; }
+  .totals-table { width: 62%; border-collapse: collapse; font-size: 0.85rem; }
+  .totals-table td { padding: 5px 10px; }
+  .totals-table td:last-child { text-align: right; font-weight: 600; }
+  .totals-table .tax-row td { color: var(--gray); font-size: 0.8rem; }
+  .totals-table .total-row td { background: var(--navy); color: #fff; font-weight: 700; padding: 6px 10px; }
+  .totals-table .total-row td:last-child { font-size: 1.3rem; }
+  .payment-grid { display: grid; gap: 8px; margin-top: 6px; }
+  .payment-card { border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; }
+  .payment-card .phase { font-size: 0.7rem; color: var(--orange); font-weight: 700; letter-spacing: 1px; margin-bottom: 2px; text-transform: uppercase; }
+  .payment-card .amount { font-size: 1rem; font-weight: 700; color: var(--navy); margin-bottom: 2px; }
+  .payment-card .timing { font-size: 0.72rem; color: var(--gray); line-height: 1.4; }
+  .schedule-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 6px; }
+  .schedule-table th { background: var(--navy); color: #fff; padding: 6px 10px; text-align: left; font-size: 0.75rem; font-weight: 600; }
+  .schedule-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); }
+  .schedule-table tr:nth-child(even) td { background: var(--bg); }
+  .schedule-table .week { font-weight: 600; color: var(--navy); white-space: nowrap; }
+  .schedule-table tbody tr.total-row td { background: var(--navy) !important; color: #fff !important; font-weight: 700; }
+  .terms-box { background: var(--bg); border-radius: 0 6px 6px 0; padding: 8px 14px; font-size: 0.78rem; color: var(--gray); line-height: 1.6; margin-top: 6px; border-left: 3px solid var(--navy); }
+  .exclusion-list {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: var(--gray);
+    column-count: 2;
+    column-gap: 20px;
+  }
+  .exclusion-list li {
+    list-style: none;
+    padding-left: 14px;
+    position: relative;
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+    margin: 0 0 3px;
+  }
+  .exclusion-list li::before { content: '—'; position: absolute; left: 0; color: var(--border); }
+  .client-list { margin-top: 6px; display: flex; flex-direction: column; gap: 3px; font-size: 0.82rem; }
+  .client-list li { list-style: none; padding-left: 16px; position: relative; color: var(--ink); }
+  .client-list li::before { content: '✓'; position: absolute; left: 0; color: var(--orange); font-weight: 700; font-size: 0.8rem; }
+  .signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px; }
+  .sig-box { border: 1px solid var(--border); border-radius: 6px; padding: 12px; }
+  .sig-box .sig-label { font-size: 0.72rem; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .sig-box .sig-company { font-weight: 700; color: var(--navy); margin-bottom: 2px; }
+  .sig-box .sig-brand { font-size: 0.75rem; color: var(--gray); margin-bottom: 80px; }
+  .sig-line { border-bottom: 1px solid var(--ink); margin-bottom: 4px; }
+  .sig-box .sig-field { font-size: 0.73rem; color: var(--gray); }
+  .page-footer { position: absolute; bottom: 0; left: 0; right: 0; background: var(--navy); color: rgba(255,255,255,0.6); padding: 8px 14mm; font-size: 0.72rem; display: flex; justify-content: space-between; align-items: center; }
+  .page-footer strong { color: #fff; }
+  .validity-bar { background: #FFF4EE; border: 1px solid #FDDCC8; border-radius: 6px; padding: 7px 12px 3px 12px; font-size: 0.78rem; color: var(--orange-dark); margin: 3mm 14mm 0; display: flex; align-items: center; gap: 8px; justify-content: center; }
+  .validity-bar::before { content: '⏱'; font-size: 1rem; }
+  .notice-chip { display: inline-block; background: #FFF4EE; border: 1px solid #FDDCC8; color: var(--orange-dark); font-size: 0.72rem; border-radius: 4px; padding: 2px 8px; margin-top: 4px; }
+  .sec-note { font-size: 0.78rem; color: var(--gray); margin-top: 2mm; line-height: 1.6; }
+  .article { padding: 1.5mm 14mm 3.5mm; }
+  .article-title { width: fit-content; font-size: 0.78rem; font-weight: 700; color: var(--navy); padding: 4px 2px 1px; border-bottom: 2px solid var(--navy); margin-bottom: 4px; }
+  .article-body { font-size: 0.78rem; color: var(--ink); line-height: 1.82; padding: 0 2px; }
+  .article-body p { margin-bottom: 4px; }
+  .article-body ol { padding-left: 18px; }
+  .article-body ul { padding-left: 18px; list-style: disc; }
+  .article-body li { margin-bottom: 2px; }
+</style>
+</head>
+<body>
+__PAGES__
+</body>
+</html>
+</script>
+
+<div id="tool-workspace" class="quote-page">
+  <div class="quote-editor-column">
+  <header class="quote-page-head">
+    <div>
+      <p class="quote-eyebrow">BUSINESS WORKSPACE</p>
+      <h1>合約文件</h1>
+      <p class="hint">編輯合約內容、即時檢查 A4 成品，完成後可複製、下載或列印。</p>
+    </div>
+  </header>
+
+  <!-- ============ FORM PANEL ============ -->
+  <div class="form-panel">
+    <div class="form-head">
+      <div>
+        <p class="hint">填寫合約資訊；各區塊右上角的「頁」欄位可決定內容落在第幾頁。</p>
+      </div>
+    </div>
+
+    <div class="draft-actions">
+      <button type="button" class="secondary" id="load-draft-btn">
+        <span class="action-icon" style="--action-icon:url('https://cdn.jsdelivr.net/npm/lucide-static@0.552.0/icons/file-up.svg')" aria-hidden="true"></span>
+        <span>載入草稿 JSON</span>
+      </button>
+      <button type="button" class="secondary" id="save-draft-btn">
+        <span class="action-icon" style="--action-icon:url('https://cdn.jsdelivr.net/npm/lucide-static@0.552.0/icons/file-down.svg')" aria-hidden="true"></span>
+        <span>下載草稿 JSON</span>
+      </button>
+      <button type="button" class="secondary" id="clear-session-btn">
+        <span class="action-icon" style="--action-icon:url('https://cdn.jsdelivr.net/npm/lucide-static@0.552.0/icons/trash-2.svg')" aria-hidden="true"></span>
+        <span>清除本機暫存</span>
+      </button>
+      <span class="draft-status" id="draft-status"></span>
+      <button type="button" class="secondary" id="accordion-toggle-all" aria-label="全部收合" title="全部收合">
+        <span class="action-icon" style="--action-icon:url('https://cdn.jsdelivr.net/npm/lucide-static@0.552.0/icons/list-chevrons-down-up.svg')" aria-hidden="true"></span>
+      </button>
+      <input type="file" id="load-draft-input" accept="application/json" style="display:none">
+    </div>
+
+    <form id="form">
+
+      <fieldset>
+        <legend>01 — 基本資訊</legend>
+        <div class="row2">
+          <div>
+            <label>合約編號</label>
+            <input type="text" id="f_ct_no">
+          </div>
+          <div>
+            <label>Banner 標籤</label>
+            <input type="text" id="f_banner_label">
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label>立約日期</label>
+            <input type="text" id="f_execution_date">
+          </div>
+          <div>
+            <label>文件性質</label>
+            <input type="text" id="f_doc_type">
+          </div>
+        </div>
+
+        <label>文件主標題（可多行，每行會換行顯示）</label>
+        <textarea id="f_doc_title" rows="2"></textarea>
+
+        <label>英文副標 Subtitle（選填）</label>
+        <input type="text" id="f_subtitle">
+      </fieldset>
+
+      <fieldset>
+        <legend>02 — 雙方資料</legend>
+        <p class="hint" style="margin-bottom:8px">左側為甲方（委託方），右側為乙方（服務方）。右側會直接排進首頁。</p>
+        <div class="row2">
+          <div class="blk" style="margin:0">
+            <div class="blk-head"><span class="blk-tag">甲方</span></div>
+            <label>角色標題</label>
+            <input type="text" id="f_party_a_role">
+            <label>公司名稱</label>
+            <input type="text" id="f_party_a_company">
+            <label>明細（一行一筆）</label>
+            <textarea id="f_party_a_details" rows="5"></textarea>
+          </div>
+          <div class="blk" style="margin:0">
+            <div class="blk-head"><span class="blk-tag">乙方</span></div>
+            <label>角色標題</label>
+            <input type="text" id="f_party_b_role">
+            <label>公司名稱</label>
+            <input type="text" id="f_party_b_company">
+            <label>明細（一行一筆）</label>
+            <textarea id="f_party_b_details" rows="5"></textarea>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>03 — 合約條文</legend>
+        <p class="hint" style="margin-bottom:8px">每一條分開填寫；可用段落、- 無序條列或 1. 編號條列。右上「頁」決定落在第幾頁。</p>
+        <div id="art-list"></div>
+        <button type="button" class="btn-add" onclick="addArticle()">＋ 新增條文</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>04 — 確認簽署與生效提示</legend>
+        <div class="blk">
+          <div class="blk-head">
+            <span class="blk-tag">確認簽署</span>
+            <span class="spacer"></span>
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;margin:0"><input type="checkbox" id="f_sig_on" checked oninput="refreshOutput()">顯示</label>
+            <span class="page-pick">頁 <input type="number" min="1" id="f_sig_page" value="3" oninput="refreshOutput()"></span>
+          </div>
+          <label>簽署說明文字</label>
+          <textarea id="f_sig_desc" rows="2" oninput="refreshOutput()"></textarea>
+        </div>
+        <div class="blk">
+          <div class="blk-head">
+            <span class="blk-tag">立約日期提示條</span>
+            <span class="spacer"></span>
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;margin:0"><input type="checkbox" id="f_validity_on" checked oninput="refreshOutput()">顯示</label>
+            <span class="page-pick">頁 <input type="number" min="1" id="f_validity_page" value="3" oninput="refreshOutput()"></span>
+          </div>
+          <label>提示條文字（空白則帶入上方立約日期）</label>
+          <input type="text" id="f_validity_text" oninput="refreshOutput()">
+        </div>
+      </fieldset>
+
+    </form>
+  </div>
+  </div>
+
+  <!-- ============ OUTPUT PANEL ============ -->
+  <div class="output-panel">
+    <div class="output-toolbar">
+      <button type="button" class="tab-btn active" data-tab="preview" aria-label="即時預覽" title="即時預覽">
+        <span class="action-icon" style="--action-icon:url('https://cdn.jsdelivr.net/npm/remixicon@4.9.1/icons/System/eye-line.svg')" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="html" aria-label="HTML 原始碼" title="HTML 原始碼">
+        <span class="action-icon" style="--action-icon:url('https://cdn.jsdelivr.net/npm/remixicon@4.9.1/icons/Development/code-s-slash-fill.svg')" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="secondary" id="copy-btn" aria-label="複製 HTML" title="複製 HTML">
+        <span class="action-icon" style="--action-icon:url('https://cdn.jsdelivr.net/npm/remixicon@4.9.1/icons/Document/file-copy-2-line.svg')" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="secondary" id="download-btn" aria-label="下載 HTML" title="下載 HTML">
+        <span class="action-icon" style="--action-icon:url('https://cdn.jsdelivr.net/npm/remixicon@4.9.1/icons/Document/file-download-line.svg')" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="secondary" id="open-btn" aria-label="在新視窗開啟／列印" title="在新視窗開啟／列印">
+        <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M15 3h6v6"></path>
+          <path d="m10 14 11-11"></path>
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+        </svg>
+      </button>
+      <span class="copy-status" id="copy-status"></span>
+    </div>
+    <div class="output-view" id="view-preview">
+      <iframe id="preview-frame"></iframe>
+    </div>
+    <div class="output-view hidden" id="view-html">
+      <textarea id="out-html" readonly spellcheck="false"></textarea>
+    </div>
+  </div>
+
+</div>
+
+<script src="tool-registry.js"></script>
+<script src="project-context.js"></script>
+<script src="app-shell.js"></script>
+<script>mountAppShell({ activeTool: 'contract' });</script>
+<script src="dghm-ui.js"></script>
+<script>
+/* Dark / Day 模式（僅編輯介面，產出的合約文件樣式不受影響） */
+initTheme('dghm-contract-editor-theme');
+
+var SESSION_STORAGE_KEY = 'dghm-contract-session-draft-v2';
+var _suspendSessionSave = false;
+var _sessionRestored = false;
+
+/* ============================================================
+   Tabs
+   ============================================================ */
+document.querySelectorAll('.tab-btn').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+    document.querySelectorAll('.output-view').forEach(function (v) { v.classList.add('hidden'); });
+    btn.classList.add('active');
+    document.getElementById('view-' + btn.dataset.tab).classList.remove('hidden');
+  });
+});
+
+/* ============================================================
+   表單分區手風琴
+   ============================================================ */
+function initFormAccordions() {
+  var fieldsets = Array.from(document.querySelectorAll('#form > fieldset'));
+  var toggleAll = document.getElementById('accordion-toggle-all');
+  var collapseIcon = "url('https://cdn.jsdelivr.net/npm/lucide-static@0.552.0/icons/list-chevrons-down-up.svg')";
+  var expandIcon = "url('https://cdn.jsdelivr.net/npm/lucide-static@0.552.0/icons/list-chevrons-up-down.svg')";
+
+  function setSectionCollapsed(fieldset, collapsed) {
+    var button = fieldset.querySelector('.form-section-toggle');
+    var content = fieldset.querySelector('.form-section-content');
+    fieldset.classList.toggle('is-collapsed', collapsed);
+    button.setAttribute('aria-expanded', String(!collapsed));
+    content.hidden = collapsed;
+  }
+
+  function updateToggleAll() {
+    var anyExpanded = fieldsets.some(function (fieldset) {
+      return !fieldset.classList.contains('is-collapsed');
+    });
+    var label = anyExpanded ? '全部收合' : '全部展開';
+    var icon = toggleAll.querySelector('.action-icon');
+    toggleAll.setAttribute('aria-label', label);
+    toggleAll.title = label;
+    icon.style.setProperty('--action-icon', anyExpanded ? collapseIcon : expandIcon);
+  }
+
+  fieldsets.forEach(function (fieldset, index) {
+    var legend = fieldset.querySelector('legend');
+    var label = legend.textContent.trim();
+    var header = document.createElement('div');
+    var content = document.createElement('div');
+    var button = document.createElement('button');
+    var title = document.createElement('span');
+    var chevron = document.createElement('span');
+    var contentId = 'form-section-' + (index + 1);
+
+    fieldset.classList.add('form-section');
+    header.className = 'form-section-header';
+    content.className = 'form-section-content';
+    content.id = contentId;
+    while (legend.nextSibling) content.appendChild(legend.nextSibling);
+    legend.remove();
+    fieldset.appendChild(header);
+    fieldset.appendChild(content);
+
+    button.type = 'button';
+    button.className = 'form-section-toggle';
+    button.setAttribute('aria-expanded', 'true');
+    button.setAttribute('aria-controls', contentId);
+    title.textContent = label;
+    chevron.className = 'action-icon section-chevron';
+    chevron.setAttribute('aria-hidden', 'true');
+    chevron.style.setProperty(
+      '--action-icon',
+      "url('https://cdn.jsdelivr.net/npm/lucide-static@0.552.0/icons/chevron-up.svg')"
+    );
+    button.appendChild(title);
+    button.appendChild(chevron);
+    header.appendChild(button);
+
+    button.addEventListener('click', function () {
+      var collapsed = !fieldset.classList.contains('is-collapsed');
+      setSectionCollapsed(fieldset, collapsed);
+      updateToggleAll();
+    });
+  });
+
+  toggleAll.addEventListener('click', function () {
+    var shouldCollapse = fieldsets.some(function (fieldset) {
+      return !fieldset.classList.contains('is-collapsed');
+    });
+    fieldsets.forEach(function (fieldset) {
+      setSectionCollapsed(fieldset, shouldCollapse);
+    });
+    updateToggleAll();
+  });
+
+  updateToggleAll();
+}
+
+/* ============================================================
+   共用工具
+   ============================================================ */
+var _uid = 0;
+function uid(prefix) { _uid++; return prefix + _uid; }
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function xmlEsc(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function nl2br(s) { return xmlEsc(s).replace(/\n/g, '<br>'); }
+function v(id) { return (document.getElementById(id)||{}).value||''; }
+function fmtNT(n) { return 'NT$ ' + Math.round(n).toLocaleString('zh-TW'); }
+function fmtDateZh(s) {
+  if (!s) return '';
+  var p = s.split('-');
+  if (p.length !== 3) return s;
+  return parseInt(p[0],10) + ' 年 ' + parseInt(p[1],10) + ' 月 ' + parseInt(p[2],10) + ' 日';
+}
+function pageOf(el) {
+  var n = parseInt(el.value, 10);
+  return (isNaN(n) || n < 1) ? 1 : n;
+}
+function lines(s) {
+  return String(s||'').split('\n').map(function (t) { return t.trim(); }).filter(Boolean);
+}
+
+/* ============================================================
+   03 合約條文（動態，對齊報價單「項目區塊」）
+   ============================================================ */
+function addArticle(data) {
+  data = data || {};
+  var id = uid('art');
+  var wrap = document.createElement('div');
+  wrap.className = 'blk';
+  wrap.id = id;
+  wrap.dataset.kind = 'art';
+  wrap.innerHTML =
+    '<div class="blk-head">' +
+      '<span class="blk-tag">條文</span>' +
+      '<span class="spacer"></span>' +
+      '<span class="page-pick">頁 <input type="number" min="1" class="a-page" value="' + (data.page || '') + '" oninput="refreshOutput()"></span>' +
+      '<button type="button" class="btn-del" onclick="removeBlk(\'' + id + '\')">✕</button>' +
+    '</div>' +
+    '<label>條文標題（例：第一條｜合約目的）</label>' +
+    '<input type="text" class="a-title" value="' + esc(data.title || '') + '" oninput="refreshOutput()">' +
+    '<label>條文內容（段落、- 條列、1. 編號）</label>' +
+    '<textarea class="a-body" rows="6" oninput="refreshOutput()">' + esc(data.body || '') + '</textarea>';
+  document.getElementById('art-list').appendChild(wrap);
+  refreshOutput();
+}
+
+function removeBlk(id) {
+  var el = document.getElementById(id);
+  if (el) el.remove();
+  refreshOutput();
+}
+
+function inlineMarkdown(text) {
+  return xmlEsc(text)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/__(.+?)__/g, '<strong>$1</strong>');
+}
+
+function parseBodyText(text) {
+  var rawLines = String(text || '').replace(/\r/g, '').split('\n');
+  var blocks = [];
+  var paragraph = [];
+
+  function flushParagraph() {
+    if (!paragraph.length) return;
+    blocks.push({ type: 'p', text: paragraph.join(' ') });
+    paragraph = [];
+  }
+
+  rawLines.forEach(function (raw) {
+    var line = raw.trim();
+    if (!line) { flushParagraph(); return; }
+    if (/^\d+\.\s+/.test(line)) {
+      flushParagraph();
+      if (!blocks.length || blocks[blocks.length - 1].type !== 'ol') blocks.push({ type: 'ol', items: [] });
+      blocks[blocks.length - 1].items.push(line.replace(/^\d+\.\s+/, '').trim());
+      return;
+    }
+    if (/^[\-\*]\s+/.test(line)) {
+      flushParagraph();
+      if (!blocks.length || blocks[blocks.length - 1].type !== 'ul') blocks.push({ type: 'ul', items: [] });
+      blocks[blocks.length - 1].items.push(line.replace(/^[\-\*]\s+/, '').trim());
+      return;
+    }
+    if (blocks.length && (blocks[blocks.length - 1].type === 'ol' || blocks[blocks.length - 1].type === 'ul')) {
+      blocks.push({ type: 'p', text: line });
+      return;
+    }
+    paragraph.push(line);
+  });
+  flushParagraph();
+  return blocks;
+}
+
+function renderBlocks(blocks) {
+  return blocks.map(function (block) {
+    if (block.type === 'p') return '<p>' + inlineMarkdown(block.text) + '</p>';
+    if (block.type === 'ol') return '<ol>' + block.items.map(function (item) { return '<li>' + inlineMarkdown(item) + '</li>'; }).join('') + '</ol>';
+    return '<ul>' + block.items.map(function (item) { return '<li>' + inlineMarkdown(item) + '</li>'; }).join('') + '</ul>';
+  }).join('\n');
+}
+
+function buildArticleHtml(wrap) {
+  var title = wrap.querySelector('.a-title').value.trim();
+  var body = wrap.querySelector('.a-body').value;
+  if (!title && !body.trim()) return '';
+  return '<div class="article"><div class="article-title">' + xmlEsc(title || '未命名條文') + '</div><div class="article-body">' +
+    renderBlocks(parseBodyText(body)) + '</div></div>\n';
+}
+
+function partyDetailHtml(text) {
+  return lines(text).map(xmlEsc).join('<br>');
+}
+
+function buildSigHtml() {
+  if (!document.getElementById('f_sig_on').checked) return '';
+  var companyA = v('f_party_a_company').trim() || '＿＿＿＿＿＿＿＿';
+  var companyB = v('f_party_b_company').trim() || '＿＿＿＿＿＿＿＿';
+  var html = '<div class="section" style="padding-bottom:6mm">\n<div class="section-title">確認簽署</div>\n';
+  var desc = v('f_sig_desc').trim();
+  if (desc) html += '<p style="font-size:0.8rem;color:var(--gray);margin:6px 0 12px">' + xmlEsc(desc) + '</p>\n';
+  html +=
+    '<div class="signature-grid">\n' +
+    '<div class="sig-box"><div class="sig-label">' + xmlEsc(v('f_party_a_role') || '甲方') + '</div><div class="sig-company">' + xmlEsc(companyA) + '</div><div class="sig-brand">&nbsp;</div><div class="sig-line"></div><div class="sig-field">授權代表簽名 &nbsp;｜&nbsp; 日期：&emsp;&emsp;&emsp;&emsp;&emsp;</div></div>\n' +
+    '<div class="sig-box"><div class="sig-label">' + xmlEsc(v('f_party_b_role') || '乙方') + '</div><div class="sig-company">' + xmlEsc(companyB) + '</div><div class="sig-brand">&nbsp;</div><div class="sig-line"></div><div class="sig-field">授權代表簽名 &nbsp;｜&nbsp; 日期：&emsp;&emsp;&emsp;&emsp;&emsp;</div></div>\n' +
+    '</div>\n</div>\n';
+  return html;
+}
+
+function buildValidityHtml() {
+  if (!document.getElementById('f_validity_on').checked) return '';
+  var d = v('f_validity_text').trim() || v('f_execution_date').trim();
+  if (!d) return '';
+  return '<div style="position:absolute; bottom:20mm; left:0; right:0;"><div class="validity-bar">立約日期：<strong>&nbsp;' + xmlEsc(d) + '&nbsp;</strong></div></div>\n';
+}
+
+function buildFooter(ctNo, companyA, companyB) {
+  return '<div class="page-footer"><span>' + xmlEsc(companyA || '甲方') + ' × <strong>' + xmlEsc(companyB || '乙方') + '</strong></span><span>' + xmlEsc(ctNo) + ' &nbsp;·&nbsp; 本文件未經授權不得轉作其他用途</span></div>\n';
+}
+
+function buildDoc() {
+  var ctNo = v('f_ct_no').trim() || '＿＿＿＿＿＿';
+  var companyA = v('f_party_a_company').trim();
+  var companyB = v('f_party_b_company').trim() || '＿＿＿＿＿＿＿＿';
+  var titleLines = lines(v('f_doc_title'));
+  var titleHtml = titleLines.map(xmlEsc).join('<br>') || '＿＿＿＿＿＿';
+  var titlePlain = titleLines.join(' ') || '＿＿＿＿＿＿';
+  var bannerLabel = v('f_banner_label').trim() || '＿＿＿＿＿＿';
+
+  var blocks = [];
+  document.querySelectorAll('#art-list .blk').forEach(function (w) {
+    var h = buildArticleHtml(w);
+    if (h) blocks.push({ page: pageOf(w.querySelector('.a-page')), html: h });
+  });
+  var h = buildSigHtml();
+  if (h) blocks.push({ page: pageOf(document.getElementById('f_sig_page')), html: h });
+
+  var validityHtml = buildValidityHtml();
+  var validityPage = pageOf(document.getElementById('f_validity_page'));
+
+  var pageTotal = 1;
+  blocks.forEach(function (b) { if (b.page > pageTotal) pageTotal = b.page; });
+  if (validityHtml && validityPage > pageTotal) pageTotal = validityPage;
+
+  var metaHtml = '<div class="header-meta">' +
+    '<div class="meta-item"><span class="label">合約編號：</span><span class="value">' + xmlEsc(ctNo) + '</span></div>' +
+    (v('f_execution_date').trim() ? '<div class="meta-item"><span class="label">立約日期：</span><span class="value">' + xmlEsc(v('f_execution_date').trim()) + '</span></div>' : '') +
+    (v('f_doc_type').trim() ? '<div class="meta-item"><span class="label">文件性質：</span><span class="value">' + xmlEsc(v('f_doc_type').trim()) + '</span></div>' : '') +
+    '</div>';
+
+  var subtitle = v('f_subtitle').trim();
+  var head1 =
+    '<div class="doc-header-banner"><span class="banner-label">' + xmlEsc(bannerLabel) + '</span></div>\n' +
+    '<div class="doc-header-body">\n' + metaHtml + '\n<h1>' + titleHtml + '</h1>\n' +
+    (subtitle ? '<div class="subtitle">' + xmlEsc(subtitle) + '</div>\n' : '') +
+    '</div>\n' +
+    '<div class="parties">\n' +
+    '<div class="party-box"><div class="role">' + xmlEsc(v('f_party_a_role') || '甲方') + '</div><div class="company">' + xmlEsc(companyA || '＿＿＿＿＿＿') + '</div><div class="detail">' +
+      partyDetailHtml(v('f_party_a_details')) + '</div></div>\n' +
+    '<div class="party-box"><div class="role">' + xmlEsc(v('f_party_b_role') || '乙方') + '</div><div class="company">' + xmlEsc(companyB) + '</div><div class="detail">' +
+      partyDetailHtml(v('f_party_b_details')) + '</div></div>\n' +
+    '</div>\n';
+
+  var footer = buildFooter(ctNo, companyA, companyB);
+  var pagesHtml = '';
+  for (var p = 1; p <= pageTotal; p++) {
+    pagesHtml += '<!-- PAGE ' + p + ' -->\n<div class="a4-page">\n';
+    if (p === 1) {
+      pagesHtml += head1;
+    } else {
+      pagesHtml += '<div class="page-mini-header"><span class="mini-doc-id">' + xmlEsc(ctNo) + '</span><span class="mini-page-num">第 ' + p + ' 頁，共 ' + pageTotal + ' 頁</span></div>\n';
+    }
+    blocks.forEach(function (b) { if (b.page === p) pagesHtml += b.html; });
+    if (validityHtml && p === validityPage) pagesHtml += validityHtml;
+    pagesHtml += footer + '</div>\n';
+  }
+
+  var tpl = document.getElementById('qtTpl').textContent;
+  tpl = tpl.replace('__PAGES__', pagesHtml);
+  tpl = tpl.split('{Client Company}').join(companyA);
+  tpl = tpl.split('{Doc Title Plain}').join(titlePlain);
+  return tpl;
+}
+
+function refreshOutput() {
+  var html = buildDoc();
+  document.getElementById('preview-frame').srcdoc = html;
+  document.getElementById('out-html').value = html;
+  persistSessionDraft();
+}
+
+function previewDoc() {
+  var html = buildDoc();
+  var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  window.open(URL.createObjectURL(blob), '_blank');
+}
+
+function generateDoc() {
+  var html = buildDoc();
+  var ctNo = v('f_ct_no') || 'CT';
+  var company = v('f_party_a_company') || 'contract';
+  var filename = ctNo + '_' + company + '-合約書.html';
+  var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+/* ============================================================
+   按鈕與輸入事件綁定
+   ============================================================ */
+document.getElementById('open-btn').addEventListener('click', previewDoc);
+document.getElementById('download-btn').addEventListener('click', generateDoc);
+document.getElementById('copy-btn').addEventListener('click', function () {
+  var status = document.getElementById('copy-status');
+  navigator.clipboard.writeText(document.getElementById('out-html').value).then(function () {
+    status.textContent = '已複製！';
+    setTimeout(function () { status.textContent = ''; }, 1500);
+  }, function () {
+    status.textContent = '複製失敗，請手動選取後複製';
+    setTimeout(function () { status.textContent = ''; }, 2000);
+  });
+});
+
+document.querySelector('.form-panel').addEventListener('input', refreshOutput);
+
+/* ============================================================
+   離開頁面前提醒（避免未存檔資料遺失）
+   ============================================================ */
+var _isDirty = false;
+document.querySelector('.form-panel').addEventListener('input', function () { _isDirty = true; });
+window.addEventListener('beforeunload', function (e) {
+  if (!_isDirty) return;
+  e.preventDefault();
+  e.returnValue = '';
+});
+
+/* ============================================================
+   草稿存讀（下載 JSON / 載入 JSON）
+   ============================================================ */
+var FIELD_IDS = [
+  'f_ct_no', 'f_banner_label', 'f_execution_date', 'f_doc_type', 'f_doc_title', 'f_subtitle',
+  'f_party_a_role', 'f_party_a_company', 'f_party_a_details',
+  'f_party_b_role', 'f_party_b_company', 'f_party_b_details',
+  'f_sig_page', 'f_sig_desc',
+  'f_validity_page', 'f_validity_text'
+];
+
+function collectDraft() {
+  var draft = { kind: 'dghm-contract-draft', version: 1, fields: {}, articles: [] };
+  FIELD_IDS.forEach(function (id) { draft.fields[id] = v(id); });
+  draft.fields.f_sig_on = document.getElementById('f_sig_on').checked;
+  draft.fields.f_validity_on = document.getElementById('f_validity_on').checked;
+
+  document.querySelectorAll('#art-list .blk').forEach(function (w) {
+    draft.articles.push({
+      title: w.querySelector('.a-title').value,
+      body: w.querySelector('.a-body').value,
+      page: w.querySelector('.a-page').value
+    });
+  });
+  return draft;
+}
+
+function setDraftStatus(message) {
+  document.getElementById('draft-status').textContent = message || '';
+}
+
+function sessionTimeLabel() {
+  return new Date().toLocaleTimeString('zh-TW', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function persistSessionDraft() {
+  if (_suspendSessionSave) return;
+  try {
+    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(collectDraft()));
+    setDraftStatus('已自動暫存 ' + sessionTimeLabel());
+  } catch (err) {
+    setDraftStatus('本機暫存失敗');
+  }
+}
+
+function clearSessionDraft(showMessage) {
+  localStorage.removeItem(SESSION_STORAGE_KEY);
+  if (showMessage) setDraftStatus('已清除本機暫存');
+}
+
+function applyDraft(draft) {
+  _suspendSessionSave = true;
+  FIELD_IDS.forEach(function (id) {
+    if (draft.fields && id in draft.fields) {
+      var el = document.getElementById(id);
+      if (el) el.value = draft.fields[id];
+    }
+  });
+  if (draft.fields) {
+    if ('f_sig_on' in draft.fields) document.getElementById('f_sig_on').checked = !!draft.fields.f_sig_on;
+    if ('f_validity_on' in draft.fields) document.getElementById('f_validity_on').checked = !!draft.fields.f_validity_on;
+  }
+
+  document.getElementById('art-list').innerHTML = '';
+  (draft.articles && draft.articles.length ? draft.articles : [{}]).forEach(function (a) {
+    addArticle(a);
+  });
+
+  _suspendSessionSave = false;
+  refreshOutput();
+}
+
+function restoreSessionDraft() {
+  var raw = localStorage.getItem(SESSION_STORAGE_KEY);
+  if (!raw) return false;
+  try {
+    applyDraft(JSON.parse(raw));
+    _sessionRestored = true;
+    setDraftStatus('已恢復上次工作 session');
+    return true;
+  } catch (err) {
+    clearSessionDraft(false);
+    setDraftStatus('上次暫存損毀，已略過');
+    return false;
+  }
+}
+
+document.getElementById('save-draft-btn').addEventListener('click', function () {
+  var draft = collectDraft();
+  var blob = new Blob([JSON.stringify(draft, null, 2)], { type: 'application/json;charset=utf-8' });
+  var ctNo = v('f_ct_no') || 'draft';
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = ctNo + '-草稿.json';
+  a.click();
+});
+
+document.getElementById('load-draft-btn').addEventListener('click', function () {
+  document.getElementById('load-draft-input').click();
+});
+
+document.getElementById('clear-session-btn').addEventListener('click', function () {
+  clearSessionDraft(true);
+});
+
+document.getElementById('load-draft-input').addEventListener('change', function (e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function () {
+    try {
+      var draft = JSON.parse(reader.result);
+      applyDraft(draft);
+      persistSessionDraft();
+      setDraftStatus('已載入草稿 JSON，並更新本機暫存');
+    } catch (err) {
+      alert('草稿檔案格式錯誤，無法載入。');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+/* ============================================================
+   初始化
+   ============================================================ */
+_suspendSessionSave = true;
+addArticle({});
+refreshOutput();
+initFormAccordions();
+if (!restoreSessionDraft()) _suspendSessionSave = false;
+
+(function () {
+  if (_sessionRestored) return;
+  var params = new URLSearchParams(window.location.search);
+  var company = params.get('company');
+  var project = params.get('project');
+  var date = params.get('date');
+  if (!company && !project && !date) return;
+
+  if (company) document.getElementById('f_party_a_company').value = company;
+  if (date) document.getElementById('f_execution_date').value = date;
+  var titleEl = document.getElementById('f_doc_title');
+  if (project) titleEl.value = project;
+  refreshOutput();
+})();
+
+if (!_sessionRestored) {
+  _suspendSessionSave = false;
+  persistSessionDraft();
+}
+</script>
+</body>
+</html>
