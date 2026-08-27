@@ -1,0 +1,20 @@
+{
+  "name": "my-agent",
+  "install": "npm ci",
+  "terminals": [
+    {
+      "name": "netlify dev",
+      "command": "npx netlify dev --port 8888",
+      "description": "Serves the static tools dashboard and the Netlify Functions API (/api/income, /api/auth, /api/skills) with a local Netlify Blobs sandbox on http://localhost:8888."
+    },
+    {
+      "name": "tool-api-server",
+      "command": "node tool-api-server.js",
+      "description": "Optional AI helper API (POST /api/social/generate, /api/sections/generate) on http://localhost:8780. AI endpoints need ANTHROPIC_API_KEY; /health works without it."
+    }
+  ],
+  "ports": [
+    { "name": "netlify dev", "port": 8888 },
+    { "name": "tool-api-server", "port": 8780 }
+  ]
+}
