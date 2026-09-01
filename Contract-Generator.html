@@ -342,6 +342,36 @@
   .validity-bar::before { content: '⏱'; font-size: 1rem; }
   .notice-chip { display: inline-block; background: #FFF4EE; border: 1px solid #FDDCC8; color: var(--orange-dark); font-size: 0.72rem; border-radius: 4px; padding: 2px 8px; margin-top: 4px; }
   .sec-note { font-size: 0.78rem; color: var(--gray); margin-top: 2mm; line-height: 1.6; }
+  .project-info {
+    margin: 0 14mm 3mm;
+    padding: 8px 12px;
+    background: var(--bg);
+    border-left: 3px solid var(--navy);
+    font-size: 0.8rem;
+    line-height: 1.9;
+  }
+  .project-info > div { display: block; }
+  .pi-label { color: var(--gray); }
+  .pi-value { color: var(--ink); font-weight: 600; }
+  .pi-total { color: var(--navy); font-weight: 700; }
+  .payment-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 6px; }
+  .payment-table thead tr { background: var(--navy); color: #fff; }
+  .payment-table th { padding: 5px 8px; text-align: left; font-weight: 600; font-size: 0.72rem; }
+  .payment-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .payment-table tbody tr:nth-child(even) { background: var(--bg); }
+  .payment-table td:nth-child(1),
+  .payment-table td:nth-child(3) { white-space: nowrap; color: var(--navy); font-weight: 600; }
+  .payment-table td:nth-child(5) { text-align: right; font-weight: 700; color: var(--navy); white-space: nowrap; }
+  .payment-note {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: var(--bg);
+    border-radius: 0 6px 6px 0;
+    border-left: 3px solid var(--navy);
+    font-size: 0.78rem;
+    color: var(--gray);
+    line-height: 1.7;
+  }
   .article { padding: 1.5mm 14mm 3.5mm; }
   .article-title { width: fit-content; font-size: 0.78rem; font-weight: 700; color: var(--navy); padding: 4px 2px 1px; border-bottom: 2px solid var(--navy); margin-bottom: 4px; }
   .article-body { font-size: 0.78rem; color: var(--ink); line-height: 1.82; padding: 0 2px; }
@@ -453,14 +483,56 @@ __PAGES__
       </fieldset>
 
       <fieldset>
-        <legend>03 — 合約條文</legend>
+        <legend>03 — 專案資訊</legend>
+        <p class="hint" style="margin-bottom:8px">此區塊固定出現在合約第 1 頁，接在雙方資料之後。</p>
+        <label>專案名稱</label>
+        <input type="text" id="f_proj_name" placeholder="例：官方網站改版">
+        <label>服務範圍</label>
+        <textarea id="f_scope" rows="2" placeholder="例：依附件一《報價單 XXX》所載內容為準"></textarea>
+        <div class="row2">
+          <div>
+            <label>預估工期</label>
+            <input type="text" id="f_duration" placeholder="例：簽約後 8 週">
+          </div>
+          <div>
+            <label>含稅總金額（數字）</label>
+            <input type="text" id="f_total_amount" inputmode="numeric" placeholder="例：207900">
+          </div>
+        </div>
+        <label>中文大寫金額</label>
+        <input type="text" id="f_total_words" placeholder="例：貳拾萬柒仟玖佰元整">
+      </fieldset>
+
+      <fieldset>
+        <legend>04 — 付款條件</legend>
+        <p class="hint" style="margin-bottom:8px">此區塊固定出現在合約第 1 頁。表頭為期別、名稱、比例、付款時機、金額。</p>
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th style="width:14%">期別</th>
+              <th style="width:16%">名稱</th>
+              <th style="width:12%">比例</th>
+              <th>付款時機</th>
+              <th style="width:18%">金額</th>
+              <th style="width:26px"></th>
+            </tr>
+          </thead>
+          <tbody id="pay-tbody"></tbody>
+        </table>
+        <button type="button" class="btn-add" onclick="addPayment()">＋ 新增付款期別</button>
+        <label>付款備註（款項計算方式、訂金規則、匯款帳戶）</label>
+        <textarea id="f_payment_note" rows="5" placeholder="例：各期金額依含稅總價計算。訂金到位前不進行任何作業。&#10;匯款帳戶：玉山銀行／萬能數維有限公司／0369-940-032822"></textarea>
+      </fieldset>
+
+      <fieldset>
+        <legend>05 — 合約條文</legend>
         <p class="hint" style="margin-bottom:8px">每一條分開填寫；可用段落、- 無序條列或 1. 編號條列。右上「頁」決定落在第幾頁。</p>
         <div id="art-list"></div>
         <button type="button" class="btn-add" onclick="addArticle()">＋ 新增條文</button>
       </fieldset>
 
       <fieldset>
-        <legend>04 — 確認簽署與生效提示</legend>
+        <legend>06 — 確認簽署與生效提示</legend>
         <div class="blk">
           <div class="blk-head">
             <span class="blk-tag">確認簽署</span>
@@ -651,6 +723,59 @@ function xmlEsc(s) {
 function nl2br(s) { return xmlEsc(s).replace(/\n/g, '<br>'); }
 function v(id) { return (document.getElementById(id)||{}).value||''; }
 function fmtNT(n) { return 'NT$ ' + Math.round(n).toLocaleString('zh-TW'); }
+function ntdToChinese(raw) {
+  var n = Math.round(Number(String(raw == null ? '' : raw).replace(/[^\d.-]/g, '')));
+  if (!isFinite(n) || n < 0) return '';
+  if (n === 0) return '零元整';
+  var digits = '零壹貳參肆伍陸柒捌玖';
+  var small = ['', '拾', '佰', '仟'];
+  function four(num) {
+    var s = '';
+    var d = [
+      Math.floor(num / 1000) % 10,
+      Math.floor(num / 100) % 10,
+      Math.floor(num / 10) % 10,
+      num % 10
+    ];
+    var pendingZero = false;
+    for (var i = 0; i < 4; i++) {
+      if (d[i] === 0) {
+        if (s) pendingZero = true;
+        continue;
+      }
+      if (pendingZero) s += '零';
+      pendingZero = false;
+      s += digits.charAt(d[i]) + small[3 - i];
+    }
+    return s;
+  }
+  var yi = Math.floor(n / 100000000);
+  var wan = Math.floor(n / 10000) % 10000;
+  var rest = n % 10000;
+  var out = '';
+  if (yi) out += four(yi) + '億';
+  if (wan) {
+    if (yi && wan < 1000) out += '零';
+    out += four(wan) + '萬';
+  } else if (yi && rest) {
+    out += '零';
+  }
+  if (rest) {
+    if ((yi || wan) && rest < 1000) out += '零';
+    out += four(rest);
+  }
+  return out + '元整';
+}
+function formatTotalDisplay(raw) {
+  var s = String(raw || '').trim();
+  if (!s) return '';
+  if (/^NT\$/i.test(s)) return s;
+  var n = Number(String(s).replace(/,/g, ''));
+  if (isFinite(n) && String(s).replace(/[,.\s]/g, '').match(/^\d+$/)) {
+    return 'NT$ ' + Math.round(n).toLocaleString('zh-TW');
+  }
+  return 'NT$ ' + s;
+}
 function fmtDateZh(s) {
   if (!s) return '';
   var p = s.split('-');
@@ -688,6 +813,51 @@ function addArticle(data) {
     '<textarea class="a-body" rows="6" oninput="refreshOutput()">' + esc(data.body || '') + '</textarea>';
   document.getElementById('art-list').appendChild(wrap);
   refreshOutput();
+}
+
+function addPayment(data) {
+  data = data || {};
+  var rid = uid('pay');
+  var tr = document.createElement('tr');
+  tr.id = rid;
+  tr.innerHTML =
+    '<td><input class="p-phase" value="' + esc(data.phase || '') + '" oninput="refreshOutput()" placeholder="第一期"></td>' +
+    '<td><input class="p-name" value="' + esc(data.name || '') + '" oninput="refreshOutput()" placeholder="簽約款"></td>' +
+    '<td><input class="p-percent" value="' + esc(data.percent || '') + '" oninput="refreshOutput()" placeholder="40%"></td>' +
+    '<td><textarea class="p-timing" rows="2" oninput="refreshOutput()" placeholder="合約簽署後 5 個工作日內...">' + esc(data.timing || '') + '</textarea></td>' +
+    '<td><input class="p-amount" value="' + esc(data.amount || '') + '" oninput="refreshOutput()" placeholder="NT$ 55,200"></td>' +
+    '<td class="td-del"><button type="button" class="btn-del" onclick="removeBlk(\'' + rid + '\')">✕</button></td>';
+  document.getElementById('pay-tbody').appendChild(tr);
+  refreshOutput();
+}
+
+function collectPayments() {
+  var rows = [];
+  document.querySelectorAll('#pay-tbody tr').forEach(function (tr) {
+    rows.push({
+      phase: tr.querySelector('.p-phase').value,
+      name: tr.querySelector('.p-name').value,
+      percent: tr.querySelector('.p-percent').value,
+      timing: tr.querySelector('.p-timing').value,
+      amount: tr.querySelector('.p-amount').value
+    });
+  });
+  return rows;
+}
+
+function addDefaultPayments() {
+  addPayment({
+    phase: '第一期',
+    name: '簽約款',
+    percent: '50%',
+    timing: '合約簽署後 5 個工作日內匯款'
+  });
+  addPayment({
+    phase: '第二期',
+    name: '尾款',
+    percent: '50%',
+    timing: '驗收完成後匯款'
+  });
 }
 
 function removeBlk(id) {
@@ -758,6 +928,41 @@ function partyDetailHtml(text) {
   return lines(text).map(xmlEsc).join('<br>');
 }
 
+function buildProjectInfoHtml() {
+  var proj = v('f_proj_name').trim();
+  var scope = v('f_scope').trim();
+  var duration = v('f_duration').trim();
+  var amountRaw = v('f_total_amount').trim();
+  var words = v('f_total_words').trim();
+  if (!proj && !scope && !duration && !amountRaw && !words) return '';
+  var amountText = formatTotalDisplay(amountRaw);
+  var html = '<div class="project-info">\n';
+  html += '<div><span class="pi-label">專案名稱：</span><span class="pi-value">' + xmlEsc(proj) + '</span></div>\n';
+  html += '<div><span class="pi-label">服務範圍：</span><span class="pi-value">' + nl2br(scope) + '</span></div>\n';
+  html += '<div><span class="pi-label">預估工期：</span><span class="pi-value">' + xmlEsc(duration) + '</span></div>\n';
+  html += '<div><span class="pi-label">含稅總金額：</span><span class="pi-total">' + xmlEsc(amountText) + '</span><span class="pi-label">（' + xmlEsc(words) + '）</span></div>\n</div>\n';
+  return html;
+}
+
+function buildPaymentsHtml() {
+  var rows = collectPayments().filter(function (row) {
+    return row.phase || row.name || row.percent || row.timing || row.amount;
+  });
+  var note = v('f_payment_note').trim();
+  if (!rows.length && !note) return '';
+  var html = '<div class="section">\n<div class="section-title">付款條件</div>\n';
+  if (rows.length) {
+    html += '<table class="payment-table">\n<thead><tr><th>期別</th><th>名稱</th><th>比例</th><th>付款時機</th><th>金額</th></tr></thead>\n<tbody>\n';
+    rows.forEach(function (row) {
+      html += '<tr><td>' + xmlEsc(row.phase) + '</td><td>' + xmlEsc(row.name) + '</td><td>' + xmlEsc(row.percent) + '</td><td>' + nl2br(row.timing) + '</td><td>' + xmlEsc(row.amount) + '</td></tr>\n';
+    });
+    html += '</tbody>\n</table>\n';
+  }
+  if (note) html += '<div class="payment-note">' + nl2br(note) + '</div>\n';
+  html += '</div>\n';
+  return html;
+}
+
 function buildSigHtml() {
   if (!document.getElementById('f_sig_on').checked) return '';
   var companyA = v('f_party_a_company').trim() || '＿＿＿＿＿＿＿＿';
@@ -825,7 +1030,9 @@ function buildDoc() {
       partyDetailHtml(v('f_party_a_details')) + '</div></div>\n' +
     '<div class="party-box"><div class="role">' + xmlEsc(v('f_party_b_role') || '乙方') + '</div><div class="company">' + xmlEsc(companyB) + '</div><div class="detail">' +
       partyDetailHtml(v('f_party_b_details')) + '</div></div>\n' +
-    '</div>\n';
+    '</div>\n' +
+    buildProjectInfoHtml() +
+    buildPaymentsHtml();
 
   var footer = buildFooter(ctNo, companyA, companyB);
   var pagesHtml = '';
@@ -909,12 +1116,20 @@ var FIELD_IDS = [
   'f_ct_no', 'f_banner_label', 'f_execution_date', 'f_doc_type', 'f_doc_title', 'f_subtitle',
   'f_party_a_role', 'f_party_a_company', 'f_party_a_details',
   'f_party_b_role', 'f_party_b_company', 'f_party_b_details',
+  'f_proj_name', 'f_scope', 'f_duration', 'f_total_amount', 'f_total_words',
   'f_sig_page', 'f_sig_desc',
   'f_validity_page', 'f_validity_text'
 ];
 
 function collectDraft() {
-  var draft = { kind: 'dghm-contract-draft', version: 1, fields: {}, articles: [] };
+  var draft = {
+    kind: 'dghm-contract-draft',
+    version: 2,
+    fields: {},
+    articles: [],
+    payments: collectPayments(),
+    payment_note: v('f_payment_note')
+  };
   FIELD_IDS.forEach(function (id) { draft.fields[id] = v(id); });
   draft.fields.f_sig_on = document.getElementById('f_sig_on').checked;
   draft.fields.f_validity_on = document.getElementById('f_validity_on').checked;
@@ -972,6 +1187,16 @@ function applyDraft(draft) {
   (draft.articles && draft.articles.length ? draft.articles : [{}]).forEach(function (a) {
     addArticle(a);
   });
+
+  document.getElementById('f_payment_note').value =
+    draft.payment_note != null ? draft.payment_note :
+    (draft.fields && draft.fields.f_payment_note) || '';
+  document.getElementById('pay-tbody').innerHTML = '';
+  if (Array.isArray(draft.payments) && draft.payments.length) {
+    draft.payments.forEach(function (row) { addPayment(row); });
+  } else {
+    addDefaultPayments();
+  }
 
   _suspendSessionSave = false;
   refreshOutput();
@@ -1033,8 +1258,12 @@ document.getElementById('load-draft-input').addEventListener('change', function 
    ============================================================ */
 _suspendSessionSave = true;
 addArticle({});
+addDefaultPayments();
 refreshOutput();
 initFormAccordions();
+document.getElementById('f_total_amount').addEventListener('input', function () {
+  document.getElementById('f_total_words').value = ntdToChinese(this.value);
+});
 if (!restoreSessionDraft()) _suspendSessionSave = false;
 
 (function () {
@@ -1047,8 +1276,11 @@ if (!restoreSessionDraft()) _suspendSessionSave = false;
 
   if (company) document.getElementById('f_party_a_company').value = company;
   if (date) document.getElementById('f_execution_date').value = date;
-  var titleEl = document.getElementById('f_doc_title');
-  if (project) titleEl.value = project;
+  if (project) {
+    document.getElementById('f_proj_name').value = project;
+    var titleEl = document.getElementById('f_doc_title');
+    if (!titleEl.value.trim()) titleEl.value = project;
+  }
   refreshOutput();
 })();
 
