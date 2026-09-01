@@ -8,6 +8,8 @@
     receipt: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6M9 16h4"/>',
     'file-check': '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 15l2 2 5-5"/>',
     sparkles: '<path d="m12 3-1.2 3.2L8 7.5l2.8 1.3L12 12l1.2-3.2L16 7.5l-2.8-1.3L12 3Z"/><path d="m5 13-.8 2.2L2 16l2.2.8L5 19l.8-2.2L8 16l-2.2-.8L5 13ZM19 12l-.7 1.8-1.8.7 1.8.7L19 17l.7-1.8 1.8-.7-1.8-.7L19 12Z"/>',
+    'arrow-left-from-line': '<path d="m9 6-6 6 6 6"/><path d="M3 12h14"/><path d="M21 19V5"/>',
+    'arrow-right-from-line': '<path d="M3 5v14"/><path d="M21 12H7"/><path d="m15 18 6-6-6-6"/>',
   };
 
   function icon(name) {
@@ -97,6 +99,9 @@
           '<img src="favicon.svg" alt="">' +
         '</a>' +
         renderRail(registry.groups, match.group) +
+        '<button type="button" class="dghm-rail-link dghm-nav-collapse" data-shell-nav-collapse data-label="收合選單" aria-label="收合側邊選單" title="收合側邊選單">' +
+          icon('arrow-left-from-line') +
+        '</button>' +
       '</aside>' +
       '<aside class="dghm-menu" aria-label="' + escapeHtml(match.group.label) + '功能選單">' +
         '<h2 class="dghm-menu-heading">' + escapeHtml(match.group.label) + '</h2>' +
@@ -108,6 +113,9 @@
       '<div class="dghm-main">' +
         '<header class="dghm-topbar">' +
           '<div class="dghm-project-control">' +
+            '<button type="button" class="dghm-nav-expand" data-shell-nav-expand aria-label="展開側邊選單" title="展開側邊選單">' +
+              icon('arrow-right-from-line') +
+            '</button>' +
             '<label for="dghm-project-select">目前案件</label>' +
             '<select id="dghm-project-select">' +
               projectOptions(projectsApi.list(), projectsApi.getCurrentId()) +
@@ -134,6 +142,7 @@
       projectsApi.setCurrent(select.value);
     });
     updateProjectDisplay(shell, projectsApi.getCurrent());
+    bindNavCollapse(shell);
 
     global.addEventListener('dghm:project-change', function (event) {
       select.value = event.detail.project ? event.detail.project.id : '';
@@ -141,6 +150,37 @@
     });
 
     hydrateUserArea(shell.querySelector('#user-area'));
+  }
+
+  var NAV_COLLAPSE_KEY = 'dghm-shell-nav-collapsed';
+
+  function applyNavCollapsed(shell, collapsed) {
+    shell.classList.toggle('is-nav-collapsed', collapsed);
+    document.body.classList.toggle('is-nav-collapsed', collapsed);
+    var collapseBtn = shell.querySelector('[data-shell-nav-collapse]');
+    var expandBtn = shell.querySelector('[data-shell-nav-expand]');
+    if (collapseBtn) collapseBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    if (expandBtn) expandBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  }
+
+  function bindNavCollapse(shell) {
+    var collapsed = false;
+    try { collapsed = localStorage.getItem(NAV_COLLAPSE_KEY) === '1'; } catch (e) {}
+    applyNavCollapsed(shell, collapsed);
+
+    function setCollapsed(next) {
+      applyNavCollapsed(shell, next);
+      try { localStorage.setItem(NAV_COLLAPSE_KEY, next ? '1' : '0'); } catch (e) {}
+    }
+
+    var collapseBtn = shell.querySelector('[data-shell-nav-collapse]');
+    var expandBtn = shell.querySelector('[data-shell-nav-expand]');
+    if (collapseBtn) {
+      collapseBtn.addEventListener('click', function () { setCollapsed(true); });
+    }
+    if (expandBtn) {
+      expandBtn.addEventListener('click', function () { setCollapsed(false); });
+    }
   }
 
   function hydrateUserArea(area) {
