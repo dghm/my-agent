@@ -35,3 +35,68 @@ function initTheme(storageKey) {
     }
   });
 }
+
+/**
+ * Drag handle between a fixed-width editor column and a flexible preview pane.
+ * Stores the editor base width in localStorage.
+ */
+function initColumnResize(options) {
+  var page = document.querySelector(options.page);
+  var editor = document.querySelector(options.editor);
+  var handle = document.querySelector(options.handle);
+  if (!page || !editor || !handle) return;
+
+  var storageKey = options.storageKey;
+  var minEditor = options.minEditor || 360;
+  var minPreview = options.minPreview || 280;
+
+  function collapsedExtra() {
+    if (!document.body.classList.contains('is-nav-collapsed')) return 0;
+    if (window.matchMedia('(max-width: 900px)').matches) return 0;
+    var styles = getComputedStyle(document.documentElement);
+    var rail = parseFloat(styles.getPropertyValue('--shell-rail-width')) || 68;
+    var menu = parseFloat(styles.getPropertyValue('--shell-menu-width')) || 238;
+    return rail + menu;
+  }
+
+  function applyBase(width) {
+    page.style.setProperty('--editor-col-width', Math.round(width) + 'px');
+  }
+
+  var saved;
+  try { saved = parseInt(localStorage.getItem(storageKey), 10); } catch (e) {}
+  if (saved >= minEditor) applyBase(saved);
+
+  handle.addEventListener('pointerdown', function (event) {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    handle.classList.add('is-dragging');
+    document.body.classList.add('is-col-resizing');
+    var startX = event.clientX;
+    var startWidth = editor.getBoundingClientRect().width;
+
+    function onMove(moveEvent) {
+      var extra = collapsedExtra();
+      var pageWidth = page.getBoundingClientRect().width;
+      var handleWidth = handle.getBoundingClientRect().width;
+      var nextVisual = startWidth + (moveEvent.clientX - startX);
+      var maxVisual = pageWidth - minPreview - handleWidth;
+      nextVisual = Math.max(minEditor + extra, Math.min(maxVisual, nextVisual));
+      applyBase(Math.max(minEditor, nextVisual - extra));
+    }
+
+    function onUp() {
+      handle.classList.remove('is-dragging');
+      document.body.classList.remove('is-col-resizing');
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      try {
+        var current = parseInt(getComputedStyle(page).getPropertyValue('--editor-col-width'), 10);
+        if (current >= minEditor) localStorage.setItem(storageKey, String(current));
+      } catch (err) {}
+    }
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  });
+}

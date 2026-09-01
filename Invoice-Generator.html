@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DGHM 應收帳款通知產生器</title>
 <link rel="icon" href="favicon.svg">
-<link rel="stylesheet" href="dghm-ui.css?v=20260729-1">
-<link rel="stylesheet" href="app-shell.css?v=20260901-1">
+<link rel="stylesheet" href="dghm-ui.css?v=20260901-2">
+<link rel="stylesheet" href="app-shell.css?v=20260901-2">
 <style>
   /* ---- Tool-specific tokens (tab surface) ---- */
   :root {
@@ -27,7 +27,7 @@
   }
   .invoice-editor-column {
     display: flex;
-    flex: 0 0 500px;
+    flex: 0 0 var(--editor-col-width, 500px);
     flex-direction: column;
     min-width: 0;
     min-height: 0;
@@ -163,7 +163,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>應收帳款通知 — {Company Name} {Project Name}</title>
+<title>{INV No.}_{Company Name}_應收帳款通知</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=K2D:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -470,6 +470,8 @@ __TERMS_LI__
   </div>
   </div>
 
+  <div class="split-handle" role="separator" aria-orientation="vertical" aria-label="拖曳調整預覽寬度" title="拖曳調整預覽寬度"></div>
+
   <!-- ============ OUTPUT PANEL ============ -->
   <div class="output-panel">
     <div class="output-toolbar">
@@ -507,10 +509,16 @@ __TERMS_LI__
 <script src="project-context.js"></script>
 <script src="app-shell.js"></script>
 <script>mountAppShell({ activeTool: 'invoice' });</script>
-<script src="dghm-ui.js"></script>
+<script src="dghm-ui.js?v=20260901-2"></script>
 <script>
 /* Dark / Day 模式（僅編輯介面，產出的應收帳款通知文件樣式不受影響） */
 initTheme('dghm-invoice-editor-theme');
+initColumnResize({
+  page: '.invoice-page',
+  editor: '.invoice-editor-column',
+  handle: '.split-handle',
+  storageKey: 'dghm-invoice-editor-width'
+});
 
 /* ============================================================
    Tabs
@@ -692,6 +700,17 @@ function v(id) {
   return (document.getElementById(id)||{}).value||'';
 }
 
+function safeFilenamePart(value, fallback) {
+  var text = String(value || '').trim() || fallback;
+  return text.replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, ' ').trim() || fallback;
+}
+
+function invoiceExportBasename() {
+  return safeFilenamePart(v('f_inv_no'), 'INV') + '_' +
+    safeFilenamePart(v('f_company_name'), '客戶') +
+    '_應收帳款通知';
+}
+
 function fmtDate(s) {
   return s ? s.replace(/-/g, '/') : '';
 }
@@ -765,6 +784,7 @@ function buildDoc() {
   for (var ph in map) {
     tpl = tpl.split(ph).join(map[ph]);
   }
+  tpl = tpl.replace(/<title>[\s\S]*?<\/title>/, '<title>' + invoiceExportBasename() + '</title>');
   return tpl;
 }
 
@@ -776,15 +796,18 @@ function refreshOutput() {
 
 function previewDoc() {
   var html = buildDoc();
-  var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  window.open(URL.createObjectURL(blob), '_blank');
+  var basename = invoiceExportBasename();
+  var win = window.open('', '_blank');
+  if (!win) return;
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  win.document.title = basename;
 }
 
 function generateDoc() {
   var html = buildDoc();
-  var invNo   = v('f_inv_no')         || 'INV';
-  var company = v('f_company_name')   || '客戶';
-  var filename = invNo + '_' + company + '-應收帳款通知.html';
+  var filename = invoiceExportBasename() + '.html';
   var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);

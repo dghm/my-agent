@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DGHM 合約文件產生器</title>
 <link rel="icon" href="favicon.svg">
-<link rel="stylesheet" href="dghm-ui.css?v=20260729-1">
-<link rel="stylesheet" href="app-shell.css?v=20260901-1">
+<link rel="stylesheet" href="dghm-ui.css?v=20260901-2">
+<link rel="stylesheet" href="app-shell.css?v=20260901-2">
 <style>
   /* ---- Tool-specific tokens (tab surface) ---- */
   :root {
@@ -27,7 +27,7 @@
   }
   .quote-editor-column {
     display: flex;
-    flex: 0 0 500px;
+    flex: 0 0 var(--editor-col-width, 500px);
     flex-direction: column;
     min-width: 0;
     min-height: 0;
@@ -487,6 +487,8 @@ __PAGES__
   </div>
   </div>
 
+  <div class="split-handle" role="separator" aria-orientation="vertical" aria-label="拖曳調整預覽寬度" title="拖曳調整預覽寬度"></div>
+
   <!-- ============ OUTPUT PANEL ============ -->
   <div class="output-panel">
     <div class="output-toolbar">
@@ -525,10 +527,16 @@ __PAGES__
 <script src="project-context.js"></script>
 <script src="app-shell.js"></script>
 <script>mountAppShell({ activeTool: 'contract' });</script>
-<script src="dghm-ui.js"></script>
+<script src="dghm-ui.js?v=20260901-2"></script>
 <script>
 /* Dark / Day 模式（僅編輯介面，產出的合約文件樣式不受影響） */
 initTheme('dghm-contract-editor-theme');
+initColumnResize({
+  page: '.quote-page',
+  editor: '.quote-editor-column',
+  handle: '.split-handle',
+  storageKey: 'dghm-contract-editor-width'
+});
 
 var SESSION_STORAGE_KEY = 'dghm-contract-session-draft-v2';
 var _suspendSessionSave = false;

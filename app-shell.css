@@ -271,7 +271,7 @@ body.has-app-shell.is-nav-collapsed {
 @media (min-width: 901px) {
   body.has-app-shell.is-nav-collapsed .quote-editor-column,
   body.has-app-shell.is-nav-collapsed .invoice-editor-column {
-    flex-basis: calc(500px + var(--shell-rail-width) + var(--shell-menu-width));
+    flex-basis: calc(var(--editor-col-width, 500px) + var(--shell-rail-width) + var(--shell-menu-width));
   }
 }
 

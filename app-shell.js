@@ -184,27 +184,11 @@
   }
 
   function hydrateUserArea(area) {
-    if (!area) return;
-
-    function renderLogin() {
-      var login = document.createElement('a');
-      login.className = 'dghm-login-link';
-      login.href = 'login.html';
-      login.textContent = '登入';
-      area.appendChild(login);
-    }
-
-    if (location.protocol === 'file:') {
-      renderLogin();
-      return;
-    }
+    if (!area || location.protocol === 'file:') return;
     fetch('/api/auth/me')
       .then(function (response) { return response.json(); })
       .then(function (data) {
-        if (!data || !data.user) {
-          renderLogin();
-          return;
-        }
+        if (!data || !data.user) return;
         var user = data.user;
         var chip = document.createElement('a');
         chip.className = 'user-chip';
@@ -213,7 +197,7 @@
         chip.textContent = user.name || user.email || '會員';
         area.appendChild(chip);
       })
-      .catch(renderLogin);
+      .catch(function () {});
   }
 
   global.mountAppShell = mountAppShell;
