@@ -1,0 +1,41 @@
+<!-- @dsCard group="Components" viewport="700x280" name="Display" subtitle="Card, Badge, Tag" -->
+<link rel="stylesheet" href="../../styles.css">
+<style>body{margin:0;font-family:var(--font-body);background:#fff}#root{padding:16px 20px}</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<div id="root"></div>
+<script type="text/babel">
+
+const { Card, Badge, Tag } = window.MeyiGlobalDesignSystem_830a18;
+function Demo() {
+  const [sel, setSel] = React.useState('sea');
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+        <Card padding="md" eyebrow="Services" title="Global sourcing">
+          <p style={{margin:0,fontSize:13,color:'var(--text-secondary)'}}>Flat, bordered, no shadow.</p>
+        </Card>
+        <Card padding="md" inverse eyebrow="Contact" title="Talk to us">
+          <p style={{margin:0,fontSize:13,color:'var(--text-inverse-secondary)'}}>Inverse card on ink.</p>
+        </Card>
+      </div>
+      <div style={{display:'flex',gap:8,alignItems:'center'}}>
+        <Badge>Neutral</Badge>
+        <Badge tone="inverse">New</Badge>
+        <Badge tone="outline">Outline</Badge>
+        <Badge tone="success">In transit</Badge>
+        <Badge tone="warning">Delayed</Badge>
+        <Badge tone="danger">Held</Badge>
+      </div>
+      <div style={{display:'flex',gap:8,alignItems:'center'}}>
+        <Tag active={sel==='air'} onClick={()=>setSel('air')}>Air freight</Tag>
+        <Tag active={sel==='sea'} onClick={()=>setSel('sea')}>Sea freight</Tag>
+        <Tag onRemove={()=>{}}>Electronics</Tag>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>

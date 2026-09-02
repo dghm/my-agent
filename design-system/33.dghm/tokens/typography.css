@@ -1,0 +1,32 @@
+/* DGHM typography — K2D (brand, Latin-first) + Noto Sans TC (繁中備援) */
+:root {
+  --font-brand: 'K2D', 'Noto Sans TC', -apple-system, 'PingFang TC', sans-serif;
+  --font-body: 'K2D', 'Noto Sans TC', -apple-system, 'PingFang TC', sans-serif;
+  --font-mono: 'K2D', ui-monospace, 'SF Mono', monospace; /* 用於 HEX/CMYK 等規格標示 */
+
+  /* Type scale */
+  --text-display: 56px;   /* Hero 標題 */
+  --text-h1: 40px;
+  --text-h2: 32px;
+  --text-h3: 24px;
+  --text-h4: 20px;
+  --text-body-lg: 18px;
+  --text-body-md: 16px;
+  --text-body-sm: 14px;
+  --text-caption: 12px;
+
+  /* Weights */
+  --weight-light: 300;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800; /* K2D only — 標題重點 */
+
+  /* Line heights */
+  --leading-tight: 1.2;   /* 標題 */
+  --leading-normal: 1.6;  /* 內文 */
+  --leading-loose: 1.8;   /* 長段落繁中 */
+
+  --tracking-wide: 0.12em; /* 全大寫小標 eyebrow，如 "COMBO 01" */
+}

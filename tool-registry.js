@@ -53,8 +53,9 @@
       label: '文件與驗收',
       icon: 'file-check',
       description: '專案資產、操作手冊與驗收準備',
-      defaultTool: 'style',
+      defaultTool: 'design-system',
       tools: [
+        { id: 'design-system', label: '客戶設計系統', href: 'design-system.html', status: 'integrated' },
         { id: 'style', label: 'Style Guideline', href: 'brand-guideline-generator.html', status: 'legacy' },
         { id: 'guide', label: 'User Guide 骨架', href: 'user-guide-generator.html', status: 'legacy' },
         { id: 'uat', label: 'UAT 問答與 JSON', href: '', status: 'planned' },

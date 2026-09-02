@@ -1,0 +1,29 @@
+/* 鴻築 FP Decoration — typography tokens */
+:root {
+  --font-sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", "Helvetica Neue", Arial, sans-serif;
+  --font-serif-display: "Noto Serif TC", "Songti TC", "PMingLiU", serif;
+  --font-latin-display: "Times New Roman", Georgia, serif; /* wordmark "Decoration" is a Latin serif */
+
+  /* Type scale */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+  --text-3xl: 36px;
+  --text-4xl: 48px;
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.6;
+  --leading-loose: 1.9;
+
+  /* Chinese display headings track wide */
+  --tracking-display: 0.12em;
+  --tracking-wide: 0.06em;
+  --tracking-normal: 0.01em;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-bold: 700;
+}

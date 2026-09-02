@@ -1,0 +1,48 @@
+/* Meyi Global — color tokens.
+   Direction (from brand brief): #000 / #FFF primary, #24272D supporting. */
+:root {
+  /* Base palette */
+  --black: #000000;
+  --white: #ffffff;
+  --ink: #24272d;          /* brand support color — panels, dark surfaces */
+  --ink-2: #31353d;        /* raised dark surface */
+  --ink-3: #3e434c;        /* borders / hover on dark */
+
+  --gray-50: #f6f7f8;
+  --gray-100: #eceef0;
+  --gray-200: #dcdfe3;
+  --gray-300: #c2c6cc;
+  --gray-400: #9aa0a8;
+  --gray-500: #6f757e;
+  --gray-600: #4d525a;
+  --gray-700: #383c43;
+  --gray-800: #24272d;
+  --gray-900: #16181c;
+
+  /* Semantic — light surfaces */
+  --surface-page: var(--white);
+  --surface-card: var(--white);
+  --surface-sunken: var(--gray-50);
+  --surface-inverse: var(--ink);
+
+  --text-primary: #0a0a0a;
+  --text-secondary: var(--gray-600);
+  --text-muted: var(--gray-400);
+  --text-inverse: var(--white);
+  --text-inverse-secondary: rgba(255, 255, 255, 0.64);
+
+  --border-default: var(--gray-200);
+  --border-strong: var(--gray-900);
+  --border-inverse: rgba(255, 255, 255, 0.16);
+
+  --accent: #0a0a0a;             /* primary action = near-black */
+  --accent-hover: var(--ink);
+  --accent-contrast: var(--white);
+
+  /* Status (used sparingly; monochrome-first brand) */
+  --status-success: #1f7a4d;
+  --status-warning: #a86a12;
+  --status-danger: #b3261e;
+
+  --focus-ring: rgba(36, 39, 45, 0.35);
+}

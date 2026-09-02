@@ -1,0 +1,16 @@
+/* 鴻築 FP Decoration — base element styles */
+body {
+  font-family: var(--font-sans);
+  color: var(--text-body);
+  background: var(--surface-page);
+  line-height: var(--leading-normal);
+  letter-spacing: var(--tracking-normal);
+  margin: 0;
+}
+h1, h2, h3 {
+  color: var(--text-heading);
+  line-height: var(--leading-tight);
+}
+a { color: var(--link); text-decoration: none; transition: color var(--duration-fast) var(--ease-out); }
+a:hover { color: var(--link-hover); }
+::selection { background: var(--fp-accent); color: var(--fp-dark); }
