@@ -1,0 +1,54 @@
+<!-- @dsCard group="Components" viewport="700x400" name="Core" subtitle="Button, IconButton, Badge, Tag, Card" -->
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{padding:20px 24px;background:var(--surface-page)}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Button, IconButton, Badge, Tag, Card } = window.DesignSystem_c03e6e;
+const Row = ({children}) => <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap",marginBottom:14}}>{children}</div>;
+const X = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M18 6 6 18M6 6l12 12"/></svg>;
+const Search = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>;
+function Demo() {
+  return (
+    <div>
+      <Row>
+        <Button variant="primary">預約諮詢</Button>
+        <Button variant="secondary">查看作品</Button>
+        <Button variant="outline">瞭解更多</Button>
+        <Button variant="ghost">聯絡我們</Button>
+        <Button variant="primary" disabled>已送出</Button>
+      </Row>
+      <Row>
+        <Button size="sm" variant="outline">小按鈕</Button>
+        <Button size="lg" variant="primary" icon={<Search />}>搜尋作品</Button>
+        <IconButton label="搜尋" variant="outline"><Search /></IconButton>
+        <IconButton label="關閉" variant="ghost"><X /></IconButton>
+        <IconButton label="搜尋" variant="solid"><Search /></IconButton>
+      </Row>
+      <Row>
+        <Badge tone="brand">施工中</Badge>
+        <Badge tone="neutral">草案</Badge>
+        <Badge tone="accent">新案</Badge>
+        <Badge tone="success">已完工</Badge>
+        <Badge tone="warning">待確認</Badge>
+        <Badge tone="danger">逾期</Badge>
+        <Tag>現代簡約</Tag>
+        <Tag onRemove={() => {}}>老屋翻新</Tag>
+      </Row>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:14}}>
+        <Card padding={18}><b style={{color:"var(--text-heading)"}}>住宅設計</b><div style={{fontSize:13,color:"var(--text-muted)",marginTop:6}}>全屋規劃與工程統包</div></Card>
+        <Card padding={18} elevated><b style={{color:"var(--text-heading)"}}>商業空間</b><div style={{fontSize:13,color:"var(--text-muted)",marginTop:6}}>elevated — 懸停加深陰影</div></Card>
+        <Card padding={18} dark><b>老屋翻新</b><div style={{fontSize:13,color:"var(--text-on-dark-muted)",marginTop:6}}>dark surface</div></Card>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+</script>
+</body></html>

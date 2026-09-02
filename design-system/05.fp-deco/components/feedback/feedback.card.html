@@ -1,0 +1,37 @@
+<!-- @dsCard group="Components" viewport="700x400" name="Feedback & Navigation" subtitle="Tabs, Dialog, Toast, Tooltip" -->
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{padding:20px 24px;background:var(--surface-page)}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Tabs, Dialog, Toast, Tooltip, Button, IconButton } = window.DesignSystem_c03e6e;
+const Heart = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>;
+function Demo() {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:20}}>
+      <Tabs tabs={["全部", "住宅", "商業空間", "老屋翻新"]} />
+      <div style={{display:"flex",gap:14,flexWrap:"wrap"}}>
+        <Toast tone="success" title="已送出" onClose={() => {}}>我們將盡快與您聯繫。</Toast>
+        <Toast tone="danger" title="送出失敗">請檢查網路連線後重試。</Toast>
+      </div>
+      <div style={{display:"flex",gap:14,alignItems:"center"}}>
+        <Tooltip content="加入收藏"><IconButton label="加入收藏" variant="outline"><Heart /></IconButton></Tooltip>
+        <Button variant="outline" onClick={() => setOpen(true)}>開啟對話框</Button>
+      </div>
+      <Dialog open={open} onClose={() => setOpen(false)} title="預約諮詢"
+        footer={<React.Fragment><Button variant="ghost" onClick={() => setOpen(false)}>取消</Button><Button variant="primary" onClick={() => setOpen(false)}>送出</Button></React.Fragment>}>
+        留下您的聯絡方式，我們將於一個工作天內回覆。
+      </Dialog>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+</script>
+</body></html>

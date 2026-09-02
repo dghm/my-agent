@@ -1,0 +1,49 @@
+/* 鴻築 FP Decoration — color tokens */
+:root {
+  /* Base palette (from brand guidelines) */
+  --fp-primary: #272a4f;        /* 主色 Primary — deep navy (print: C91.5 M87.32 Y39.93 K26.88) */
+  --fp-secondary: #39559a;      /* 輔助色 Secondary — royal blue (print: C88.53 M74.36 Y8.93 K0.84) */
+  --fp-dark: #1d1f38;           /* Brand dark */
+  --fp-lite: #797fa8;           /* Brand lite */
+  --fp-accent: #c3c6dd;         /* Accent — pale periwinkle */
+  --fp-sky: #bde1f7;            /* Logo gradient endpoint — light sky */
+  --fp-gray: #aaaaaa;           /* Gray */
+  --fp-ink: #333333;            /* Text color */
+  --fp-paper: #fcfcfc;          /* Background */
+  --fp-white: #ffffff;
+
+  /* Semantic aliases */
+  --text-body: var(--fp-ink);
+  --text-heading: var(--fp-primary);
+  --text-muted: #777777;
+  --text-faint: var(--fp-gray);
+  --text-on-dark: #f2f3f8;
+  --text-on-dark-muted: var(--fp-accent);
+
+  --surface-page: var(--fp-paper);
+  --surface-card: var(--fp-white);
+  --surface-raised: var(--fp-white);
+  --surface-tint: #eef0f6;      /* accent-tinted panel */
+  --surface-dark: var(--fp-primary);
+  --surface-darker: var(--fp-dark);
+
+  --border-subtle: #e6e7ee;
+  --border-strong: var(--fp-accent);
+  --divider-on-dark: rgba(195, 198, 221, 0.25);
+
+  --link: var(--fp-secondary);
+  --link-hover: var(--fp-primary);
+  --focus-ring: rgba(57, 85, 154, 0.45);
+
+  /* Interaction states */
+  --btn-primary-bg: var(--fp-primary);
+  --btn-primary-bg-hover: var(--fp-dark);
+  --btn-secondary-bg: var(--fp-secondary);
+  --btn-secondary-bg-hover: #2e4680;
+
+  /* Semantic status (derived, harmonized with palette) */
+  --status-success: #2e7d5b;
+  --status-warning: #a8762a;
+  --status-danger: #a83a3a;
+  --status-info: var(--fp-secondary);
+}

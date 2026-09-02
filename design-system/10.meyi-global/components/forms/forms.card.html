@@ -1,0 +1,36 @@
+<!-- @dsCard group="Components" viewport="700x330" name="Forms" subtitle="Input, Select, Checkbox, Radio, Switch" -->
+<link rel="stylesheet" href="../../styles.css">
+<style>body{margin:0;font-family:var(--font-body);background:#fff}#root{padding:16px 20px}</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<div id="root"></div>
+<script type="text/babel">
+
+const { Input, Select, Checkbox, Radio, Switch } = window.MeyiGlobalDesignSystem_830a18;
+function Demo() {
+  const [v, setV] = React.useState('');
+  const [c, setC] = React.useState(true);
+  const [m, setM] = React.useState('air');
+  const [on, setOn] = React.useState(true);
+  return (
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px 24px',maxWidth:640}}>
+      <Input label="Email" placeholder="you@company.com" value={v} onChange={setV} hint="Business address preferred" />
+      <div style={{display:'flex',flexDirection:'column',gap:12}}>
+        <Select label="Region" placeholder="Choose…" options={['Asia Pacific','Europe','Americas']} />
+      </div>
+      <Input label="Company" error="Required" />
+      <div style={{display:'flex',flexDirection:'column',gap:10,paddingTop:4}}>
+        <Checkbox label="Subscribe to updates" checked={c} onChange={setC} />
+        <div style={{display:'flex',gap:16}}>
+          <Radio label="Air freight" checked={m==='air'} onChange={()=>setM('air')} />
+          <Radio label="Sea freight" checked={m==='sea'} onChange={()=>setM('sea')} />
+        </div>
+        <Switch label="Email notifications" checked={on} onChange={setOn} />
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>

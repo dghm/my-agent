@@ -4,3 +4,6 @@ data/
 
 # Local Netlify folder
 .netlify
+
+# Design system build output
+design-system/dist/
