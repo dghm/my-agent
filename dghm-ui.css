@@ -156,3 +156,36 @@ button.small  { padding: 4px 8px; font-size: 12px; }
 button.danger { border-color: #c0392b; background: #fff; color: #c0392b; }
 :root[data-theme="dark"] button.danger { background: var(--surface-input-bg); }
 button:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ---- Editor / preview split handle ---- */
+.split-handle {
+  flex: 0 0 7px;
+  position: relative;
+  z-index: 4;
+  margin: 0 -3px;
+  cursor: col-resize;
+  touch-action: none;
+  background: transparent;
+}
+.split-handle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 1px;
+  background: var(--surface-border);
+}
+.split-handle:hover::before,
+.split-handle.is-dragging::before {
+  left: 2px;
+  width: 3px;
+  background: var(--navy-text);
+}
+body.is-col-resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+body.is-col-resizing iframe {
+  pointer-events: none;
+}
