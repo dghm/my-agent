@@ -1,0 +1,28 @@
+/* DGHM spacing, radius, shadow, motion */
+:root {
+  /* Spacing scale (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  /* Corner radius */
+  --radius-sm: 6px;    /* 按鈕、標籤 */
+  --radius-md: 10px;   /* 卡片 */
+  --radius-lg: 16px;   /* 大區塊、彈窗 */
+  --radius-pill: 999px;
+
+  /* Shadows — 淺、冷色調，避免厚重 */
+  --shadow-card: 0 1px 3px rgba(13, 47, 110, 0.06), 0 4px 16px rgba(13, 47, 110, 0.07);
+  --shadow-raised: 0 8px 32px rgba(13, 47, 110, 0.14);
+
+  /* Motion */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1); /* @kind other */
+  --duration-fast: 150ms; /* @kind other */
+  --duration-normal: 250ms; /* @kind other */
+}

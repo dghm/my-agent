@@ -1,0 +1,14 @@
+/* Meyi Global — borders, shadows, motion */
+:root {
+  --border-w: 1px;
+  --border-w-strong: 2px;
+
+  /* Flat brand: shadows are subtle and reserved for overlays */
+  --shadow-card: none;
+  --shadow-raised: 0 1px 2px rgba(10, 10, 10, 0.06);
+  --shadow-overlay: 0 12px 40px rgba(10, 10, 10, 0.18);
+
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1); /* @kind other */
+  --duration-fast: 120ms; /* @kind other */
+  --duration-normal: 200ms; /* @kind other */
+}

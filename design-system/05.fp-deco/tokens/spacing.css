@@ -1,0 +1,29 @@
+/* 鴻築 FP Decoration — spacing, radius, shadow, motion tokens */
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  /* Corners: architectural, restrained */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-pill: 999px;
+
+  /* Shadows: soft, cool-tinted */
+  --shadow-sm: 0 1px 2px rgba(29, 31, 56, 0.08);
+  --shadow-md: 0 2px 8px rgba(29, 31, 56, 0.10);
+  --shadow-lg: 0 8px 24px rgba(29, 31, 56, 0.14);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1); /* @kind other */
+  --duration-fast: 120ms; /* @kind other */
+  --duration-base: 200ms; /* @kind other */
+  --duration-slow: 350ms; /* @kind other */
+}

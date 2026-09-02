@@ -1,0 +1,47 @@
+/* ============================================================
+   DGHM 萬能數維 Digi-HandyMan — Color tokens
+   Screen: RGB/HEX. Print: use CMYK / Pantone (noted per color).
+   ============================================================ */
+:root {
+  /* ---- Base palette 基礎色 ---- */
+  /* 深海軍藍 Deep Navy — CMYK 88/57/0/57 · PMS 2757 C */
+  --dghm-navy: #0D2F6E;
+  /* 暖橘 Warm Orange — CMYK 0/57/82/10 · PMS 7579 C */
+  --dghm-orange: #E5622A;
+  /* 海軍藍 Light — CMYK 89/54/0/42 · PMS 286 C */
+  --dghm-navy-light: #1A4494;
+  /* 深橘 Deep Orange (hover/press) */
+  --dghm-orange-deep: #C04E1E;
+  /* 深墨藍 Ink Navy — CMYK 40/35/0/82 · PMS Black 6 C */
+  --dghm-ink: #1A1E2E;
+  /* 石板灰 Slate Gray — CMYK 30/21/0/50 · PMS Cool Gray 9 C */
+  --dghm-slate: #5A6580;
+  /* 淡藍灰 Pale Blue-Gray — CMYK 3/2/0/2 · White / PMS 9441 C */
+  --dghm-pale: #F4F7FB;
+  /* 邊框淡藍灰 */
+  --dghm-line: #E8ECF5;
+  --dghm-white: #FFFFFF;
+
+  /* ---- Semantic aliases 語意色 ---- */
+  --surface-page: var(--dghm-white);
+  --surface-section: var(--dghm-pale);      /* 案例區塊、步驟區塊 */
+  --surface-brand: var(--dghm-navy);        /* Hero CTA、深色區塊、封面 */
+  --surface-accent: var(--dghm-orange);     /* 強調標籤、數據重點 */
+  --surface-card: var(--dghm-white);
+
+  --text-heading: var(--dghm-navy);
+  --text-body: var(--dghm-ink);
+  --text-secondary: var(--dghm-slate);
+  --text-on-brand: var(--dghm-white);       /* 深藍底上一律白字 */
+  --text-on-accent: var(--dghm-white);      /* 橘底上一律白字，禁用深藍字 */
+  --text-link: var(--dghm-navy-light);
+
+  --border-default: var(--dghm-line);
+  --border-strong: var(--dghm-slate);
+
+  --cta-bg: var(--dghm-orange);             /* CTA 一律橘底白字 */
+  --cta-bg-hover: var(--dghm-orange-deep);
+  --cta-text: var(--dghm-white);
+
+  --focus-ring: var(--dghm-navy-light);
+}
