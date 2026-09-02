@@ -32,10 +32,7 @@
     transition: border-color .12s ease, transform .12s ease;
   }
   .client-card:hover { border-color: var(--ink); transform: translateY(-2px); }
-  .logo-panel {
-    display: flex; align-items: center; justify-content: center;
-    height: 130px; background: #16181c; padding: 24px 32px;
-  }
+  .logo-panel { display: flex; align-items: center; justify-content: center; height: 130px; padding: 24px 32px; }
   .logo-panel img { max-width: 100%; max-height: 100%; }
   .logo-fallback { color: #fff; font-weight: 700; font-size: 20px; letter-spacing: 0.04em; }
   .chips { display: flex; height: 14px; }
@@ -45,47 +42,818 @@
   .client-dir { display: block; font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 1px; }
   .client-stats { display: block; font-size: 12.5px; color: var(--muted); margin-top: 8px; }
   .client-fonts { display: block; font-size: 12.5px; color: var(--muted); }
+
+  .back { display: inline-block; margin-bottom: 18px; color: var(--muted); text-decoration: none; font-size: 13px; }
+  .back:hover { color: var(--ink); }
+  .head { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; align-items: baseline; border-top: 2px solid var(--ink); padding-top: 20px; }
+  .dir { margin: 2px 0 0; color: var(--muted); font-size: 13px; font-family: var(--mono); }
+  .quick { display: flex; flex-wrap: wrap; gap: 6px; }
+  .quick a {
+    font-size: 12.5px; font-family: var(--mono); color: var(--ink); text-decoration: none;
+    border: 1px solid var(--border); background: #fff; border-radius: 4px; padding: 3px 9px;
+  }
+  .quick a:hover { border-color: var(--ink); }
+  .search {
+    width: 100%; max-width: 420px; margin: 20px 0 8px; padding: 9px 12px;
+    border: 1px solid var(--border); border-radius: 4px; font: inherit; background: #fff;
+  }
+  h3 { margin: 30px 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+  .grid, .screens { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .card {
+    display: block; background: #fff; border: 1px solid var(--border); border-radius: 4px;
+    overflow: hidden; text-decoration: none; color: inherit;
+  }
+  .card:hover { border-color: var(--ink); }
+  .card.hide, .screen.hide { display: none; }
+  .thumb { display: block; overflow: hidden; border-bottom: 1px solid var(--border); background: #fff; }
+  .thumb iframe { border: 0; transform-origin: top left; pointer-events: none; display: block; }
+  .card-meta { display: block; padding: 9px 12px; }
+  .card-name { display: block; font-weight: 600; font-size: 14px; }
+  .card-sub { display: block; color: var(--muted); font-size: 12.5px; }
+  .screen {
+    display: block; background: var(--ink); color: #fff; border-radius: 4px;
+    padding: 14px 16px; text-decoration: none;
+  }
+  .screen .card-sub { color: rgba(255,255,255,.65); }
+  .screen-name { display: block; font-weight: 600; font-size: 14px; }
 </style>
 </head>
 <body data-tool="design-system">
   <div id="tool-workspace" class="wrap">
-    <h1>客戶設計系統</h1>
-    <p class="subtitle">共 3 個系統，點卡片查看該客戶的品牌規範與元件</p>
-    <div class="dash">
+    <section class="view" id="view-dashboard">
+      <h1>客戶設計系統</h1>
+      <p class="subtitle">共 3 個系統，點卡片查看該客戶的品牌規範與元件</p>
+      <div class="dash">
 
-    <a class="client-card" href="design-system/05.fp-deco/index.html">
-      <span class="logo-panel" style="background:#272a4f"><img src="design-system/05.fp-deco/assets/logo-colorbg.svg" alt="鴻築室內裝修 (FP Decoration) Design System logo"></span>
-      <span class="chips"><span class="chip" style="background:#272a4f" title="--fp-primary #272a4f"></span><span class="chip" style="background:#39559a" title="--fp-secondary #39559a"></span><span class="chip" style="background:#1d1f38" title="--fp-dark #1d1f38"></span><span class="chip" style="background:#797fa8" title="--fp-lite #797fa8"></span><span class="chip" style="background:#c3c6dd" title="--fp-accent #c3c6dd"></span><span class="chip" style="background:#bde1f7" title="--fp-sky #bde1f7"></span><span class="chip" style="background:#aaaaaa" title="--fp-gray #aaaaaa"></span><span class="chip" style="background:#333333" title="--fp-ink #333333"></span></span>
-      <span class="client-info">
-        <span class="client-name">鴻築室內裝修 (FP Decoration) Design System</span>
-        <span class="client-dir">05.fp-deco/</span>
-        <span class="client-stats">14 components ・ 17 cards ・ 1 UI kit</span>
-        <span class="client-fonts">Noto Sans TC · Noto Serif TC</span>
-      </span>
-    </a>
+      <a class="client-card" href="#05.fp-deco">
+        <span class="logo-panel" style="background:#272a4f"><img src="design-system/05.fp-deco/assets/logo-colorbg.svg" alt="鴻築室內裝修 (FP Decoration) Design System logo"></span>
+        <span class="chips"><span class="chip" style="background:#272a4f" title="--fp-primary #272a4f"></span><span class="chip" style="background:#39559a" title="--fp-secondary #39559a"></span><span class="chip" style="background:#1d1f38" title="--fp-dark #1d1f38"></span><span class="chip" style="background:#797fa8" title="--fp-lite #797fa8"></span><span class="chip" style="background:#c3c6dd" title="--fp-accent #c3c6dd"></span><span class="chip" style="background:#bde1f7" title="--fp-sky #bde1f7"></span><span class="chip" style="background:#aaaaaa" title="--fp-gray #aaaaaa"></span><span class="chip" style="background:#333333" title="--fp-ink #333333"></span></span>
+        <span class="client-info">
+          <span class="client-name">鴻築室內裝修 (FP Decoration) Design System</span>
+          <span class="client-dir">05.fp-deco/</span>
+          <span class="client-stats">14 components ・ 17 cards ・ 1 UI kit</span>
+          <span class="client-fonts">Noto Sans TC · Noto Serif TC</span>
+        </span>
+      </a>
 
-    <a class="client-card" href="design-system/10.meyi-global/index.html">
-      <span class="logo-panel" style="background:#000000"><img src="design-system/10.meyi-global/assets/meyi-logo-white.svg" alt="Meyi Global Design System logo"></span>
-      <span class="chips"><span class="chip" style="background:#000000" title="--black #000000"></span><span class="chip" style="background:#ffffff" title="--white #ffffff"></span><span class="chip" style="background:#24272d" title="--ink #24272d"></span><span class="chip" style="background:#31353d" title="--ink-2 #31353d"></span><span class="chip" style="background:#3e434c" title="--ink-3 #3e434c"></span><span class="chip" style="background:#f6f7f8" title="--gray-50 #f6f7f8"></span><span class="chip" style="background:#eceef0" title="--gray-100 #eceef0"></span><span class="chip" style="background:#dcdfe3" title="--gray-200 #dcdfe3"></span></span>
-      <span class="client-info">
-        <span class="client-name">Meyi Global Design System</span>
-        <span class="client-dir">10.meyi-global/</span>
-        <span class="client-stats">14 components ・ 21 cards ・ 1 UI kit</span>
-        <span class="client-fonts">Archivo · IBM Plex Mono</span>
-      </span>
-    </a>
+      <a class="client-card" href="#10.meyi-global">
+        <span class="logo-panel" style="background:#000000"><img src="design-system/10.meyi-global/assets/meyi-logo-white.svg" alt="Meyi Global Design System logo"></span>
+        <span class="chips"><span class="chip" style="background:#000000" title="--black #000000"></span><span class="chip" style="background:#ffffff" title="--white #ffffff"></span><span class="chip" style="background:#24272d" title="--ink #24272d"></span><span class="chip" style="background:#31353d" title="--ink-2 #31353d"></span><span class="chip" style="background:#3e434c" title="--ink-3 #3e434c"></span><span class="chip" style="background:#f6f7f8" title="--gray-50 #f6f7f8"></span><span class="chip" style="background:#eceef0" title="--gray-100 #eceef0"></span><span class="chip" style="background:#dcdfe3" title="--gray-200 #dcdfe3"></span></span>
+        <span class="client-info">
+          <span class="client-name">Meyi Global Design System</span>
+          <span class="client-dir">10.meyi-global/</span>
+          <span class="client-stats">14 components ・ 21 cards ・ 1 UI kit</span>
+          <span class="client-fonts">Archivo · IBM Plex Mono</span>
+        </span>
+      </a>
 
-    <a class="client-card" href="design-system/33.dghm/index.html">
-      <span class="logo-panel" style="background:#0D2F6E"><img src="design-system/33.dghm/assets/dghm-logo-zhtw-dark.svg" alt="DGHM 萬能數維 Digi-HandyMan — Design System logo"></span>
-      <span class="chips"><span class="chip" style="background:#0D2F6E" title="--dghm-navy #0D2F6E"></span><span class="chip" style="background:#E5622A" title="--dghm-orange #E5622A"></span><span class="chip" style="background:#1A4494" title="--dghm-navy-light #1A4494"></span><span class="chip" style="background:#C04E1E" title="--dghm-orange-deep #C04E1E"></span><span class="chip" style="background:#1A1E2E" title="--dghm-ink #1A1E2E"></span><span class="chip" style="background:#5A6580" title="--dghm-slate #5A6580"></span><span class="chip" style="background:#F4F7FB" title="--dghm-pale #F4F7FB"></span><span class="chip" style="background:#E8ECF5" title="--dghm-line #E8ECF5"></span></span>
-      <span class="client-info">
-        <span class="client-name">DGHM 萬能數維 Digi-HandyMan — Design System</span>
-        <span class="client-dir">33.dghm/</span>
-        <span class="client-stats">9 components ・ 16 cards</span>
-        <span class="client-fonts">K2D</span>
-      </span>
-    </a>
-    </div>
+      <a class="client-card" href="#33.dghm">
+        <span class="logo-panel" style="background:#0D2F6E"><img src="design-system/33.dghm/assets/dghm-logo-zhtw-dark.svg" alt="DGHM 萬能數維 Digi-HandyMan — Design System logo"></span>
+        <span class="chips"><span class="chip" style="background:#0D2F6E" title="--dghm-navy #0D2F6E"></span><span class="chip" style="background:#E5622A" title="--dghm-orange #E5622A"></span><span class="chip" style="background:#1A4494" title="--dghm-navy-light #1A4494"></span><span class="chip" style="background:#C04E1E" title="--dghm-orange-deep #C04E1E"></span><span class="chip" style="background:#1A1E2E" title="--dghm-ink #1A1E2E"></span><span class="chip" style="background:#5A6580" title="--dghm-slate #5A6580"></span><span class="chip" style="background:#F4F7FB" title="--dghm-pale #F4F7FB"></span><span class="chip" style="background:#E8ECF5" title="--dghm-line #E8ECF5"></span></span>
+        <span class="client-info">
+          <span class="client-name">DGHM 萬能數維 Digi-HandyMan — Design System</span>
+          <span class="client-dir">33.dghm/</span>
+          <span class="client-stats">9 components ・ 16 cards</span>
+          <span class="client-fonts">K2D</span>
+        </span>
+      </a>
+      </div>
+    </section>
+
+    <section class="view" id="view-05.fp-deco" hidden>
+      <a class="back" href="#">← 所有設計系統</a>
+      <header class="head">
+        <div>
+          <h1>鴻築室內裝修 (FP Decoration) Design System</h1>
+          <p class="dir">design-system/05.fp-deco/</p>
+        </div>
+        <nav class="quick">
+          <a href="design-system/05.fp-deco/readme.md" target="_blank" rel="noopener">README</a>
+          <a href="design-system/05.fp-deco/SKILL.md" target="_blank" rel="noopener">SKILL.md</a>
+          <a href="design-system/05.fp-deco/styles.css" target="_blank" rel="noopener">styles.css</a>
+          <a href="design-system/05.fp-deco/tokens/" target="_blank" rel="noopener">tokens/</a>
+          <a href="design-system/05.fp-deco/components/" target="_blank" rel="noopener">components/</a>
+        </nav>
+      </header>
+      <input class="search" type="search" placeholder="搜尋卡片（例如 button、color、type…）">
+
+      <h3>UI Kits</h3>
+      <div class="screens">
+        <a class="screen" href="design-system/05.fp-deco/ui_kits/website/index.html" target="_blank" rel="noopener"
+           data-name="website Concept site — home, portfolio, contact (clickable)">
+          <span class="screen-name">website</span>
+          <span class="card-sub">Concept site — home, portfolio, contact (clickable)</span>
+        </a>
+      </div>
+
+      <h3>Brand</h3>
+      <div class="grid">
+        <a class="card" href="design-system/05.fp-deco/guidelines/brand-logo.html" target="_blank" rel="noopener"
+           data-name="Logo Brand Full color · monotone · reversed on navy">
+          <span class="thumb" style="height:87px">
+            <iframe src="design-system/05.fp-deco/guidelines/brand-logo.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:180px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Logo</span>
+            <span class="card-sub">Full color · monotone · reversed on navy</span>
+          </span>
+        </a>
+      </div>
+
+      <h3>Colors</h3>
+      <div class="grid">
+        <a class="card" href="design-system/05.fp-deco/guidelines/colors-primary.html" target="_blank" rel="noopener"
+           data-name="Primary Colors Primary">
+          <span class="thumb" style="height:78px">
+            <iframe src="design-system/05.fp-deco/guidelines/colors-primary.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:160px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Primary</span>
+            <span class="card-sub">Primary</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/05.fp-deco/guidelines/colors-secondary.html" target="_blank" rel="noopener"
+           data-name="Secondary Colors Secondary">
+          <span class="thumb" style="height:78px">
+            <iframe src="design-system/05.fp-deco/guidelines/colors-secondary.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:160px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Secondary</span>
+            <span class="card-sub">Secondary</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/05.fp-deco/guidelines/colors-neutrals.html" target="_blank" rel="noopener"
+           data-name="Neutrals &amp; Accents Colors Neutrals &amp; accents">
+          <span class="thumb" style="height:78px">
+            <iframe src="design-system/05.fp-deco/guidelines/colors-neutrals.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:160px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Neutrals &amp; Accents</span>
+            <span class="card-sub">Neutrals &amp; accents</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/05.fp-deco/guidelines/colors-print.html" target="_blank" rel="noopener"
+           data-name="Print CMYK Colors Print CMYK">
+          <span class="thumb" style="height:78px">
+            <iframe src="design-system/05.fp-deco/guidelines/colors-print.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:160px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Print CMYK</span>
+            <span class="card-sub">Print CMYK</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/05.fp-deco/guidelines/colors-status.html" target="_blank" rel="noopener"
+           data-name="Semantic Status Colors Semantic status">
+          <span class="thumb" style="height:78px">
+            <iframe src="design-system/05.fp-deco/guidelines/colors-status.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:160px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Semantic Status</span>
+            <span class="card-sub">Semantic status</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/05.fp-deco/guidelines/colors-scale.html" target="_blank" rel="noopener"
+           data-name="Color Scale Colors Primary → Secondary">
+          <span class="thumb" style="height:78px">
+            <iframe src="design-system/05.fp-deco/guidelines/colors-scale.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:160px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Color Scale</span>
+            <span class="card-sub">Primary → Secondary</span>
+          </span>
+        </a>
+      </div>
+
+      <h3>Components</h3>
+      <div class="grid">
+        <a class="card" href="design-system/05.fp-deco/components/core/core.card.html" target="_blank" rel="noopener"
+           data-name="Core Components Button, IconButton, Badge, Tag, Card">
+          <span class="thumb" style="height:180px">
+            <iframe src="design-system/05.fp-deco/components/core/core.card.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:400px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Core</span>
+            <span class="card-sub">Button, IconButton, Badge, Tag, Card</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/05.fp-deco/components/feedback/feedback.card.html" target="_blank" rel="noopener"
+           data-name="Feedback &amp; Navigation Components Tabs, Dialog, Toast, Tooltip">
+          <span class="thumb" style="height:180px">
+            <iframe src="design-system/05.fp-deco/components/feedback/feedback.card.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:400px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Feedback &amp; Navigation</span>
+            <span class="card-sub">Tabs, Dialog, Toast, Tooltip</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/05.fp-deco/components/forms/forms.card.html" target="_blank" rel="noopener"
+           data-name="Forms Components Input, Select, Checkbox, Radio, Switch">
+          <span class="thumb" style="height:180px">
+            <iframe src="design-system/05.fp-deco/components/forms/forms.card.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:420px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Forms</span>
+            <span class="card-sub">Input, Select, Checkbox, Radio, Switch</span>
+          </span>
+        </a>
+      </div>
+
+      <h3>Spacing</h3>
+      <div class="grid">
+        <a class="card" href="design-system/05.fp-deco/guidelines/spacing-radius-shadow.html" target="_blank" rel="noopener"
+           data-name="Radius &amp; Shadow Spacing 2/4/8px corners · cool navy shadows">
+          <span class="thumb" style="height:80px">
+            <iframe src="design-system/05.fp-deco/guidelines/spacing-radius-shadow.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:150px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Radius &amp; Shadow</span>
+            <span class="card-sub">2/4/8px corners · cool navy shadows</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/05.fp-deco/guidelines/spacing-scale.html" target="_blank" rel="noopener"
+           data-name="Spacing Scale Spacing 4px base — --space-1 … --space-9">
+          <span class="thumb" style="height:80px">
+            <iframe src="design-system/05.fp-deco/guidelines/spacing-scale.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:150px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Spacing Scale</span>
+            <span class="card-sub">4px base — --space-1 … --space-9</span>
+          </span>
+        </a>
+      </div>
+
+      <h3>Type</h3>
+      <div class="grid">
+        <a class="card" href="design-system/05.fp-deco/guidelines/type-body.html" target="_blank" rel="noopener"
+           data-name="Body Sans Type Noto Sans TC — UI and paragraph text">
+          <span class="thumb" style="height:112px">
+            <iframe src="design-system/05.fp-deco/guidelines/type-body.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:180px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Body Sans</span>
+            <span class="card-sub">Noto Sans TC — UI and paragraph text</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/05.fp-deco/guidelines/type-display.html" target="_blank" rel="noopener"
+           data-name="Display Serif Type Noto Serif TC — headings, wide tracking">
+          <span class="thumb" style="height:112px">
+            <iframe src="design-system/05.fp-deco/guidelines/type-display.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:170px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Display Serif</span>
+            <span class="card-sub">Noto Serif TC — headings, wide tracking</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/05.fp-deco/guidelines/type-eyebrow.html" target="_blank" rel="noopener"
+           data-name="Eyebrow Labels Type ALL-CAPS English labels, wide tracking">
+          <span class="thumb" style="height:112px">
+            <iframe src="design-system/05.fp-deco/guidelines/type-eyebrow.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:130px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Eyebrow Labels</span>
+            <span class="card-sub">ALL-CAPS English labels, wide tracking</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/05.fp-deco/guidelines/type-scale.html" target="_blank" rel="noopener"
+           data-name="Type Scale Type 12 → 48px tokens">
+          <span class="thumb" style="height:112px">
+            <iframe src="design-system/05.fp-deco/guidelines/type-scale.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:230px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Type Scale</span>
+            <span class="card-sub">12 → 48px tokens</span>
+          </span>
+        </a>
+      </div>
+
+      <h3>Website</h3>
+      <div class="grid">
+        <a class="card" href="design-system/05.fp-deco/ui_kits/website/index.html" target="_blank" rel="noopener"
+           data-name="Marketing Site (Sample) Website Concept site — home, portfolio, contact (clickable)">
+          <span class="thumb" style="height:210px">
+            <iframe src="design-system/05.fp-deco/ui_kits/website/index.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:1280px;height:760px;transform:scale(0.2656)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Marketing Site (Sample)</span>
+            <span class="card-sub">Concept site — home, portfolio, contact (clickable)</span>
+          </span>
+        </a>
+      </div>
+    </section>
+
+    <section class="view" id="view-10.meyi-global" hidden>
+      <a class="back" href="#">← 所有設計系統</a>
+      <header class="head">
+        <div>
+          <h1>Meyi Global Design System</h1>
+          <p class="dir">design-system/10.meyi-global/</p>
+        </div>
+        <nav class="quick">
+          <a href="design-system/10.meyi-global/readme.md" target="_blank" rel="noopener">README</a>
+          <a href="design-system/10.meyi-global/SKILL.md" target="_blank" rel="noopener">SKILL.md</a>
+          <a href="design-system/10.meyi-global/styles.css" target="_blank" rel="noopener">styles.css</a>
+          <a href="design-system/10.meyi-global/tokens/" target="_blank" rel="noopener">tokens/</a>
+          <a href="design-system/10.meyi-global/components/" target="_blank" rel="noopener">components/</a>
+        </nav>
+      </header>
+      <input class="search" type="search" placeholder="搜尋卡片（例如 button、color、type…）">
+
+      <h3>UI Kits</h3>
+      <div class="screens">
+        <a class="screen" href="design-system/10.meyi-global/ui_kits/website/index.html" target="_blank" rel="noopener"
+           data-name="website Corporate marketing site — home, services, contact">
+          <span class="screen-name">website</span>
+          <span class="card-sub">Corporate marketing site — home, services, contact</span>
+        </a>
+      </div>
+
+      <h3>Brand</h3>
+      <div class="grid">
+        <a class="card" href="design-system/10.meyi-global/guidelines/brand-logo.html" target="_blank" rel="noopener"
+           data-name="Logo Brand Full lockup — white on dark, black on light">
+          <span class="thumb" style="height:87px">
+            <iframe src="design-system/10.meyi-global/guidelines/brand-logo.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:180px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Logo</span>
+            <span class="card-sub">Full lockup — white on dark, black on light</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/10.meyi-global/guidelines/brand-mark.html" target="_blank" rel="noopener"
+           data-name="Mark Brand M monogram — app icons, favicons, small lockups">
+          <span class="thumb" style="height:87px">
+            <iframe src="design-system/10.meyi-global/guidelines/brand-mark.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:180px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Mark</span>
+            <span class="card-sub">M monogram — app icons, favicons, small lockups</span>
+          </span>
+        </a>
+      </div>
+
+      <h3>Colors</h3>
+      <div class="grid">
+        <a class="card" href="design-system/10.meyi-global/guidelines/colors-primary.html" target="_blank" rel="noopener"
+           data-name="Primary Colors Primary">
+          <span class="thumb" style="height:78px">
+            <iframe src="design-system/10.meyi-global/guidelines/colors-primary.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:160px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Primary</span>
+            <span class="card-sub">Primary</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/10.meyi-global/guidelines/colors-secondary.html" target="_blank" rel="noopener"
+           data-name="Secondary Colors Secondary">
+          <span class="thumb" style="height:78px">
+            <iframe src="design-system/10.meyi-global/guidelines/colors-secondary.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:160px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Secondary</span>
+            <span class="card-sub">Secondary</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/10.meyi-global/guidelines/colors-neutrals.html" target="_blank" rel="noopener"
+           data-name="Neutrals &amp; Accents Colors Neutrals &amp; accents">
+          <span class="thumb" style="height:78px">
+            <iframe src="design-system/10.meyi-global/guidelines/colors-neutrals.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:160px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Neutrals &amp; Accents</span>
+            <span class="card-sub">Neutrals &amp; accents</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/10.meyi-global/guidelines/colors-print.html" target="_blank" rel="noopener"
+           data-name="Print CMYK Colors Print CMYK">
+          <span class="thumb" style="height:78px">
+            <iframe src="design-system/10.meyi-global/guidelines/colors-print.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:160px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Print CMYK</span>
+            <span class="card-sub">Print CMYK</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/10.meyi-global/guidelines/colors-status.html" target="_blank" rel="noopener"
+           data-name="Semantic Status Colors Semantic status">
+          <span class="thumb" style="height:78px">
+            <iframe src="design-system/10.meyi-global/guidelines/colors-status.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:160px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Semantic Status</span>
+            <span class="card-sub">Semantic status</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/10.meyi-global/guidelines/colors-scale.html" target="_blank" rel="noopener"
+           data-name="Color Scale Colors Primary → Secondary">
+          <span class="thumb" style="height:78px">
+            <iframe src="design-system/10.meyi-global/guidelines/colors-scale.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:160px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Color Scale</span>
+            <span class="card-sub">Primary → Secondary</span>
+          </span>
+        </a>
+      </div>
+
+      <h3>Components</h3>
+      <div class="grid">
+        <a class="card" href="design-system/10.meyi-global/components/actions/actions.card.html" target="_blank" rel="noopener"
+           data-name="Actions Components Button, IconButton — variants and sizes">
+          <span class="thumb" style="height:180px">
+            <iframe src="design-system/10.meyi-global/components/actions/actions.card.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:200px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Actions</span>
+            <span class="card-sub">Button, IconButton — variants and sizes</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/10.meyi-global/components/display/display.card.html" target="_blank" rel="noopener"
+           data-name="Display Components Card, Badge, Tag">
+          <span class="thumb" style="height:180px">
+            <iframe src="design-system/10.meyi-global/components/display/display.card.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:280px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Display</span>
+            <span class="card-sub">Card, Badge, Tag</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/10.meyi-global/components/feedback/feedback.card.html" target="_blank" rel="noopener"
+           data-name="Feedback Components Dialog, Toast, Tooltip">
+          <span class="thumb" style="height:180px">
+            <iframe src="design-system/10.meyi-global/components/feedback/feedback.card.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:260px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Feedback</span>
+            <span class="card-sub">Dialog, Toast, Tooltip</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/10.meyi-global/components/forms/forms.card.html" target="_blank" rel="noopener"
+           data-name="Forms Components Input, Select, Checkbox, Radio, Switch">
+          <span class="thumb" style="height:180px">
+            <iframe src="design-system/10.meyi-global/components/forms/forms.card.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:330px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Forms</span>
+            <span class="card-sub">Input, Select, Checkbox, Radio, Switch</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/10.meyi-global/components/navigation/navigation.card.html" target="_blank" rel="noopener"
+           data-name="Navigation Components Tabs — underline style">
+          <span class="thumb" style="height:180px">
+            <iframe src="design-system/10.meyi-global/components/navigation/navigation.card.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:120px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Navigation</span>
+            <span class="card-sub">Tabs — underline style</span>
+          </span>
+        </a>
+      </div>
+
+      <h3>Spacing</h3>
+      <div class="grid">
+        <a class="card" href="design-system/10.meyi-global/guidelines/effects-borders.html" target="_blank" rel="noopener"
+           data-name="Borders &amp; Shadows Spacing Flat cards defined by borders; shadow only on overlays">
+          <span class="thumb" style="height:80px">
+            <iframe src="design-system/10.meyi-global/guidelines/effects-borders.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:150px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Borders &amp; Shadows</span>
+            <span class="card-sub">Flat cards defined by borders; shadow only on overlays</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/10.meyi-global/guidelines/spacing-radii.html" target="_blank" rel="noopener"
+           data-name="Corner Radii Spacing Near-square; pill reserved for badges">
+          <span class="thumb" style="height:80px">
+            <iframe src="design-system/10.meyi-global/guidelines/spacing-radii.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:140px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Corner Radii</span>
+            <span class="card-sub">Near-square; pill reserved for badges</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/10.meyi-global/guidelines/spacing-tokens.html" target="_blank" rel="noopener"
+           data-name="Spacing Scale Spacing 4-based, 4–96px">
+          <span class="thumb" style="height:80px">
+            <iframe src="design-system/10.meyi-global/guidelines/spacing-tokens.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:150px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Spacing Scale</span>
+            <span class="card-sub">4-based, 4–96px</span>
+          </span>
+        </a>
+      </div>
+
+      <h3>Type</h3>
+      <div class="grid">
+        <a class="card" href="design-system/10.meyi-global/guidelines/type-body.html" target="_blank" rel="noopener"
+           data-name="Body Type Archivo / Noto Sans TC, 15px base">
+          <span class="thumb" style="height:112px">
+            <iframe src="design-system/10.meyi-global/guidelines/type-body.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:160px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Body</span>
+            <span class="card-sub">Archivo / Noto Sans TC, 15px base</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/10.meyi-global/guidelines/type-display.html" target="_blank" rel="noopener"
+           data-name="Display Type Archivo 600–800, tight tracking — font substitution, see readme">
+          <span class="thumb" style="height:112px">
+            <iframe src="design-system/10.meyi-global/guidelines/type-display.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:170px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Display</span>
+            <span class="card-sub">Archivo 600–800, tight tracking — font substitution, see readme</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/10.meyi-global/guidelines/type-eyebrow-mono.html" target="_blank" rel="noopener"
+           data-name="Eyebrow &amp; Mono Type Uppercase labels and numeric accents">
+          <span class="thumb" style="height:112px">
+            <iframe src="design-system/10.meyi-global/guidelines/type-eyebrow-mono.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:130px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Eyebrow &amp; Mono</span>
+            <span class="card-sub">Uppercase labels and numeric accents</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/10.meyi-global/guidelines/type-scale.html" target="_blank" rel="noopener"
+           data-name="Type Scale Type 12–64px token ladder">
+          <span class="thumb" style="height:112px">
+            <iframe src="design-system/10.meyi-global/guidelines/type-scale.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:260px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Type Scale</span>
+            <span class="card-sub">12–64px token ladder</span>
+          </span>
+        </a>
+      </div>
+
+      <h3>Website</h3>
+      <div class="grid">
+        <a class="card" href="design-system/10.meyi-global/ui_kits/website/index.html" target="_blank" rel="noopener"
+           data-name="Corporate Website Website Modelled marketing site — home, services, contact">
+          <span class="thumb" style="height:210px">
+            <iframe src="design-system/10.meyi-global/ui_kits/website/index.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:1280px;height:800px;transform:scale(0.2656)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Corporate Website</span>
+            <span class="card-sub">Modelled marketing site — home, services, contact</span>
+          </span>
+        </a>
+      </div>
+    </section>
+
+    <section class="view" id="view-33.dghm" hidden>
+      <a class="back" href="#">← 所有設計系統</a>
+      <header class="head">
+        <div>
+          <h1>DGHM 萬能數維 Digi-HandyMan — Design System</h1>
+          <p class="dir">design-system/33.dghm/</p>
+        </div>
+        <nav class="quick">
+          <a href="design-system/33.dghm/readme.md" target="_blank" rel="noopener">README</a>
+          <a href="design-system/33.dghm/SKILL.md" target="_blank" rel="noopener">SKILL.md</a>
+          <a href="design-system/33.dghm/styles.css" target="_blank" rel="noopener">styles.css</a>
+          <a href="design-system/33.dghm/tokens/" target="_blank" rel="noopener">tokens/</a>
+          <a href="design-system/33.dghm/components/" target="_blank" rel="noopener">components/</a>
+        </nav>
+      </header>
+      <input class="search" type="search" placeholder="搜尋卡片（例如 button、color、type…）">
+
+
+      <h3>Brand</h3>
+      <div class="grid">
+        <a class="card" href="design-system/33.dghm/guidelines/logo-color.html" target="_blank" rel="noopener"
+           data-name="Logo — 標準三色 Brand 中英雙語 Logo,淺色底使用">
+          <span class="thumb" style="height:87px">
+            <iframe src="design-system/33.dghm/guidelines/logo-color.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:180px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Logo — 標準三色</span>
+            <span class="card-sub">中英雙語 Logo,淺色底使用</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/33.dghm/guidelines/logo-dark.html" target="_blank" rel="noopener"
+           data-name="Logo — 深色底 Brand 深藍/深色背景使用 in-Dark-BGC 版本">
+          <span class="thumb" style="height:87px">
+            <iframe src="design-system/33.dghm/guidelines/logo-dark.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:180px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Logo — 深色底</span>
+            <span class="card-sub">深藍/深色背景使用 in-Dark-BGC 版本</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/33.dghm/guidelines/mark.html" target="_blank" rel="noopener"
+           data-name="Mark Brand 單獨圖標 — favicon、社群頭像、小尺寸場景">
+          <span class="thumb" style="height:87px">
+            <iframe src="design-system/33.dghm/guidelines/mark.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:180px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Mark</span>
+            <span class="card-sub">單獨圖標 — favicon、社群頭像、小尺寸場景</span>
+          </span>
+        </a>
+      </div>
+
+      <h3>Colors</h3>
+      <div class="grid">
+        <a class="card" href="design-system/33.dghm/guidelines/colors-primary.html" target="_blank" rel="noopener"
+           data-name="Primary Colors Primary">
+          <span class="thumb" style="height:78px">
+            <iframe src="design-system/33.dghm/guidelines/colors-primary.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:160px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Primary</span>
+            <span class="card-sub">Primary</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/33.dghm/guidelines/colors-secondary.html" target="_blank" rel="noopener"
+           data-name="Secondary Colors Secondary">
+          <span class="thumb" style="height:78px">
+            <iframe src="design-system/33.dghm/guidelines/colors-secondary.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:160px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Secondary</span>
+            <span class="card-sub">Secondary</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/33.dghm/guidelines/colors-neutrals.html" target="_blank" rel="noopener"
+           data-name="Neutrals &amp; Accents Colors Neutrals &amp; accents">
+          <span class="thumb" style="height:78px">
+            <iframe src="design-system/33.dghm/guidelines/colors-neutrals.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:160px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Neutrals &amp; Accents</span>
+            <span class="card-sub">Neutrals &amp; accents</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/33.dghm/guidelines/colors-print.html" target="_blank" rel="noopener"
+           data-name="Print CMYK Colors Print CMYK">
+          <span class="thumb" style="height:78px">
+            <iframe src="design-system/33.dghm/guidelines/colors-print.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:160px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Print CMYK</span>
+            <span class="card-sub">Print CMYK</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/33.dghm/guidelines/colors-status.html" target="_blank" rel="noopener"
+           data-name="Semantic Status Colors Semantic status">
+          <span class="thumb" style="height:78px">
+            <iframe src="design-system/33.dghm/guidelines/colors-status.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:160px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Semantic Status</span>
+            <span class="card-sub">Semantic status</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/33.dghm/guidelines/colors-scale.html" target="_blank" rel="noopener"
+           data-name="Color Scale Colors Primary → Secondary">
+          <span class="thumb" style="height:78px">
+            <iframe src="design-system/33.dghm/guidelines/colors-scale.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:160px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Color Scale</span>
+            <span class="card-sub">Primary → Secondary</span>
+          </span>
+        </a>
+      </div>
+
+      <h3>Components</h3>
+      <div class="grid">
+        <a class="card" href="design-system/33.dghm/components/actions/buttons.card.html" target="_blank" rel="noopener"
+           data-name="Button Components primary 橘 CTA · secondary 深藍 · outline · ghost">
+          <span class="thumb" style="height:180px">
+            <iframe src="design-system/33.dghm/components/actions/buttons.card.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:170px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Button</span>
+            <span class="card-sub">primary 橘 CTA · secondary 深藍 · outline · ghost</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/33.dghm/components/display/display.card.html" target="_blank" rel="noopener"
+           data-name="Display Components Card · Tag · Stat · SectionHeader · PhaseStep">
+          <span class="thumb" style="height:180px">
+            <iframe src="design-system/33.dghm/components/display/display.card.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:330px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Display</span>
+            <span class="card-sub">Card · Tag · Stat · SectionHeader · PhaseStep</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/33.dghm/components/forms/forms.card.html" target="_blank" rel="noopener"
+           data-name="Forms Components Input · Select · Checkbox — 諮詢/預約表單元件">
+          <span class="thumb" style="height:180px">
+            <iframe src="design-system/33.dghm/components/forms/forms.card.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:230px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">Forms</span>
+            <span class="card-sub">Input · Select · Checkbox — 諮詢/預約表單元件</span>
+          </span>
+        </a>
+      </div>
+
+      <h3>Spacing</h3>
+      <div class="grid">
+        <a class="card" href="design-system/33.dghm/guidelines/spacing-radius.html" target="_blank" rel="noopener"
+           data-name="間距與圓角 Spacing &amp; Radius Spacing 4px 基準 · 圓角 6/10/16">
+          <span class="thumb" style="height:80px">
+            <iframe src="design-system/33.dghm/guidelines/spacing-radius.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:160px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">間距與圓角 Spacing &amp; Radius</span>
+            <span class="card-sub">4px 基準 · 圓角 6/10/16</span>
+          </span>
+        </a>
+      </div>
+
+      <h3>Type</h3>
+      <div class="grid">
+        <a class="card" href="design-system/33.dghm/guidelines/type-body.html" target="_blank" rel="noopener"
+           data-name="內文字 Body &amp; Weights Type 16px 內文 · 1.6 行高 · 六級字重">
+          <span class="thumb" style="height:112px">
+            <iframe src="design-system/33.dghm/guidelines/type-body.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:220px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">內文字 Body &amp; Weights</span>
+            <span class="card-sub">16px 內文 · 1.6 行高 · 六級字重</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/33.dghm/guidelines/type-display.html" target="_blank" rel="noopener"
+           data-name="標題字 Display — K2D Type 品牌字體 K2D,中英混排,搭配 Noto Sans TC 繁中備援">
+          <span class="thumb" style="height:112px">
+            <iframe src="design-system/33.dghm/guidelines/type-display.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:180px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">標題字 Display — K2D</span>
+            <span class="card-sub">品牌字體 K2D,中英混排,搭配 Noto Sans TC 繁中備援</span>
+          </span>
+        </a>
+        <a class="card" href="design-system/33.dghm/guidelines/type-scale.html" target="_blank" rel="noopener"
+           data-name="字級系統 Type Scale Type Display 56 → Caption 12">
+          <span class="thumb" style="height:112px">
+            <iframe src="design-system/33.dghm/guidelines/type-scale.html" loading="lazy" tabindex="-1" scrolling="no"
+                    style="width:700px;height:180px;transform:scale(0.4857)"></iframe>
+          </span>
+          <span class="card-meta">
+            <span class="card-name">字級系統 Type Scale</span>
+            <span class="card-sub">Display 56 → Caption 12</span>
+          </span>
+        </a>
+      </div>
+    </section>
     <footer>
       本頁由 <code>node design-system/scripts/build-index.mjs</code> 產生。
       新增客戶資料夾（含 <code>_ds_manifest.json</code>）到 <code>design-system/</code> 後重跑即可更新。
@@ -96,5 +864,28 @@
 <script src="app-shell.js"></script>
 <script>mountAppShell({ activeTool: 'design-system' });</script>
 <script src="dghm-ui.js"></script>
+<script>
+  // Views swap in place so the app shell around them never reloads.
+  var views = document.querySelectorAll('.view');
+  function route() {
+    var id = decodeURIComponent(location.hash.slice(1));
+    var target = document.getElementById('view-' + id) || document.getElementById('view-dashboard');
+    for (var i = 0; i < views.length; i += 1) views[i].hidden = views[i] !== target;
+    var workspace = document.getElementById('tool-workspace');
+    if (workspace) workspace.scrollTop = 0;
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', route);
+  route();
+
+  Array.prototype.forEach.call(document.querySelectorAll('.search'), function (box) {
+    box.addEventListener('input', function () {
+      var term = box.value.trim().toLowerCase();
+      Array.prototype.forEach.call(box.closest('.view').querySelectorAll('.card'), function (el) {
+        el.classList.toggle('hide', !!term && el.dataset.name.toLowerCase().indexOf(term) === -1);
+      });
+    });
+  });
+</script>
 </body>
 </html>
