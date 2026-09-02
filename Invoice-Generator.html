@@ -895,10 +895,9 @@ function applyDraft(draft) {
 document.getElementById('save-draft-btn').addEventListener('click', function () {
   var draft = collectDraft();
   var blob = new Blob([JSON.stringify(draft, null, 2)], { type: 'application/json;charset=utf-8' });
-  var invNo = v('f_inv_no') || 'draft';
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = invNo + '-草稿.json';
+  a.download = invoiceExportBasename() + '.json';
   a.click();
 });
 
