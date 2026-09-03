@@ -7,6 +7,37 @@
   --shell-sidebar-width:     264px;
   --shell-sidebar-collapsed:  64px;
   --shell-topbar-height:      62px;
+
+  /* ---- 外框配色 ----
+     側欄與頂列採品牌深海軍藍（--dghm-navy），內容區維持淺色。
+     選取項目為橘底白字：依 design-system/33.dghm/tokens/colors.css
+     的 --text-on-accent「橘底上一律白字，禁用深藍字」。 */
+  --chrome-bg:           #0D2F6E;
+  --chrome-text:         #FFFFFF;
+  --chrome-text-muted:   rgba(255, 255, 255, .72);
+  --chrome-text-faint:   rgba(255, 255, 255, .50);
+  --chrome-hover:        rgba(255, 255, 255, .10);
+  --chrome-border:       rgba(255, 255, 255, .14);
+  --chrome-field-bg:     rgba(255, 255, 255, .10);
+  --chrome-focus-ring:   rgba(229, 98, 42, .38);
+  --chrome-active-bg:    #E5622A;
+  --chrome-active-text:  #FFFFFF;
+  --chrome-active-hover: #C04E1E;
+}
+
+/* 夜覽：內容區底色已近黑（#161b22），外框若再壓深會與內容糊成一片，
+   因此改採介於 --dghm-navy 與 --dghm-navy-light 之間的中階海軍藍，
+   與內容區維持約 1.5:1 的亮度階差，保留品牌識別又不刺眼；
+   橘色維持品牌原色，選取範圍面積小，不需降彩度。 */
+:root[data-theme="dark"] {
+  --chrome-bg:           #1A3968;
+  --chrome-text:         #E8EDF6;
+  --chrome-text-muted:   rgba(232, 237, 246, .62);
+  --chrome-text-faint:   rgba(232, 237, 246, .42);
+  --chrome-hover:        rgba(255, 255, 255, .07);
+  --chrome-border:       rgba(255, 255, 255, .09);
+  --chrome-field-bg:     rgba(0, 0, 0, .22);
+  --chrome-focus-ring:   rgba(229, 98, 42, .32);
 }
 
 body.has-app-shell {
@@ -34,8 +65,7 @@ body.has-app-shell {
   min-width: 0;
   padding: 14px 12px;
   overflow: hidden;
-  border-right: 1px solid var(--surface-border);
-  background: var(--surface-panel-bg);
+  background: var(--chrome-bg);
 }
 
 .dghm-brand {
@@ -43,19 +73,22 @@ body.has-app-shell {
   align-items: center;
   gap: 10px;
   padding: 6px 8px 14px;
-  color: var(--surface-text);
+  color: var(--chrome-text);
   text-decoration: none;
 }
 
+/* 標誌本身是深藍底，需描邊才能在同色側欄上讀出方塊邊界 */
 .dghm-brand img {
   display: block;
   flex-shrink: 0;
   width: 32px;
   height: 32px;
+  border-radius: 7px;
+  box-shadow: 0 0 0 1px var(--chrome-border);
 }
 
 .dghm-brand-text strong { display: block; font-size: 14px; }
-.dghm-brand-text span   { display: block; color: var(--surface-text-muted); font-size: 11px; }
+.dghm-brand-text span   { display: block; color: var(--chrome-text-faint); font-size: 11px; }
 
 .dghm-search { position: relative; margin-bottom: 12px; }
 
@@ -65,17 +98,18 @@ body.has-app-shell {
   padding: 8px 10px 8px 30px;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  background: var(--surface-bg);
-  color: var(--surface-text);
+  background: var(--chrome-field-bg);
+  color: var(--chrome-text);
   font: inherit;
   font-size: 13px;
 }
 
+.dghm-search input::placeholder { color: var(--chrome-text-faint); }
+
 .dghm-search input:focus {
   outline: none;
-  border-color: var(--navy-text);
-  background: var(--surface-input-bg);
-  box-shadow: 0 0 0 3px var(--focus-ring);
+  border-color: var(--chrome-active-bg);
+  box-shadow: 0 0 0 3px var(--chrome-focus-ring);
 }
 
 .dghm-search svg {
@@ -86,7 +120,7 @@ body.has-app-shell {
   height: 15px;
   transform: translateY(-50%);
   fill: none;
-  stroke: var(--surface-text-muted);
+  stroke: var(--chrome-text-faint);
   stroke-width: 2;
   pointer-events: none;
 }
@@ -102,7 +136,7 @@ body.has-app-shell {
 
 .dghm-nav-empty {
   padding: 16px 10px;
-  color: var(--surface-text-muted);
+  color: var(--chrome-text-faint);
   font-size: 12px;
 }
 
@@ -117,7 +151,7 @@ body.has-app-shell {
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--surface-text-muted);
+  color: var(--chrome-text-muted);
   font: inherit;
   font-size: 12px;
   font-weight: 700;
@@ -126,8 +160,8 @@ body.has-app-shell {
   cursor: pointer;
 }
 
-.dghm-group-head:hover { background: var(--surface-bg); color: var(--surface-text); }
-.dghm-group.is-open > .dghm-group-head { color: var(--surface-text); }
+.dghm-group-head:hover { background: var(--chrome-hover); color: var(--chrome-text); }
+.dghm-group.is-open > .dghm-group-head { color: var(--chrome-text); }
 
 .dghm-group-head .group-icon {
   flex-shrink: 0;
@@ -166,21 +200,23 @@ body.has-app-shell {
   min-height: 36px;
   padding: 8px 10px 8px 36px;
   border-radius: var(--radius-sm);
-  color: var(--surface-text-muted);
+  color: var(--chrome-text-muted);
   text-decoration: none;
   font-size: 13px;
 }
 
-.dghm-tool-link:hover { background: var(--surface-bg); color: var(--surface-text); }
+.dghm-tool-link:hover { background: var(--chrome-hover); color: var(--chrome-text); }
 
 .dghm-tool-link.is-active {
-  background: var(--navy-soft);
-  color: var(--navy-text);
+  background: var(--chrome-active-bg);
+  color: var(--chrome-active-text);
   font-weight: 700;
 }
 
+.dghm-tool-link.is-active:hover { background: var(--chrome-active-hover); }
+
 .dghm-tool-link.is-disabled {
-  color: var(--surface-text-faint);
+  color: var(--chrome-text-faint);
   cursor: not-allowed;
 }
 .dghm-tool-link.is-disabled:hover { background: transparent; }
@@ -193,16 +229,19 @@ body.has-app-shell {
   margin-left: auto;
   border-radius: 50%;
   background: var(--orange);
-  opacity: .55;
+  opacity: .9;
 }
+
+/* 選取列已是橘底，圓點改白色才看得出來 */
+.dghm-tool-link.is-active .dghm-tool-dot { background: #fff; opacity: .75; }
 
 .dghm-tool-tag {
   flex-shrink: 0;
   margin-left: auto;
   padding: 1px 6px;
   border-radius: 999px;
-  background: var(--surface-bg);
-  color: var(--surface-text-faint);
+  background: var(--chrome-hover);
+  color: var(--chrome-text-faint);
   font-size: 10px;
   font-weight: 700;
 }
@@ -211,7 +250,7 @@ body.has-app-shell {
   flex-shrink: 0;
   margin-top: 8px;
   padding-top: 10px;
-  border-top: 1px solid var(--surface-border);
+  border-top: 1px solid var(--chrome-border);
 }
 
 .dghm-nav-toggle {
@@ -223,13 +262,13 @@ body.has-app-shell {
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--surface-text-muted);
+  color: var(--chrome-text-muted);
   font: inherit;
   font-size: 12px;
   cursor: pointer;
 }
 
-.dghm-nav-toggle:hover { background: var(--surface-bg); color: var(--surface-text); }
+.dghm-nav-toggle:hover { background: var(--chrome-hover); color: var(--chrome-text); }
 
 .dghm-nav-toggle svg {
   flex-shrink: 0;
@@ -271,8 +310,8 @@ body.has-app-shell {
 }
 
 .dghm-shell.is-nav-collapsed .dghm-group-head.has-active {
-  background: var(--navy-soft);
-  color: var(--navy-text);
+  background: var(--chrome-active-bg);
+  color: var(--chrome-active-text);
 }
 
 /* 收合時以 tooltip 補回群組名稱 */
@@ -289,8 +328,8 @@ body.has-app-shell {
   padding: 6px 9px;
   transform: translateY(-50%);
   border-radius: var(--radius-xs);
-  background: var(--surface-text);
-  color: var(--surface-panel-bg);
+  background: var(--surface-panel-bg);
+  color: var(--surface-text);
   font-size: 11px;
   font-weight: 400;
   white-space: nowrap;
@@ -313,8 +352,7 @@ body.has-app-shell {
   align-items: center;
   gap: 12px;
   padding: 0 20px;
-  border-bottom: 1px solid var(--surface-border);
-  background: var(--surface-panel-bg);
+  background: var(--chrome-bg);
 }
 
 .dghm-breadcrumb {
@@ -322,7 +360,7 @@ body.has-app-shell {
   align-items: center;
   gap: 7px;
   min-width: 0;
-  color: var(--surface-text-faint);
+  color: var(--chrome-text-faint);
   font-size: 13px;
 }
 
@@ -334,7 +372,7 @@ body.has-app-shell {
 }
 
 .dghm-breadcrumb .crumb-tool {
-  color: var(--surface-text);
+  color: var(--chrome-text);
   font-size: 15px;
   font-weight: 700;
 }
@@ -367,15 +405,23 @@ body.has-app-shell {
   min-width: 0;
   margin: 0;
   padding: 7px 30px 7px 13px;
-  border: 1px solid var(--surface-border);
+  border: 1px solid var(--chrome-border);
   border-radius: 999px;
-  background-color: var(--surface-panel-bg);
-  color: var(--surface-text);
+  background-color: var(--chrome-field-bg);
+  color: var(--chrome-text);
   font-size: 12px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
+  /* 讓原生下拉箭頭與選單在深色外框上以淺色描繪 */
+  color-scheme: dark;
 }
 
-.dghm-project-control select:hover { border-color: var(--navy-text); }
+.dghm-project-control select:hover { border-color: var(--chrome-text-muted); }
+
+.dghm-project-control select:focus-visible {
+  outline: none;
+  border-color: var(--chrome-active-bg);
+  box-shadow: 0 0 0 3px var(--chrome-focus-ring);
+}
 
 .dghm-top-actions {
   display: flex;
@@ -392,17 +438,33 @@ body.has-app-shell {
   align-items: center;
   min-height: 32px;
   padding: 6px 12px;
-  border: 1px solid var(--surface-border);
+  border: 1px solid var(--chrome-border);
   border-radius: 999px;
-  color: var(--surface-text);
+  color: var(--chrome-text);
   text-decoration: none;
   font-size: 12px;
 }
 
 .dghm-login-link:hover,
 .dghm-top-actions .user-chip:hover {
-  border-color: var(--navy-text);
-  color: var(--navy-text);
+  border-color: var(--chrome-text-muted);
+  color: var(--chrome-text);
+}
+
+/* 覆寫 dghm-ui.css 的淺色主題切換鈕，使其貼合深色外框 */
+.dghm-topbar #theme-toggle {
+  border-color: var(--chrome-border);
+  background: var(--chrome-field-bg);
+  color: var(--chrome-text);
+}
+
+.dghm-topbar #theme-toggle:hover { border-color: var(--chrome-text-muted); }
+
+/* 深色外框上的鍵盤焦點需為亮色才看得見 */
+.dghm-sidebar :focus-visible,
+.dghm-topbar :focus-visible {
+  outline: 2px solid var(--chrome-active-bg);
+  outline-offset: 2px;
 }
 
 .dghm-workspace {
