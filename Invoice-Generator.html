@@ -841,10 +841,69 @@ function buildDoc() {
   return tpl;
 }
 
+/* ============================================================
+   預覽輸出
+
+   原本每次 oninput 都直接改寫 iframe.srcdoc，等於重新載入整份文件，
+   預覽會跳回最上面。改為三層處理：
+   1. 內容與上次相同就完全不動
+   2. 連續輸入去抖動，停止打字後才重畫
+   3. 重畫前記住捲動位置，載入後還原
+   ============================================================ */
+var OUTPUT_DEBOUNCE_MS = 250;
+var _outputTimer = null;
+var _lastOutputHtml = null;
+
 function refreshOutput() {
+  if (_outputTimer) clearTimeout(_outputTimer);
+  _outputTimer = setTimeout(applyOutput, OUTPUT_DEBOUNCE_MS);
+}
+
+/** 立即重畫，供需要馬上取得最新 HTML 的操作使用（複製、下載、列印）。 */
+function flushOutput() {
+  if (_outputTimer) { clearTimeout(_outputTimer); _outputTimer = null; }
+  applyOutput();
+}
+
+function applyOutput() {
+  _outputTimer = null;
   var html = buildDoc();
-  document.getElementById('preview-frame').srcdoc = html;
-  document.getElementById('out-html').value = html;
+  if (html === _lastOutputHtml) return;
+  _lastOutputHtml = html;
+
+  var out = document.getElementById('out-html');
+  var outTop = out.scrollTop;
+  out.value = html;
+  out.scrollTop = outTop;
+
+  paintPreview(document.getElementById('preview-frame'), html);
+}
+
+/**
+ * 更新預覽。
+ *
+ * 重新指派 srcdoc 會讓 iframe 整份重載，捲動位置歸零；而 load 事件在字型
+ * 等外部資源未就緒時不一定會觸發，事後還原並不可靠。因此改為直接改寫
+ * iframe 內既有文件的 body——不重載就不會捲動，也沒有閃爍。
+ *
+ * 預覽文件本身不含 script，用 innerHTML 取代不會遺漏行為。
+ * 同源存取失敗時（例如瀏覽器政策限制）退回原本的 srcdoc 寫法。
+ */
+function paintPreview(frame, html) {
+  var doc = null;
+  try { doc = frame.contentDocument; } catch (error) { doc = null; }
+
+  if (doc && doc.body && doc.documentElement.hasAttribute('data-preview-ready')) {
+    var parsed = new DOMParser().parseFromString(html, 'text/html');
+    var title = parsed.querySelector('title');
+    if (title) doc.title = title.textContent;
+    doc.body.className = parsed.body.className;
+    doc.body.innerHTML = parsed.body.innerHTML;
+    return;
+  }
+
+  // 首次渲染：建立文件，並標記後續可原地更新
+  frame.srcdoc = html.replace('<html', '<html data-preview-ready');
 }
 
 function previewDoc() {
@@ -874,6 +933,7 @@ function generateDoc() {
 document.getElementById('open-btn').addEventListener('click', previewDoc);
 document.getElementById('download-btn').addEventListener('click', generateDoc);
 document.getElementById('copy-btn').addEventListener('click', function () {
+  flushOutput();   // 去抖動可能還沒觸發，先確保 out-html 是最新內容
   var status = document.getElementById('copy-status');
   navigator.clipboard.writeText(document.getElementById('out-html').value).then(function () {
     status.textContent = '已複製！';

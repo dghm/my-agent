@@ -61,6 +61,20 @@
   - 資料透過 `netlify/functions/income.js` 的 `/api/income/*` 讀寫，存於 Netlify Blobs。
   - 儲存登記後可在「附件」區上傳請款單／發票掃描檔（單檔上限 10MB），附件附加於該筆收入登記紀錄，可點擊檢視或刪除，存於獨立的 Netlify Blobs store（`income-attachments`）。
 
+- 預覽即時更新，不重載、不跳動
+  - `Quote-Generator.html`、`Invoice-Generator.html`、`Contract-Generator.html`
+    的右側 A4 預覽原本每次 `oninput` 都重新指派 `iframe.srcdoc`，等同整份
+    重新載入，捲動位置會跳回最上方。
+  - 改為 `applyOutput()` 內的 `paintPreview()`：首次渲染仍用 `srcdoc` 建立
+    文件，之後輸入變動改為直接以 `DOMParser` 解析新內容、原地替換
+    `iframe.contentDocument.body`，不重載頁面，捲動位置與焦點不受影響。
+  - 連續輸入以 `refreshOutput()` 做 250ms 去抖動，停止打字後才重畫一次；
+    複製、下載、預覽、列印等需要立即取得最新內容的操作改呼叫
+    `flushOutput()`，跳過去抖動直接刷新。
+  - 內容與上次相同時 `applyOutput()` 直接跳過，不做任何 DOM 操作。
+  - 預覽文件本身不含 `<script>`，僅以 `innerHTML` 替換 body 不會遺漏行為；
+    同源存取失敗時（少見的瀏覽器政策限制）退回原本的 `srcdoc` 寫法。
+
 - 草稿 JSON 的格式辨識
   - 各工具的草稿都帶 `kind` 標記：`dghm-quote-draft`、`dghm-invoice-draft`、
     `dghm-contract-draft`。載入前以 `dghm-ui.js` 的 `checkDraftKind()` 驗證，
