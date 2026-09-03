@@ -13,6 +13,8 @@
      選取項目為橘底白字：依 design-system/33.dghm/tokens/colors.css
      的 --text-on-accent「橘底上一律白字，禁用深藍字」。 */
   --chrome-bg:           #0D2F6E;
+  /* 頂列壓深一階，讓側欄（導覽）與頂列（目前工作範圍）在視覺上分開 */
+  --chrome-topbar-bg:    #06183A;
   --chrome-text:         #FFFFFF;
   --chrome-text-muted:   rgba(255, 255, 255, .72);
   --chrome-text-faint:   rgba(255, 255, 255, .50);
@@ -31,6 +33,7 @@
    橘色維持品牌原色，選取範圍面積小，不需降彩度。 */
 :root[data-theme="dark"] {
   --chrome-bg:           #1A3968;
+  --chrome-topbar-bg:    #0F2547;
   --chrome-text:         #E8EDF6;
   --chrome-text-muted:   rgba(232, 237, 246, .62);
   --chrome-text-faint:   rgba(232, 237, 246, .42);
@@ -352,7 +355,7 @@ body.has-app-shell {
   align-items: center;
   gap: 12px;
   padding: 0 20px;
-  background: var(--chrome-bg);
+  background: var(--chrome-topbar-bg);
 }
 
 .dghm-breadcrumb {
