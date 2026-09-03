@@ -61,6 +61,15 @@
   - 資料透過 `netlify/functions/income.js` 的 `/api/income/*` 讀寫，存於 Netlify Blobs。
   - 儲存登記後可在「附件」區上傳請款單／發票掃描檔（單檔上限 10MB），附件附加於該筆收入登記紀錄，可點擊檢視或刪除，存於獨立的 Netlify Blobs store（`income-attachments`）。
 
+- 報價單 → 請款單交接
+  - `Quote-Generator.html` 的「開立請款單 →」會列出付款條件裡的各期別，
+    選定一期後把客戶名稱、地址、統一編號、聯絡人、電話、Email、專案名稱、
+    專案代碼與該期金額，透過 localStorage 的 `dghm-quote-to-invoice`
+    交給 `Invoice-Generator.html`。
+  - 交接資料單次取用（讀取後即清除），超過 1 小時視為過期不套用。
+  - 請款單編號與開立日期刻意留空，由開單時自行填寫。
+  - 期別金額若寫成百分比（如「40%」）無法換算，金額欄會留空待補。
+
 - `qr-generator.html`
   - 靜態 QR Code 產生器（完全離線，QR 編碼引擎內建於檔案中，不依賴外部服務或 CDN，產生的 QR Code 永不過期）。
   - 支援網址／文字、Wi-Fi、名片 vCard 三種內容，可調容錯等級（L/M/Q/H）、尺寸、顏色、留白，可加中央 LOGO（自動切換 H 容錯），下載 PNG／SVG 或複製圖片。

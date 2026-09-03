@@ -164,6 +164,51 @@
   button.secondary { border-color: var(--surface-border); }
   button.secondary:hover { border-color: var(--navy-text); }
 
+  /* ---- 交接到請款單 ---- */
+  .handoff-actions {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin: 0 0 16px; padding-bottom: 16px;
+    border-bottom: 1px solid var(--surface-border);
+  }
+  .handoff-actions button {
+    border-color: var(--orange);
+    background: var(--orange);
+    color: #fff;
+    font-weight: 700;
+  }
+  .handoff-actions button:hover { background: #C04E1E; border-color: #C04E1E; }
+  .handoff-hint { color: var(--surface-text-muted); font-size: 11px; }
+
+  .handoff-dialog {
+    width: min(480px, calc(100vw - 32px));
+    padding: 0; border: 0;
+    border-radius: var(--radius);
+    background: var(--surface-panel-bg);
+    color: var(--surface-text);
+    box-shadow: var(--shadow-lg);
+  }
+  .handoff-dialog::backdrop { background: rgba(13, 47, 110, .45); }
+  .handoff-dialog form { padding: 22px 24px 18px; }
+  .handoff-dialog h2 { margin: 0 0 6px; font-size: 17px; color: var(--navy-text); }
+  .handoff-desc { margin: 0 0 16px; color: var(--surface-text-muted); font-size: 12px; line-height: 1.6; }
+  .handoff-list { display: grid; gap: 8px; max-height: 46vh; overflow-y: auto; }
+  .handoff-option {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: baseline;
+    gap: 10px; padding: 12px 14px;
+    border-radius: var(--radius-sm); background: var(--surface-bg); cursor: pointer;
+  }
+  .handoff-option:hover { background: color-mix(in srgb, var(--orange) 8%, var(--surface-bg)); }
+  .handoff-option input { width: auto; margin: 0; accent-color: var(--orange); }
+  .handoff-option .ho-phase { font-size: 13px; font-weight: 700; }
+  .handoff-option .ho-timing { display: block; margin-top: 3px; color: var(--surface-text-muted); font-size: 11px; font-weight: 400; }
+  .handoff-option .ho-amount {
+    color: var(--navy-text); font-size: 14px; font-weight: 700;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .handoff-empty { padding: 14px; border-radius: var(--radius-sm); background: var(--surface-bg); color: var(--surface-text-muted); font-size: 12px; }
+  .handoff-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+  .handoff-foot button[value="cancel"] { border-color: var(--surface-border); }
+
   /* ---- Output panel ---- */
   .output-panel { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow: hidden; }
   .output-toolbar {
@@ -388,6 +433,11 @@ __PAGES__
       <input type="file" id="load-draft-input" accept="application/json" style="display:none">
     </div>
 
+    <div class="handoff-actions">
+      <button type="button" id="to-invoice-btn">開立請款單 →</button>
+      <span class="handoff-hint">依付款條件的期別，把客戶資料與該期金額帶到請款單</span>
+    </div>
+
     <form id="form">
 
       <fieldset>
@@ -398,8 +448,8 @@ __PAGES__
             <input type="text" id="f_qt_no">
           </div>
           <div>
-            <label>預估工期（例：約 3 週，選填）</label>
-            <input type="text" id="f_duration">
+            <label>專案代碼（選填，會帶入請款單）</label>
+            <input type="text" id="f_proj_code" placeholder="例：DH-MSK-PJ1">
           </div>
         </div>
         <div class="row2">
@@ -412,6 +462,9 @@ __PAGES__
             <input type="date" id="f_valid_date">
           </div>
         </div>
+
+        <label>預估工期（例：約 3 週，選填）</label>
+        <input type="text" id="f_duration">
 
         <label>文件主標題（可多行，每行會換行顯示）</label>
         <textarea id="f_doc_title" rows="2" placeholder="例：麥司克股份有限公司&#10;網站搬遷及委託維護服務"></textarea>
@@ -545,6 +598,18 @@ __PAGES__
     </form>
   </div>
   </div>
+
+  <dialog id="handoff-dialog" class="handoff-dialog" aria-labelledby="handoff-title">
+    <form method="dialog">
+      <h2 id="handoff-title">要開立哪一期的請款單？</h2>
+      <p class="handoff-desc">客戶名稱、地址、統一編號、聯絡人、電話、Email、專案名稱與專案代碼會一併帶入。</p>
+      <div id="handoff-list" class="handoff-list"></div>
+      <div class="handoff-foot">
+        <button type="submit" value="cancel" class="secondary">取消</button>
+        <button type="button" id="handoff-confirm">帶入請款單</button>
+      </div>
+    </form>
+  </dialog>
 
   <div class="split-handle" role="separator" aria-orientation="vertical" aria-label="拖曳調整預覽寬度" title="拖曳調整預覽寬度"></div>
 
@@ -1277,7 +1342,7 @@ window.addEventListener('beforeunload', function (e) {
    草稿存讀（下載 JSON / 載入 JSON）
    ============================================================ */
 var FIELD_IDS = [
-  'f_qt_no', 'f_duration', 'f_issue_date', 'f_valid_date', 'f_doc_title', 'f_subtitle',
+  'f_qt_no', 'f_proj_code', 'f_duration', 'f_issue_date', 'f_valid_date', 'f_doc_title', 'f_subtitle',
   'f_client_name', 'f_client_addr', 'f_client_vat', 'f_client_contact', 'f_client_phone', 'f_client_email',
   'f_sched_page', 'f_sched_title', 'f_sched_total', 'f_sched_risk',
   'f_excl_page', 'f_excl_intro', 'f_excl_items',
@@ -1454,6 +1519,154 @@ addPayBlock({
 refreshOutput();
 initFormAccordions();
 if (!restoreSessionDraft()) _suspendSessionSave = false;
+
+/* ============================================================
+   交接到請款單
+   把目前報價單的客戶資料與選定期別的金額，透過 localStorage
+   交給 Invoice-Generator.html（單次取用，讀取後即清除）。
+   ============================================================ */
+var HANDOFF_KEY = 'dghm-quote-to-invoice';
+
+/** 把各付款條件區塊的期別卡片攤平成單一清單，供選擇與帶入共用同一組索引。 */
+function flattenPayCards(draft) {
+  var out = [];
+  (draft.payments || []).forEach(function (block) {
+    (block.cards || []).forEach(function (card) {
+      if (!String(card.phase || '').trim() && !String(card.amount || '').trim()) return;
+      out.push({
+        phase: String(card.phase || '').trim(),
+        amount: String(card.amount || '').trim(),
+        timing: String(card.timing || '').trim()
+      });
+    });
+  });
+  return out;
+}
+
+/** 「48,000」「NT$ 48,000」→「48000」；含 % 的比例寫法無法換算，回傳空字串。 */
+function amountToNumber(text) {
+  var raw = String(text || '');
+  if (raw.indexOf('%') > -1) return '';
+  var digits = raw.replace(/[^\d.]/g, '');
+  if (!digits) return '';
+  var num = parseFloat(digits);
+  return isFinite(num) ? String(Math.round(num)) : '';
+}
+
+function formatAmount(num) {
+  return String(num).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+/** 文件主標題常是「客戶名\n專案名」，取出專案名的部分。 */
+function projectNameFromTitle(title, clientName) {
+  var lines = String(title || '').split('\n')
+    .map(function (line) { return line.trim(); })
+    .filter(Boolean);
+  var client = String(clientName || '').trim();
+  var rest = lines.filter(function (line) { return line !== client; });
+  return (rest.length ? rest : lines).join(' ');
+}
+
+/** 服務項目摘要：優先用各區塊標題，沒有標題就退回逐列的項目名稱。 */
+function serviceSummary(draft) {
+  var titles = [];
+  (draft.sections || []).forEach(function (sec) {
+    var title = String(sec.title || '').trim();
+    if (title) titles.push(title);
+  });
+  if (!titles.length) {
+    (draft.sections || []).forEach(function (sec) {
+      (sec.rows || []).forEach(function (row) {
+        var name = String(row.name || '').trim();
+        if (name) titles.push(name);
+      });
+    });
+  }
+  return titles.join('、');
+}
+
+function buildHandoffPayload(draft, cards, index) {
+  var f = draft.fields || {};
+  var card = cards[index];
+  var amount = amountToNumber(card.amount);
+  var hint = amount
+    ? 'NT$ ' + formatAmount(amount) + '(' + (index + 1) + '/' + cards.length + ')'
+    : '';
+
+  return {
+    kind: 'dghm-quote-to-invoice',
+    version: 1,
+    createdAt: new Date().toISOString(),
+    source: { quoteNo: String(f.f_qt_no || '').trim() },
+    fields: {
+      f_company_name:  String(f.f_client_name || '').trim(),
+      f_project_name:  projectNameFromTitle(f.f_doc_title, f.f_client_name),
+      f_proj_code:     String(f.f_proj_code || '').trim(),
+      f_address:       String(f.f_client_addr || '').trim(),
+      f_vat:           String(f.f_client_vat || '').trim(),
+      f_contact:       String(f.f_client_contact || '').trim(),
+      f_phone:         String(f.f_client_phone || '').trim(),
+      f_email:         String(f.f_client_email || '').trim(),
+      f_payment_terms: card.timing,
+      f_total_hint:    hint
+    },
+    items: [{
+      name: card.phase || ('第 ' + (index + 1) + ' 期'),
+      desc: serviceSummary(draft),
+      price: amount
+    }]
+  };
+}
+
+(function () {
+  var openBtn = document.getElementById('to-invoice-btn');
+  var dialog = document.getElementById('handoff-dialog');
+  var list = document.getElementById('handoff-list');
+  var confirmBtn = document.getElementById('handoff-confirm');
+  if (!openBtn || !dialog) return;
+
+  var cards = [];
+  var draft = null;
+
+  openBtn.addEventListener('click', function () {
+    draft = collectDraft();
+    cards = flattenPayCards(draft);
+
+    if (!cards.length) {
+      list.innerHTML = '<p class="handoff-empty">這張報價單的「付款條件」還沒有填任何期別。' +
+        '請先在付款條件區塊新增付款卡片（期別／金額／時點），再回來開立請款單。</p>';
+      confirmBtn.disabled = true;
+    } else {
+      confirmBtn.disabled = false;
+      list.innerHTML = cards.map(function (card, i) {
+        var amount = amountToNumber(card.amount);
+        return '<label class="handoff-option">' +
+          '<input type="radio" name="handoff-phase" value="' + i + '"' + (i === 0 ? ' checked' : '') + '>' +
+          '<span>' +
+            '<span class="ho-phase">' + esc(card.phase || ('第 ' + (i + 1) + ' 期')) + '</span>' +
+            (card.timing ? '<span class="ho-timing">' + esc(card.timing) + '</span>' : '') +
+          '</span>' +
+          '<span class="ho-amount">' + (amount ? 'NT$ ' + formatAmount(amount) : esc(card.amount || '—')) + '</span>' +
+          '</label>';
+      }).join('');
+    }
+    dialog.showModal();
+  });
+
+  confirmBtn.addEventListener('click', function () {
+    var picked = list.querySelector('input[name="handoff-phase"]:checked');
+    if (!picked) return;
+    var payload = buildHandoffPayload(draft, cards, parseInt(picked.value, 10));
+    try {
+      localStorage.setItem(HANDOFF_KEY, JSON.stringify(payload));
+    } catch (error) {
+      alert('無法暫存交接資料，請確認瀏覽器允許本機儲存。');
+      return;
+    }
+    dialog.close();
+    location.href = 'Invoice-Generator.html';
+  });
+})();
 
 /* ============================================================
    從其他工具帶入資料（?company=&project=&date=）

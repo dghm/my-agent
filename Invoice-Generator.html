@@ -118,6 +118,22 @@
   button.secondary { border-color: var(--surface-border); }
   button.secondary:hover { border-color: var(--navy-text); }
 
+  /* ---- 由報價單帶入的提示 ---- */
+  .handoff-banner {
+    display: flex; align-items: flex-start; gap: 10px;
+    margin: 0 0 16px; padding: 12px 14px;
+    border-radius: var(--radius, 16px);
+    background: color-mix(in srgb, var(--orange) 10%, var(--surface-panel-bg));
+    color: var(--surface-text); font-size: 12px; line-height: 1.6;
+  }
+  .handoff-banner strong { color: var(--orange); }
+  .handoff-banner button {
+    margin-left: auto; flex-shrink: 0; padding: 2px 8px;
+    border: 0; border-radius: var(--radius-xs, 8px);
+    background: transparent; color: var(--surface-text-muted); font-size: 15px; line-height: 1;
+  }
+  .handoff-banner button:hover { color: var(--surface-text); }
+
   /* ---- Output panel ---- */
   .output-panel { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow: hidden; }
   .output-toolbar {
@@ -933,7 +949,59 @@ refreshOutput();
 /* ============================================================
    從收入登記系統帶入資料（?company=&project=&amount=&date=）
    ============================================================ */
+/* ============================================================
+   由報價單帶入（Quote-Generator 寫入 localStorage，單次取用）
+   ============================================================ */
+var _handoffApplied = false;
+
 (function () {
+  var KEY = 'dghm-quote-to-invoice';
+  var raw = null;
+  try { raw = localStorage.getItem(KEY); } catch (error) { return; }
+  if (!raw) return;
+
+  // 交接資料只用一次，先清掉再處理，避免重整時重複套用
+  try { localStorage.removeItem(KEY); } catch (error) {}
+
+  var payload;
+  try { payload = JSON.parse(raw); } catch (error) { return; }
+  if (!payload || payload.kind !== 'dghm-quote-to-invoice') return;
+
+  // 超過一小時的交接視為過期，避免帶入早已忘記的舊資料
+  var age = Date.now() - Date.parse(payload.createdAt || '');
+  if (isFinite(age) && age > 60 * 60 * 1000) return;
+
+  Object.keys(payload.fields || {}).forEach(function (id) {
+    var el = document.getElementById(id);
+    var value = payload.fields[id];
+    if (el && value) el.value = value;
+  });
+
+  if (payload.items && payload.items.length) {
+    document.getElementById('items-tbody').innerHTML = '';
+    payload.items.forEach(function (item) {
+      addItem(item.name, item.desc, item.price);
+    });
+  }
+
+  _handoffApplied = true;
+  refreshOutput();
+
+  var quoteNo = (payload.source && payload.source.quoteNo) || '';
+  var banner = document.createElement('div');
+  banner.className = 'handoff-banner';
+  banner.innerHTML =
+    '<span><strong>已由報價單帶入</strong>' +
+    (quoteNo ? '（' + esc(quoteNo) + '）' : '') +
+    '　請確認金額與付款條件，並補上請款單編號與開立日期。</span>' +
+    '<button type="button" aria-label="關閉提示">×</button>';
+  banner.querySelector('button').addEventListener('click', function () { banner.remove(); });
+  var panel = document.querySelector('.form-panel');
+  if (panel) panel.insertBefore(banner, panel.firstChild);
+})();
+
+(function () {
+  if (_handoffApplied) return;
   var params = new URLSearchParams(window.location.search);
   var company = params.get('company');
   var project = params.get('project');
