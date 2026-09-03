@@ -61,6 +61,18 @@
   - 資料透過 `netlify/functions/income.js` 的 `/api/income/*` 讀寫，存於 Netlify Blobs。
   - 儲存登記後可在「附件」區上傳請款單／發票掃描檔（單檔上限 10MB），附件附加於該筆收入登記紀錄，可點擊檢視或刪除，存於獨立的 Netlify Blobs store（`income-attachments`）。
 
+- 圖示內嵌
+  - `Quote-Generator.html`、`Invoice-Generator.html`、`Contract-Generator.html`
+    的工具列圖示原本以 CSS mask 從 cdn.jsdelivr.net 載入，網路不通時整排按鈕
+    會變成空白方塊。現已改為內嵌 SVG sprite（每檔開頭的 `.icon-sprite`），
+    以 `<svg class="action-icon"><use href="#i-名稱"></use></svg>` 引用。
+  - 來源：lucide-static 0.552.0（6 個）與 remixicon 4.9.1（4 個）。
+  - remixicon 是實心字形，以 `.action-icon.is-filled` 改為填色不描邊。
+  - 動態切換圖示請用 `setActionIcon(元素, '名稱')`，建立新圖示用
+    `actionIcon('名稱', 是否實心)`。
+  - 三支檔案仍以 `@import` 從 Google Fonts 載入 K2D 與 Noto Sans TC；
+    離線時會退回系統字型，版面不會壞掉但字體不同。
+
 - 報價單 → 請款單交接
   - `Quote-Generator.html` 的「開立請款單 →」會列出付款條件裡的各期別，
     選定一期後把客戶名稱、地址、統一編號、聯絡人、電話、Email、專案名稱、
