@@ -3,56 +3,103 @@
 
   var iconPaths = {
     home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-6h5v6"/>',
-    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>',
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>',
     briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18M10 12v2h4v-2"/>',
     receipt: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6M9 16h4"/>',
     'file-check': '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 15l2 2 5-5"/>',
     sparkles: '<path d="m12 3-1.2 3.2L8 7.5l2.8 1.3L12 12l1.2-3.2L16 7.5l-2.8-1.3L12 3Z"/><path d="m5 13-.8 2.2L2 16l2.2.8L5 19l.8-2.2L8 16l-2.2-.8L5 13ZM19 12l-.7 1.8-1.8.7 1.8.7L19 17l.7-1.8 1.8-.7-1.8-.7L19 12Z"/>',
-    'arrow-left-from-line': '<path d="m9 6-6 6 6 6"/><path d="M3 12h14"/><path d="M21 19V5"/>',
-    'arrow-right-from-line': '<path d="M3 5v14"/><path d="M21 12H7"/><path d="m15 18 6-6-6-6"/>',
+    qr: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 19h2v2h-2z"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    caret: '<path d="m9 6 6 6-6 6"/>',
+    'panel-collapse': '<path d="m14 6-6 6 6 6"/><path d="M20 4v16"/>',
   };
 
-  function icon(name) {
-    return '<svg viewBox="0 0 24 24" aria-hidden="true">' + (iconPaths[name] || iconPaths.home) + '</svg>';
+  function icon(name, className) {
+    return '<svg class="' + (className || '') + '" viewBox="0 0 24 24" aria-hidden="true">' +
+      (iconPaths[name] || iconPaths.home) + '</svg>';
   }
 
   function escapeHtml(value) {
-    return String(value || '')
+    return String(value == null ? '' : value)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
   }
 
-  function statusLabel(status) {
-    if (status === 'integrated') return '新版';
-    if (status === 'planned') return '規劃中';
-    return '舊版';
+  var NAV_COLLAPSE_KEY = 'dghm-shell-nav-collapsed';
+  var NAV_OPEN_GROUPS_KEY = 'dghm-shell-open-groups';
+
+  function readOpenGroups() {
+    try {
+      var saved = JSON.parse(localStorage.getItem(NAV_OPEN_GROUPS_KEY) || 'null');
+      if (Array.isArray(saved)) return saved;
+    } catch (error) {}
+    return null;
   }
 
-  function renderRail(groups, activeGroup) {
-    return groups.map(function (group) {
-      var entry = global.DGHMToolRegistry.findTool(group.defaultTool);
-      var href = entry && entry.tool.href ? entry.tool.href : 'index.html';
-      return '<a class="dghm-rail-link' + (group.id === activeGroup.id ? ' is-active' : '') +
-        '" href="' + href + '" data-label="' + escapeHtml(group.label) +
-        '" aria-label="' + escapeHtml(group.label) + '">' + icon(group.icon) + '</a>';
-    }).join('');
+  function writeOpenGroups(ids) {
+    try { localStorage.setItem(NAV_OPEN_GROUPS_KEY, JSON.stringify(ids)); } catch (error) {}
   }
 
-  function renderTools(group, activeToolId) {
-    return group.tools.map(function (tool) {
-      var disabled = !tool.href;
-      var tag = disabled ? 'span' : 'a';
-      var href = disabled ? '' : ' href="' + tool.href + '"';
-      var classes = 'dghm-tool-link' +
-        (tool.id === activeToolId ? ' is-active' : '') +
-        (disabled ? ' is-disabled' : '');
-      return '<' + tag + ' class="' + classes + '"' + href + '>' +
-        '<span>' + escapeHtml(tool.label) + '</span>' +
-        '<span class="dghm-tool-status">' + statusLabel(tool.status) + '</span>' +
-        '</' + tag + '>';
-    }).join('');
+  /* ---------- 側邊選單 ---------- */
+
+  function renderNav(state) {
+    var registry = global.DGHMToolRegistry;
+    var filter = (state.filter || '').trim().toLowerCase();
+    var html = '';
+
+    registry.groups.forEach(function (group) {
+      var tools = group.tools.filter(function (tool) {
+        if (!filter) return true;
+        if (tool.label.toLowerCase().indexOf(filter) > -1) return true;
+        if (tool.id.indexOf(filter) > -1) return true;
+        if (group.label.indexOf(filter) > -1) return true;
+        return (tool.keywords || []).some(function (word) {
+          return word.toLowerCase().indexOf(filter) > -1;
+        });
+      });
+      if (!tools.length) return;
+
+      var hasActive = tools.some(function (tool) { return tool.id === state.activeToolId; });
+      // 搜尋時全部展開；否則依使用者紀錄，含目前工具的群組一律展開。
+      var open = filter ? true : (hasActive || state.openGroups.indexOf(group.id) > -1);
+
+      html += '<div class="dghm-group' + (open ? ' is-open' : '') + '" data-group="' + escapeHtml(group.id) + '">';
+      html += '<button type="button" class="dghm-group-head' + (hasActive ? ' has-active' : '') +
+        '" data-group-toggle data-label="' + escapeHtml(group.label) +
+        '" aria-expanded="' + (open ? 'true' : 'false') + '">' +
+        icon(group.icon, 'group-icon') +
+        '<span class="group-label">' + escapeHtml(group.label) + '</span>' +
+        icon('caret', 'group-caret') +
+        '</button>';
+
+      html += '<div class="dghm-tool-nav">';
+      tools.forEach(function (tool) {
+        var isActive = tool.id === state.activeToolId;
+        var disabled = !tool.href;
+        var classes = 'dghm-tool-link' +
+          (isActive ? ' is-active' : '') +
+          (disabled ? ' is-disabled' : '');
+        var mark = tool.status === 'planned'
+          ? '<span class="dghm-tool-tag">規劃中</span>'
+          : tool.status === 'legacy'
+            ? '<span class="dghm-tool-dot" title="尚未套用新版外框"></span>'
+            : '';
+
+        if (disabled) {
+          html += '<span class="' + classes + '" aria-disabled="true">' +
+            '<span>' + escapeHtml(tool.label) + '</span>' + mark + '</span>';
+        } else {
+          html += '<a class="' + classes + '" href="' + escapeHtml(tool.href) + '"' +
+            (isActive ? ' aria-current="page"' : '') + '>' +
+            '<span>' + escapeHtml(tool.label) + '</span>' + mark + '</a>';
+        }
+      });
+      html += '</div></div>';
+    });
+
+    return html || '<p class="dghm-nav-empty">找不到符合的工具</p>';
   }
 
   function projectOptions(projects, currentId) {
@@ -66,21 +113,14 @@
   }
 
   function updateProjectDisplay(shell, project) {
-    var projectName = shell.querySelector('[data-shell-project-name]');
-    var projectAction = shell.querySelector('[data-shell-project-action]');
-    var menuProject = shell.querySelector('[data-shell-menu-project]');
-    if (!project) {
-      projectName.textContent = '未指定案件';
-      projectAction.textContent = '可先進行內部工作或建立新案件';
-      menuProject.innerHTML = '<strong>目前沒有綁定案件</strong><p>Phase 1 使用本機模擬資料，之後可替換為 Airtable。</p>';
-      return;
-    }
-    projectName.textContent = project.status + ' · ' + project.clientName;
-    projectAction.textContent = '下一步：' + project.nextAction;
-    menuProject.innerHTML =
-      '<strong>' + escapeHtml(project.projectName) + '</strong>' +
-      '<p>' + escapeHtml(project.projectCode) + '<br>下一步：' + escapeHtml(project.nextAction) + '</p>';
+    var select = shell.querySelector('#dghm-project-select');
+    if (!select) return;
+    select.title = project
+      ? project.projectName + '（' + project.status + '）下一步：' + project.nextAction
+      : '尚未指定案件';
   }
+
+  /* ---------- 掛載 ---------- */
 
   function mountAppShell(options) {
     options = options || {};
@@ -91,39 +131,49 @@
 
     var match = registry.findTool(options.activeTool || document.body.dataset.tool || 'home') ||
       registry.findTool('home');
+
+    var state = {
+      activeToolId: match.tool.id,
+      filter: '',
+      openGroups: readOpenGroups() || [match.group.id],
+    };
+
     var shell = document.createElement('div');
     shell.className = 'dghm-shell';
     shell.innerHTML =
-      '<aside class="dghm-rail" aria-label="主要功能">' +
-        '<a class="dghm-rail-brand" href="index.html" aria-label="DGHM 工作台">' +
+      '<aside class="dghm-sidebar">' +
+        '<a class="dghm-brand" href="index.html">' +
           '<img src="favicon.svg" alt="">' +
+          '<span class="dghm-brand-text">' +
+            '<strong>DGHM 工作台</strong>' +
+            '<span>Tools Workspace</span>' +
+          '</span>' +
         '</a>' +
-        renderRail(registry.groups, match.group) +
-        '<button type="button" class="dghm-rail-link dghm-nav-collapse" data-shell-nav-collapse data-label="收合選單" aria-label="收合側邊選單" title="收合側邊選單">' +
-          icon('arrow-left-from-line') +
-        '</button>' +
-      '</aside>' +
-      '<aside class="dghm-menu" aria-label="' + escapeHtml(match.group.label) + '功能選單">' +
-        '<h2 class="dghm-menu-heading">' + escapeHtml(match.group.label) + '</h2>' +
-        '<p class="dghm-menu-description">' + escapeHtml(match.group.description) + '</p>' +
-        '<div class="dghm-menu-label">功能選單</div>' +
-        '<nav class="dghm-tool-nav">' + renderTools(match.group, match.tool.id) + '</nav>' +
-        '<div class="dghm-menu-project" data-shell-menu-project></div>' +
+        '<div class="dghm-search">' +
+          icon('search') +
+          '<input type="search" id="dghm-tool-search" placeholder="搜尋工具…" aria-label="搜尋工具" autocomplete="off">' +
+        '</div>' +
+        '<nav class="dghm-nav" aria-label="工具選單" data-shell-nav></nav>' +
+        '<div class="dghm-sidebar-foot">' +
+          '<button type="button" class="dghm-nav-toggle" data-shell-nav-toggle aria-label="收合側邊選單">' +
+            icon('panel-collapse') +
+            '<span>收合選單</span>' +
+          '</button>' +
+        '</div>' +
       '</aside>' +
       '<div class="dghm-main">' +
         '<header class="dghm-topbar">' +
+          '<div class="dghm-breadcrumb">' +
+            '<span class="crumb-group">' + escapeHtml(match.group.label) + '</span>' +
+            '<span class="crumb-sep" aria-hidden="true">›</span>' +
+            '<span class="crumb-tool">' + escapeHtml(match.tool.label) + '</span>' +
+          '</div>' +
+          '<div class="dghm-topbar-spacer"></div>' +
           '<div class="dghm-project-control">' +
-            '<button type="button" class="dghm-nav-expand" data-shell-nav-expand aria-label="展開側邊選單" title="展開側邊選單">' +
-              icon('arrow-right-from-line') +
-            '</button>' +
             '<label for="dghm-project-select">目前案件</label>' +
             '<select id="dghm-project-select">' +
               projectOptions(projectsApi.list(), projectsApi.getCurrentId()) +
             '</select>' +
-            '<div class="dghm-project-meta">' +
-              '<strong data-shell-project-name></strong>' +
-              '<span data-shell-project-action></span>' +
-            '</div>' +
           '</div>' +
           '<div class="dghm-top-actions">' +
             '<div id="user-area"></div>' +
@@ -137,12 +187,18 @@
     workspace.parentNode.insertBefore(shell, workspace);
     shell.querySelector('.dghm-workspace').appendChild(workspace);
 
+    var nav = shell.querySelector('[data-shell-nav]');
+    function paintNav() { nav.innerHTML = renderNav(state); }
+    paintNav();
+
+    bindNav(shell, nav, state, paintNav);
+    bindNavToggle(shell);
+
     var select = shell.querySelector('#dghm-project-select');
     select.addEventListener('change', function () {
       projectsApi.setCurrent(select.value);
     });
     updateProjectDisplay(shell, projectsApi.getCurrent());
-    bindNavCollapse(shell);
 
     global.addEventListener('dghm:project-change', function (event) {
       select.value = event.detail.project ? event.detail.project.id : '';
@@ -152,35 +208,73 @@
     hydrateUserArea(shell.querySelector('#user-area'));
   }
 
-  var NAV_COLLAPSE_KEY = 'dghm-shell-nav-collapsed';
+  function bindNav(shell, nav, state, paintNav) {
+    nav.addEventListener('click', function (event) {
+      var head = event.target.closest('[data-group-toggle]');
+      if (!head) return;
 
-  function applyNavCollapsed(shell, collapsed) {
-    shell.classList.toggle('is-nav-collapsed', collapsed);
-    document.body.classList.toggle('is-nav-collapsed', collapsed);
-    var collapseBtn = shell.querySelector('[data-shell-nav-collapse]');
-    var expandBtn = shell.querySelector('[data-shell-nav-expand]');
-    if (collapseBtn) collapseBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-    if (expandBtn) expandBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      var groupEl = head.parentNode;
+      var groupId = groupEl.dataset.group;
+
+      // 收合狀態下點群組圖示 = 直接開啟該群組第一個可用工具
+      if (isIconOnly(shell)) {
+        var group = global.DGHMToolRegistry.groups.filter(function (g) { return g.id === groupId; })[0];
+        var first = group && global.DGHMToolRegistry.firstAvailableTool(group);
+        if (first) location.href = first.href;
+        return;
+      }
+
+      var index = state.openGroups.indexOf(groupId);
+      if (index > -1) state.openGroups.splice(index, 1);
+      else state.openGroups.push(groupId);
+      writeOpenGroups(state.openGroups);
+      paintNav();
+    });
+
+    var search = shell.querySelector('#dghm-tool-search');
+    search.addEventListener('input', function () {
+      state.filter = search.value;
+      paintNav();
+    });
+    search.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape' || !search.value) return;
+      search.value = '';
+      state.filter = '';
+      paintNav();
+    });
   }
 
-  function bindNavCollapse(shell) {
+  /** 側欄目前是否只顯示圖示（手動收合，或視窗窄且未展開）。 */
+  function isIconOnly(shell) {
+    if (shell.classList.contains('is-nav-collapsed')) return true;
+    return global.matchMedia('(max-width: 860px)').matches && !shell.classList.contains('is-nav-expanded');
+  }
+
+  function bindNavToggle(shell) {
     var collapsed = false;
-    try { collapsed = localStorage.getItem(NAV_COLLAPSE_KEY) === '1'; } catch (e) {}
-    applyNavCollapsed(shell, collapsed);
+    try { collapsed = localStorage.getItem(NAV_COLLAPSE_KEY) === '1'; } catch (error) {}
 
-    function setCollapsed(next) {
-      applyNavCollapsed(shell, next);
-      try { localStorage.setItem(NAV_COLLAPSE_KEY, next ? '1' : '0'); } catch (e) {}
+    function apply(next) {
+      shell.classList.toggle('is-nav-collapsed', next);
+      document.body.classList.toggle('is-nav-collapsed', next);
+      var btn = shell.querySelector('[data-shell-nav-toggle]');
+      btn.setAttribute('aria-expanded', next ? 'false' : 'true');
+      btn.setAttribute('aria-label', next ? '展開側邊選單' : '收合側邊選單');
+      btn.querySelector('span').textContent = next ? '展開選單' : '收合選單';
     }
 
-    var collapseBtn = shell.querySelector('[data-shell-nav-collapse]');
-    var expandBtn = shell.querySelector('[data-shell-nav-expand]');
-    if (collapseBtn) {
-      collapseBtn.addEventListener('click', function () { setCollapsed(true); });
-    }
-    if (expandBtn) {
-      expandBtn.addEventListener('click', function () { setCollapsed(false); });
-    }
+    apply(collapsed);
+
+    shell.querySelector('[data-shell-nav-toggle]').addEventListener('click', function () {
+      // 窄視窗下側欄本來就是圖示狀態，按鈕改為切換浮層展開
+      if (global.matchMedia('(max-width: 860px)').matches) {
+        shell.classList.toggle('is-nav-expanded');
+        return;
+      }
+      var next = !shell.classList.contains('is-nav-collapsed');
+      apply(next);
+      try { localStorage.setItem(NAV_COLLAPSE_KEY, next ? '1' : '0'); } catch (error) {}
+    });
   }
 
   function hydrateUserArea(area) {

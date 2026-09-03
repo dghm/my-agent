@@ -50,15 +50,6 @@ function initColumnResize(options) {
   var minEditor = options.minEditor || 360;
   var minPreview = options.minPreview || 280;
 
-  function collapsedExtra() {
-    if (!document.body.classList.contains('is-nav-collapsed')) return 0;
-    if (window.matchMedia('(max-width: 900px)').matches) return 0;
-    var styles = getComputedStyle(document.documentElement);
-    var rail = parseFloat(styles.getPropertyValue('--shell-rail-width')) || 68;
-    var menu = parseFloat(styles.getPropertyValue('--shell-menu-width')) || 238;
-    return rail + menu;
-  }
-
   function applyBase(width) {
     page.style.setProperty('--editor-col-width', Math.round(width) + 'px');
   }
@@ -76,13 +67,13 @@ function initColumnResize(options) {
     var startWidth = editor.getBoundingClientRect().width;
 
     function onMove(moveEvent) {
-      var extra = collapsedExtra();
+      // 側欄收合後多出來的寬度直接留給預覽區，編輯欄維持設定寬度，
+      // 因此不再需要針對收合狀態做補償計算。
       var pageWidth = page.getBoundingClientRect().width;
       var handleWidth = handle.getBoundingClientRect().width;
-      var nextVisual = startWidth + (moveEvent.clientX - startX);
-      var maxVisual = pageWidth - minPreview - handleWidth;
-      nextVisual = Math.max(minEditor + extra, Math.min(maxVisual, nextVisual));
-      applyBase(Math.max(minEditor, nextVisual - extra));
+      var maxWidth = pageWidth - minPreview - handleWidth;
+      var next = startWidth + (moveEvent.clientX - startX);
+      applyBase(Math.max(minEditor, Math.min(maxWidth, next)));
     }
 
     function onUp() {

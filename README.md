@@ -15,8 +15,23 @@
 ## 主要檔案用途
 
 - `index.html`
-  - Dashboard 主頁（左側工具選單 + 右側預覽區）。
-  - 可切換各工具頁面（客戶訪談、Section 生成、社群文案）或查看 CLI 工具資訊。
+  - Dashboard 主頁（工作台總覽）。
+  - 顯示客戶案件流程 01–06 與快速入口，各卡片連往對應工具。
+
+- `app-shell.css` / `app-shell.js` / `tool-registry.js`
+  - 所有工具頁共用的外框：單一側邊選單（6 個類別群組、18 個工具）＋ 頂列。
+  - 側欄支援搜尋（含口語別名，例如「請款」找得到「應收帳款通知」）、
+    群組折疊（狀態記憶於 localStorage）、收合成 64px 圖示列。
+  - 頁面掛載方式：`<body data-tool="工具 id">` ＋ `mountAppShell({ activeTool: '工具 id' })`，
+    工具 id 定義於 `tool-registry.js`。
+  - 目前已套用的頁面：`index`、`skill-toolbox`、`client-brief`、`design-system`、
+    `work-schedule`、`Quote-Generator`、`Contract-Generator`、`Invoice-Generator`。
+    其餘頁面（`income-tracker`、`meeting-notes`、`clear-todo`、`qr-generator`、
+    `wechat-h5-card`、`user-guide-generator`、`brand-guideline-generator`、
+    `social-ui`、`breakdance-section-generator`）尚未掛殼，側欄以橘色小圓點標示。
+
+- `ui-proposal.html`
+  - UI 整理提案原型（不影響實際頁面），內建「設計說明」面板記錄改動理由。
 
 - `tool-api-server.js`
   - 本專案的 API 後端（Node.js HTTP server）。
