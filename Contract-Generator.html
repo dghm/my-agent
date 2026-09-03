@@ -402,55 +402,52 @@ __PAGES__
         <div class="row2">
           <div>
             <label>合約編號</label>
-            <input type="text" id="f_ct_no" placeholder="例：DH-USA-SA-2026-001">
+            <input type="text" id="f_ct_no">
           </div>
           <div>
             <label>Banner 標籤</label>
-            <input type="text" id="f_banner_label" value="專 案 合 約 書">
+            <input type="text" id="f_banner_label">
           </div>
         </div>
         <div class="row2">
           <div>
             <label>立約日期</label>
-            <input type="text" id="f_execution_date" placeholder="例：___年___月___日（2026 年 ___月___日）">
+            <input type="text" id="f_execution_date">
           </div>
           <div>
             <label>文件性質</label>
-            <input type="text" id="f_doc_type" placeholder="例：關聯企業內部服務合約">
+            <input type="text" id="f_doc_type">
           </div>
         </div>
 
         <label>文件主標題（可多行，每行會換行顯示）</label>
-        <textarea id="f_doc_title" rows="2" placeholder="例：服務合約書">服務合約書</textarea>
+        <textarea id="f_doc_title" rows="2"></textarea>
 
         <label>英文副標 Subtitle（選填）</label>
-        <input type="text" id="f_subtitle" placeholder="例：Service Agreement" value="Service Agreement">
+        <input type="text" id="f_subtitle">
       </fieldset>
 
       <fieldset>
         <legend>02 — 雙方資料</legend>
-        <p class="hint" style="margin-bottom:8px">左側為甲方（委託方），右側為乙方（服務方，預設帶入 DGHM）。右側會直接排進首頁。</p>
+        <p class="hint" style="margin-bottom:8px">左側為甲方（委託方），右側為乙方（服務方）。右側會直接排進首頁。</p>
         <div class="row2">
           <div class="blk" style="margin:0">
             <div class="blk-head"><span class="blk-tag">甲方</span></div>
             <label>角色標題</label>
-            <input type="text" id="f_party_a_role" value="甲方">
+            <input type="text" id="f_party_a_role">
             <label>公司名稱</label>
             <input type="text" id="f_party_a_company">
             <label>明細（一行一筆）</label>
-            <textarea id="f_party_a_details" rows="5" placeholder="例：&#10;地址：…&#10;統一編號：…&#10;聯絡人：…"></textarea>
+            <textarea id="f_party_a_details" rows="5"></textarea>
           </div>
           <div class="blk" style="margin:0">
             <div class="blk-head"><span class="blk-tag">乙方</span></div>
             <label>角色標題</label>
-            <input type="text" id="f_party_b_role" value="乙方">
+            <input type="text" id="f_party_b_role">
             <label>公司名稱</label>
-            <input type="text" id="f_party_b_company" value="萬能數維有限公司">
+            <input type="text" id="f_party_b_company">
             <label>明細（一行一筆）</label>
-            <textarea id="f_party_b_details" rows="5">桃園市楊梅區梅高路 120 巷 33 號
-統一編號：60458287
-聯絡人：謝萬錤 Aries Hsieh
-電話 / Email：0937-805149 / help@dghm.tw</textarea>
+            <textarea id="f_party_b_details" rows="5"></textarea>
           </div>
         </div>
       </fieldset>
@@ -472,7 +469,7 @@ __PAGES__
             <span class="page-pick">頁 <input type="number" min="1" id="f_sig_page" value="3" oninput="refreshOutput()"></span>
           </div>
           <label>簽署說明文字</label>
-          <textarea id="f_sig_desc" rows="2" oninput="refreshOutput()">本合約經雙方簽署後生效，雙方各執一份為憑。</textarea>
+          <textarea id="f_sig_desc" rows="2" oninput="refreshOutput()"></textarea>
         </div>
         <div class="blk">
           <div class="blk-head">
@@ -482,7 +479,7 @@ __PAGES__
             <span class="page-pick">頁 <input type="number" min="1" id="f_validity_page" value="3" oninput="refreshOutput()"></span>
           </div>
           <label>提示條文字（空白則帶入上方立約日期）</label>
-          <input type="text" id="f_validity_text" oninput="refreshOutput()" placeholder="例：___年___月___日（2026 年 ___月___日）">
+          <input type="text" id="f_validity_text" oninput="refreshOutput()">
         </div>
       </fieldset>
 
@@ -533,7 +530,7 @@ __PAGES__
 /* Dark / Day 模式（僅編輯介面，產出的合約文件樣式不受影響） */
 initTheme('dghm-contract-editor-theme');
 
-var SESSION_STORAGE_KEY = 'dghm-contract-session-draft';
+var SESSION_STORAGE_KEY = 'dghm-contract-session-draft-v2';
 var _suspendSessionSave = false;
 var _sessionRestored = false;
 
@@ -674,7 +671,7 @@ function addArticle(data) {
     '<div class="blk-head">' +
       '<span class="blk-tag">條文</span>' +
       '<span class="spacer"></span>' +
-      '<span class="page-pick">頁 <input type="number" min="1" class="a-page" value="' + (data.page || 1) + '" oninput="refreshOutput()"></span>' +
+      '<span class="page-pick">頁 <input type="number" min="1" class="a-page" value="' + (data.page || '') + '" oninput="refreshOutput()"></span>' +
       '<button type="button" class="btn-del" onclick="removeBlk(\'' + id + '\')">✕</button>' +
     '</div>' +
     '<label>條文標題（例：第一條｜合約目的）</label>' +
@@ -756,7 +753,7 @@ function partyDetailHtml(text) {
 function buildSigHtml() {
   if (!document.getElementById('f_sig_on').checked) return '';
   var companyA = v('f_party_a_company').trim() || '＿＿＿＿＿＿＿＿';
-  var companyB = v('f_party_b_company').trim() || '萬能數維有限公司';
+  var companyB = v('f_party_b_company').trim() || '＿＿＿＿＿＿＿＿';
   var html = '<div class="section" style="padding-bottom:6mm">\n<div class="section-title">確認簽署</div>\n';
   var desc = v('f_sig_desc').trim();
   if (desc) html += '<p style="font-size:0.8rem;color:var(--gray);margin:6px 0 12px">' + xmlEsc(desc) + '</p>\n';
@@ -776,17 +773,17 @@ function buildValidityHtml() {
 }
 
 function buildFooter(ctNo, companyA, companyB) {
-  return '<div class="page-footer"><span>' + xmlEsc(companyA || '甲方') + ' × <strong>' + xmlEsc(companyB || '萬能數維有限公司') + '</strong></span><span>' + xmlEsc(ctNo) + ' &nbsp;·&nbsp; 本文件由萬能數維有限公司出具，未經授權不得轉作其他用途</span></div>\n';
+  return '<div class="page-footer"><span>' + xmlEsc(companyA || '甲方') + ' × <strong>' + xmlEsc(companyB || '乙方') + '</strong></span><span>' + xmlEsc(ctNo) + ' &nbsp;·&nbsp; 本文件未經授權不得轉作其他用途</span></div>\n';
 }
 
 function buildDoc() {
-  var ctNo = v('f_ct_no').trim() || 'DH-CT-001';
+  var ctNo = v('f_ct_no').trim() || '＿＿＿＿＿＿';
   var companyA = v('f_party_a_company').trim();
-  var companyB = v('f_party_b_company').trim() || '萬能數維有限公司';
+  var companyB = v('f_party_b_company').trim() || '＿＿＿＿＿＿＿＿';
   var titleLines = lines(v('f_doc_title'));
-  var titleHtml = titleLines.map(xmlEsc).join('<br>') || '服務合約書';
-  var titlePlain = titleLines.join(' ') || '服務合約書';
-  var bannerLabel = v('f_banner_label').trim() || '專 案 合 約 書';
+  var titleHtml = titleLines.map(xmlEsc).join('<br>') || '＿＿＿＿＿＿';
+  var titlePlain = titleLines.join(' ') || '＿＿＿＿＿＿';
+  var bannerLabel = v('f_banner_label').trim() || '＿＿＿＿＿＿';
 
   var blocks = [];
   document.querySelectorAll('#art-list .blk').forEach(function (w) {
@@ -859,7 +856,7 @@ function previewDoc() {
 function generateDoc() {
   var html = buildDoc();
   var ctNo = v('f_ct_no') || 'CT';
-  var company = v('f_party_a_company') || '合約';
+  var company = v('f_party_a_company') || 'contract';
   var filename = ctNo + '_' + company + '-合約書.html';
   var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   var a = document.createElement('a');
@@ -964,7 +961,7 @@ function applyDraft(draft) {
   }
 
   document.getElementById('art-list').innerHTML = '';
-  (draft.articles && draft.articles.length ? draft.articles : [{ title: '第一條｜合約目的', page: 1 }]).forEach(function (a) {
+  (draft.articles && draft.articles.length ? draft.articles : [{}]).forEach(function (a) {
     addArticle(a);
   });
 
@@ -1027,8 +1024,7 @@ document.getElementById('load-draft-input').addEventListener('change', function 
    初始化
    ============================================================ */
 _suspendSessionSave = true;
-addArticle({ title: '第一條｜合約目的', page: 1, body: '雙方依誠信原則訂立本合約，明確服務範疇與報酬計算方式。' });
-addArticle({ title: '第二條｜服務範圍', page: 1, body: '乙方提供甲方以下服務：\n1. 技術服務執行\n2. 業務開發支援\n3. 專案管理' });
+addArticle({});
 refreshOutput();
 initFormAccordions();
 if (!restoreSessionDraft()) _suspendSessionSave = false;

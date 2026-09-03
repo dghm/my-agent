@@ -45,6 +45,7 @@
         { id: 'quote', label: '服務報價單', href: 'Quote-Generator.html', status: 'integrated' },
         { id: 'contract', label: '合約文件', href: 'Contract-Generator.html', status: 'integrated' },
         { id: 'invoice', label: '應收帳款通知', href: 'Invoice-Generator.html', status: 'integrated' },
+        { id: 'allowance', label: '折讓單', href: 'Allowance-Generator.html', status: 'integrated' },
         { id: 'income', label: '收入登記', href: 'income-tracker.html', status: 'legacy' },
       ],
     },

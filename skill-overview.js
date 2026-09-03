@@ -11,6 +11,21 @@
   var count = document.getElementById('skill-count');
   var detail = document.getElementById('skill-detail');
   var storageAvailable = true;
+  var EMPTY_LIST_HTML =
+    '<div class="skill-empty"><strong>尚未加入 Skill</strong>' +
+    '<p>請從本機選擇一個 `.skill` 或 ZIP 套件。</p></div>';
+  var EMPTY_DETAIL_HTML =
+    '<div class="skill-detail-empty"><span aria-hidden="true">✦</span>' +
+    '<h2>選擇一個 Skill 查看說明</h2>' +
+    '<p>你會在這裡看到用途、使用時機、輸出結果與原始 SKILL.md。</p></div>';
+
+  function isSkillPackage(filename) {
+    return /\.(skill|zip)$/i.test(String(filename || ''));
+  }
+
+  function isSavableSkill(filename) {
+    return /\.skill$/i.test(String(filename || ''));
+  }
 
   function escapeHtml(value) {
     return String(value == null ? '' : value)
@@ -190,7 +205,9 @@
   }
 
   async function readSkillFile(file) {
-    if (!/\.skill$/i.test(file.name)) throw new Error(file.name + '：請選擇副檔名為 .skill 的檔案。');
+    if (!isSkillPackage(file.name)) {
+      throw new Error(file.name + '：請選擇副檔名為 .skill 或 .zip 的套件檔。');
+    }
     var buffer = await file.arrayBuffer();
     var entries = parseZipDirectory(buffer);
     var skillEntry = entries.find(function (entry) {
@@ -207,6 +224,7 @@
       file: file,
       size: file.size,
       saved: false,
+      savable: isSavableSkill(file.name),
       source: source,
       files: entries.filter(function (entry) { return !entry.directory; }),
       summary: deriveSummary(parsed, file.name),
@@ -216,9 +234,7 @@
   function renderList() {
     count.textContent = skills.length;
     if (!skills.length) {
-      list.innerHTML =
-        '<div class="skill-empty"><strong>尚未加入 Skill</strong>' +
-        '<p>請從本機選擇一個 .skill 套件。</p></div>';
+      list.innerHTML = EMPTY_LIST_HTML;
       return;
     }
     list.innerHTML = skills.map(function (skill) {
@@ -246,18 +262,25 @@
           '<span class="skill-format-badge">本機解析</span>' +
           '<button class="skill-action-button is-primary" type="button" data-save-skill="' +
             escapeHtml(skill.id) + '">' +
-            (storageAvailable ? '儲存到工作台' : '雲端保存不可用') +
+            (!skill.savable ? '僅供預覽' : (storageAvailable ? '儲存到工作台' : '雲端保存不可用')) +
           '</button></div>';
+    var packageMeta = '<div class="skill-package-meta">' +
+      '<span>' + escapeHtml(formatBytes(skill.size || 0)) + '</span>' +
+      '<span>' + escapeHtml(skill.savable === false ? 'ZIP 預覽' : '.skill 套件') + '</span>' +
+      '</div>';
     detail.innerHTML =
       '<div class="skill-detail-head"><div><p class="skill-package-name">' +
         escapeHtml(skill.filename) + '</p><h2>' + escapeHtml(skill.summary.name) +
-        '</h2></div>' + actions + '</div>' +
+        '</h2>' + packageMeta + '</div>' + actions + '</div>' +
       '<div class="skill-summary-grid">' +
         summaryCard('可以幫我完成什麼', skill.summary.purpose) +
         summaryCard('何時適合使用', skill.summary.when) +
         summaryCard('輸出結果', skill.summary.output) +
         summaryCard('來源格式／平台', skill.summary.source) +
       '</div>' +
+      (skill.savable === false
+        ? '<div class="skill-inline-note">這個套件目前是以 ZIP 形式開啟，可先預覽內容；若要保存到工作台，請改用副檔名 `.skill` 的原始套件。</div>'
+        : '') +
       '<section class="skill-subsection"><h3>套件檔案 · ' + skill.files.length + '</h3><ul class="skill-files">' +
         skill.files.map(function (entry) {
           return '<li><span>' + escapeHtml(entry.name) + '</span><span>' +
@@ -312,6 +335,7 @@
       files: Array.isArray(record.files) ? record.files : [],
       summary: record.summary || {},
       saved: true,
+      savable: true,
       uploadedAt: record.uploadedAt,
     };
   }
@@ -341,6 +365,10 @@
   async function saveSkill(skill, button) {
     if (!skill.file) {
       showMessage('這個 Skill 沒有可上傳的本機原始檔，請重新選擇 .skill。', true);
+      return;
+    }
+    if (!skill.savable) {
+      showMessage('這個 ZIP 套件目前僅供預覽；請改用 `.skill` 原始檔再保存到工作台。', true);
       return;
     }
     button.disabled = true;
@@ -390,12 +418,7 @@
       activeId = skills.length ? skills[0].id : '';
       renderList();
       if (activeId) renderDetail();
-      else {
-        detail.innerHTML =
-          '<div class="skill-detail-empty"><span aria-hidden="true">✦</span>' +
-          '<h2>選擇一個 Skill 查看說明</h2>' +
-          '<p>你會在這裡看到用途、使用時機、輸出結果與原始 SKILL.md。</p></div>';
-      }
+      else detail.innerHTML = EMPTY_DETAIL_HTML;
       showMessage('Skill 已從工作台刪除。', false);
     } catch (error) {
       button.disabled = false;
