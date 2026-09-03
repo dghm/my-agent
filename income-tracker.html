@@ -607,13 +607,25 @@ document.getElementById('import-btn').addEventListener('click', () => {
 document.getElementById('import-file').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
+  let json;
   try {
-    const json = JSON.parse(await file.text());
-    importInvoiceJson(json);
-    setStatus('已匯入請款單資料，請確認金額、稅率與收款／發票狀態後按「儲存登記」');
+    json = JSON.parse(await file.text());
   } catch (err) {
-    setStatus(`匯入失敗：${err.message}`);
+    setStatus(`匯入失敗：檔案不是有效的 JSON（${err.message}）`);
+    e.target.value = '';
+    return;
   }
+  // 舊版請款單草稿沒有 kind，以欄位結構判斷
+  const check = checkDraftKind(json, 'dghm-invoice-draft', (d) =>
+    !!(d.fields && ('f_company_name' in d.fields || 'f_inv_no' in d.fields)) || Array.isArray(d.items)
+  );
+  if (!check.ok) {
+    setStatus(`匯入失敗：${check.reason}`);
+    e.target.value = '';
+    return;
+  }
+  importInvoiceJson(json);
+  setStatus('已匯入請款單資料，請確認金額、稅率與收款／發票狀態後按「儲存登記」');
   e.target.value = '';
 });
 

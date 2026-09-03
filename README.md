@@ -61,6 +61,14 @@
   - 資料透過 `netlify/functions/income.js` 的 `/api/income/*` 讀寫，存於 Netlify Blobs。
   - 儲存登記後可在「附件」區上傳請款單／發票掃描檔（單檔上限 10MB），附件附加於該筆收入登記紀錄，可點擊檢視或刪除，存於獨立的 Netlify Blobs store（`income-attachments`）。
 
+- 草稿 JSON 的格式辨識
+  - 各工具的草稿都帶 `kind` 標記：`dghm-quote-draft`、`dghm-invoice-draft`、
+    `dghm-contract-draft`。載入前以 `dghm-ui.js` 的 `checkDraftKind()` 驗證，
+    載錯檔案會明確說明（例如「這是報價單草稿，不是請款單草稿」），
+    而不是安靜地把表單清空又填不進東西。
+  - 涵蓋報價單、請款單、合約的「載入草稿 JSON」與收入登記的「匯入請款單 JSON」。
+  - 加上標記之前存的舊草稿沒有 `kind`，改以欄位結構判斷，仍可正常載入。
+
 - 圖示內嵌
   - `Quote-Generator.html`、`Invoice-Generator.html`、`Contract-Generator.html`
     的工具列圖示原本以 CSS mask 從 cdn.jsdelivr.net 載入，網路不通時整排按鈕

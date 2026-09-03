@@ -910,7 +910,7 @@ var FIELD_IDS = [
 ];
 
 function collectDraft() {
-  var draft = { fields: {}, items: [], terms: [] };
+  var draft = { kind: 'dghm-invoice-draft', version: 1, fields: {}, items: [], terms: [] };
   FIELD_IDS.forEach(function (id) { draft.fields[id] = v(id); });
   document.querySelectorAll('#items-tbody tr').forEach(function (row) {
     var fields = row.querySelectorAll('input, textarea');
@@ -963,12 +963,19 @@ document.getElementById('load-draft-input').addEventListener('change', function 
   if (!file) return;
   var reader = new FileReader();
   reader.onload = function () {
+    var draft;
     try {
-      var draft = JSON.parse(reader.result);
-      applyDraft(draft);
+      draft = JSON.parse(reader.result);
     } catch (err) {
-      alert('草稿檔案格式錯誤，無法載入。');
+      alert('草稿檔案不是有效的 JSON，無法載入。');
+      return;
     }
+    // 舊版請款單草稿沒有 kind，以欄位結構判斷
+    var check = checkDraftKind(draft, 'dghm-invoice-draft', function (d) {
+      return !!(d.fields && ('f_company_name' in d.fields || 'f_inv_no' in d.fields)) || Array.isArray(d.items);
+    });
+    if (!check.ok) { alert(check.reason); return; }
+    applyDraft(draft);
   };
   reader.readAsText(file);
   e.target.value = '';

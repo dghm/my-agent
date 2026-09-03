@@ -1519,14 +1519,21 @@ document.getElementById('load-draft-input').addEventListener('change', function 
   if (!file) return;
   var reader = new FileReader();
   reader.onload = function () {
+    var draft;
     try {
-      var draft = JSON.parse(reader.result);
-      applyDraft(draft);
-      persistSessionDraft();
-      setDraftStatus('已載入草稿 JSON，並更新本機暫存');
+      draft = JSON.parse(reader.result);
     } catch (err) {
-      alert('草稿檔案格式錯誤，無法載入。');
+      alert('草稿檔案不是有效的 JSON，無法載入。');
+      return;
     }
+    // 舊版報價單草稿沒有 kind，以欄位結構判斷
+    var check = checkDraftKind(draft, 'dghm-quote-draft', function (d) {
+      return !!(d.fields && ('f_qt_no' in d.fields || 'f_client_name' in d.fields)) || Array.isArray(d.sections);
+    });
+    if (!check.ok) { alert(check.reason); return; }
+    applyDraft(draft);
+    persistSessionDraft();
+    setDraftStatus('已載入草稿 JSON，並更新本機暫存');
   };
   reader.readAsText(file);
   e.target.value = '';
