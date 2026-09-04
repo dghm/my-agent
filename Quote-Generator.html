@@ -1683,6 +1683,47 @@ function serviceSummary(draft) {
   return titles.join('、');
 }
 
+/**
+ * 請款單的標準付款條件，跟報價單資料無關——是公司固定政策，不是從報價單
+ * 算出來的。少數 Net 30 客戶開單時自己在請款單上改掉即可。
+ *
+ * 原本這裡直接帶報價單付款卡片的「時點說明」過去，但那一欄有時候會被拿來
+ * 兼放驗收定義之類的補充說明（尤其金額不到 $24,000、不會另外簽合約時），
+ * 整段搬過去會把驗收定義文字錯放到請款單的付款條件欄。這類補充說明留在
+ * 報價單原地，需要的話請自行複製到請款單的「條款與說明」，不在交接時
+ * 自動處理——沒有把握安全地從自然語言裡分辨「期限」跟「定義」。
+ */
+var DEFAULT_PAYMENT_TERMS = '收到發票後 5 個工作天內現金或匯款';
+
+/**
+ * 一次付清時，把報價的計價表／勾選方案表逐列攤成請款單項目，取代原本
+ * 「一個項目、用期別名稱當項目名」的做法——請款單項目該是實際服務明細，
+ * 不是期別包裝。
+ *
+ * 分期的話沒有「這個項目算第幾期」的歸屬資料（報價單表單本身沒有這種
+ * 關聯），沒把握就不猜，退回舊的整期一個項目做法。
+ */
+function flattenQuoteItems(draft, card, index) {
+  var rows = [];
+  (draft.sections || []).forEach(function (sec) {
+    if (sec.type !== 'price' && sec.type !== 'option') return; // 說明表不列金額，不算請款項目
+    (sec.rows || []).forEach(function (row) {
+      var name = String(row.name || '').trim();
+      if (!name) return;
+      rows.push({ name: name, desc: String(row.desc || '').trim(), price: amountToNumber(row.price) });
+    });
+  });
+
+  if (rows.length) return rows;
+
+  // 整份報價只有說明表、沒有計價內容可攤時，退回舊的單一項目做法
+  return [{
+    name: card.phase || ('第 ' + (index + 1) + ' 期'),
+    desc: serviceSummary(draft),
+    price: amountToNumber(card.amount)
+  }];
+}
+
 function buildHandoffPayload(draft, cards, index) {
   var f = draft.fields || {};
   var card = cards[index];
@@ -1690,6 +1731,14 @@ function buildHandoffPayload(draft, cards, index) {
   var hint = amount
     ? 'NT$ ' + formatAmount(amount) + '(' + (index + 1) + '/' + cards.length + ')'
     : '';
+
+  var items = cards.length === 1
+    ? flattenQuoteItems(draft, card, index)
+    : [{
+        name: card.phase || ('第 ' + (index + 1) + ' 期'),
+        desc: serviceSummary(draft),
+        price: amount
+      }];
 
   return {
     kind: 'dghm-quote-to-invoice',
@@ -1705,14 +1754,10 @@ function buildHandoffPayload(draft, cards, index) {
       f_contact:       String(f.f_client_contact || '').trim(),
       f_phone:         String(f.f_client_phone || '').trim(),
       f_email:         String(f.f_client_email || '').trim(),
-      f_payment_terms: card.timing,
+      f_payment_terms: DEFAULT_PAYMENT_TERMS,
       f_total_hint:    hint
     },
-    items: [{
-      name: card.phase || ('第 ' + (index + 1) + ' 期'),
-      desc: serviceSummary(draft),
-      price: amount
-    }]
+    items: items
   };
 }
 
