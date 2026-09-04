@@ -1716,6 +1716,26 @@ function serviceSummary(draft) {
 var DEFAULT_PAYMENT_TERMS = '收到發票後 5 個工作天內現金或匯款';
 
 /**
+ * 請款單「單一項目」的說明欄用：列出報價單各區塊逐列的項目名稱（計價表、
+ * 勾選方案表、說明表都算），這樣才看得出實際請款的服務內容是什麼。
+ * `serviceSummary()` 的區塊標題（如「一、專案範圍與規格」）對報價單本身
+ * 是合理的目錄式摘要，但拿來當請款項目說明太籠統、看不出內容——尤其
+ * 現在常態是整份報價只用說明表呈現，不拆單項金額，標題摘要幾乎每次都
+ * 會踩到這個問題。找不到任何項目列時才退回區塊標題。
+ */
+function invoiceItemSummary(draft) {
+  var names = [];
+  (draft.sections || []).forEach(function (sec) {
+    (sec.rows || []).forEach(function (row) {
+      var name = String(row.name || '').trim();
+      if (name) names.push(name);
+    });
+  });
+  if (names.length) return names.join('、');
+  return serviceSummary(draft);
+}
+
+/**
  * 一次付清時，把報價的計價表／勾選方案表逐列攤成請款單項目，取代原本
  * 「一個項目、用期別名稱當項目名」的做法——請款單項目該是實際服務明細，
  * 不是期別包裝。
@@ -1739,7 +1759,7 @@ function flattenQuoteItems(draft, card, index) {
   // 整份報價只有說明表、沒有計價內容可攤時，退回舊的單一項目做法
   return [{
     name: card.phase || ('第 ' + (index + 1) + ' 期'),
-    desc: serviceSummary(draft),
+    desc: invoiceItemSummary(draft),
     price: amountToNumber(card.amount)
   }];
 }
@@ -1787,7 +1807,7 @@ function buildHandoffPayload(draft, cards, index) {
     ? flattenQuoteItems(draft, card, index)
     : [{
         name: card.phase || ('第 ' + (index + 1) + ' 期'),
-        desc: serviceSummary(draft),
+        desc: invoiceItemSummary(draft),
         price: amount
       }];
 
