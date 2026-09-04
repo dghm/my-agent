@@ -179,6 +179,9 @@
   .handoff-actions button:hover { background: #C04E1E; border-color: #C04E1E; }
   .handoff-hint { color: var(--surface-text-muted); font-size: 11px; }
 
+  .airtable-actions { padding-top: 12px; margin-top: -4px; border-top: none; }
+  .airtable-actions button.secondary { display: inline-flex; align-items: center; gap: 7px; }
+
   .handoff-dialog {
     width: min(480px, calc(100vw - 32px));
     padding: 0; border: 0;
@@ -455,6 +458,14 @@ __PAGES__
       <span class="handoff-hint">依付款條件的期別，把客戶資料與該期金額帶到請款單</span>
     </div>
 
+    <div class="handoff-actions airtable-actions">
+      <button type="button" class="secondary" id="airtable-open-btn">
+        <svg class="action-icon" aria-hidden="true"><use href="#i-file-down"></use></svg>
+        <span>從 Airtable 開啟</span>
+      </button>
+      <span class="handoff-hint">讀取【DGHM】base 的既有報價單（唯讀，不會寫回 Airtable）</span>
+    </div>
+
     <form id="form">
 
       <fieldset>
@@ -624,6 +635,20 @@ __PAGES__
       <div class="handoff-foot">
         <button type="submit" value="cancel" class="secondary">取消</button>
         <button type="button" id="handoff-confirm">帶入請款單</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="airtable-dialog" class="handoff-dialog" aria-labelledby="airtable-title">
+    <form method="dialog">
+      <h2 id="airtable-title">開啟哪一筆報價單？</h2>
+      <p class="handoff-desc">會覆蓋目前編輯中的內容（服務項目區塊會整份取代），建議先自行確認或另存草稿。</p>
+      <div id="airtable-list" class="handoff-list">
+        <p class="handoff-empty">讀取中…</p>
+      </div>
+      <div class="handoff-foot">
+        <button type="submit" value="cancel" class="secondary">取消</button>
+        <button type="button" id="airtable-confirm" disabled>帶入報價單</button>
       </div>
     </form>
   </dialog>
@@ -1764,6 +1789,128 @@ function buildHandoffPayload(draft, cards, index) {
     dialog.close();
     location.href = 'Invoice-Generator.html';
   });
+})();
+
+/* ============================================================
+   從 Airtable 開啟既有報價單（唯讀）
+
+   資料來源是【DGHM】base 的「報價單」表，透過 Netlify Function
+   netlify/functions/airtable-quotes.js 代理讀取（Airtable API Key
+   放在伺服器環境變數，靜態頁面本身不會接觸金鑰）。
+
+   只覆蓋確定能從 Airtable 對應到的欄位：報價單編號、專案代碼、
+   報價／有效日期、客戶方資料，以及重建一個「服務項目」計價表區塊。
+   付款條件、預估時程等 Airtable 尚未結構化的內容維持原狀，不清空。
+   ============================================================ */
+(function () {
+  var openBtn = document.getElementById('airtable-open-btn');
+  var dialog = document.getElementById('airtable-dialog');
+  var list = document.getElementById('airtable-list');
+  var confirmBtn = document.getElementById('airtable-confirm');
+  if (!openBtn || !dialog) return;
+
+  var records = [];
+
+  function renderError(message) {
+    list.innerHTML = '<p class="handoff-empty">' + esc(message) + '</p>';
+    confirmBtn.disabled = true;
+  }
+
+  openBtn.addEventListener('click', function () {
+    dialog.showModal();
+    list.innerHTML = '<p class="handoff-empty">讀取中…</p>';
+    confirmBtn.disabled = true;
+
+    fetch('/api/airtable-quotes/list')
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (!data.ok) throw new Error(data.error || '讀取失敗');
+        records = data.records || [];
+        if (!records.length) {
+          renderError('Airtable 上目前沒有任何報價單記錄。');
+          return;
+        }
+        confirmBtn.disabled = false;
+        list.innerHTML = records.map(function (r, i) {
+          var amount = r.total ? 'NT$ ' + Math.round(r.total).toLocaleString('en-US') : '—';
+          return '<label class="handoff-option">' +
+            '<input type="radio" name="airtable-quote" value="' + i + '"' + (i === 0 ? ' checked' : '') + '>' +
+            '<span>' +
+              '<span class="ho-phase">' + esc(r.quoteNo) + '</span>' +
+              '<span class="ho-timing">' + esc(r.clientName || '（未填客戶）') + (r.issueDate ? '　' + esc(r.issueDate) : '') + '</span>' +
+            '</span>' +
+            '<span class="ho-amount">' + amount + '</span>' +
+            '</label>';
+        }).join('');
+      })
+      .catch(function (error) {
+        // 最常見的狀況：本機開檔案（file://）或 http-server 沒有 Netlify Function 可用，
+        // 或伺服器尚未設定 AIRTABLE_API_KEY——訊息盡量講清楚，不要只丟一句「讀取失敗」。
+        renderError(
+          '無法連線到 Airtable：' + error.message +
+          '（需在 netlify dev 或已部署的站台開啟，且伺服器已設定 AIRTABLE_API_KEY）'
+        );
+      });
+  });
+
+  confirmBtn.addEventListener('click', function () {
+    var picked = list.querySelector('input[name="airtable-quote"]:checked');
+    if (!picked) return;
+    var summary = records[parseInt(picked.value, 10)];
+    if (!summary) return;
+
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = '讀取中…';
+
+    fetch('/api/airtable-quotes/get?id=' + encodeURIComponent(summary.id))
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (!data.ok) throw new Error(data.error || '讀取失敗');
+        applyAirtableQuote(data.quote);
+        dialog.close();
+      })
+      .catch(function (error) {
+        alert('帶入失敗：' + error.message);
+      })
+      .finally(function () {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = '帶入報價單';
+      });
+  });
+
+  function setValue(id, value) {
+    var el = document.getElementById(id);
+    if (el && value) el.value = value;
+  }
+
+  function applyAirtableQuote(q) {
+    setValue('f_qt_no', q.quoteNo);
+    setValue('f_proj_code', q.projectCode);
+    setValue('f_issue_date', q.issueDate);
+    setValue('f_valid_date', q.validDate);
+    setValue('f_client_name', q.clientName);
+    setValue('f_client_addr', q.clientAddr);
+    setValue('f_client_vat', q.clientVat);
+    setValue('f_client_contact', q.clientContact);
+    setValue('f_client_phone', q.clientPhone);
+    setValue('f_client_email', q.clientEmail);
+
+    document.getElementById('sec-list').innerHTML = '';
+    addSection({
+      title: '服務項目',
+      type: 'price',
+      rows: (q.items && q.items.length ? q.items : [{}]).map(function (it) {
+        return { name: it.name || '', spec: it.spec || '', desc: it.desc || '', price: it.price != null ? String(it.price) : '' };
+      })
+    });
+
+    refreshOutput();
+    // refreshOutput() 是去抖動的，250ms 後才會實際重畫並自動暫存（連帶覆蓋狀態列文字為
+    // 「已自動暫存」）；這則訊息要晚於去抖動視窗才設，否則會被蓋掉。
+    setTimeout(function () {
+      setDraftStatus('已從 Airtable 帶入「' + q.quoteNo + '」');
+    }, OUTPUT_DEBOUNCE_MS + 60);
+  }
 })();
 
 /* ============================================================

@@ -95,6 +95,22 @@
   - 三支檔案仍以 `@import` 從 Google Fonts 載入 K2D 與 Noto Sans TC；
     離線時會退回系統字型，版面不會壞掉但字體不同。
 
+- 從 Airtable 開啟既有報價單（唯讀）
+  - `Quote-Generator.html` 的「從 Airtable 開啟」會列出【DGHM】Airtable base
+    （appnhALSuMU5xcGVf）「報價單」表裡的既有記錄，選一筆後把客戶資料、
+    報價／有效日期、專案代碼與服務項目明細帶入表單。**只讀，不會寫回
+    Airtable**——Airtable 是正式資料庫，這支工具只是拿來離線出單、列印。
+  - 後端：`netlify/functions/airtable-quotes.js`，仿 `income.js` 的
+    Netlify Function 寫法。Base ID 與 Table ID 是結構性設定寫在檔案裡；
+    唯一需要另外設定的是機密資訊，存在 Netlify 環境變數
+    `AIRTABLE_API_KEY`（Airtable Personal Access Token，僅給這個 base
+    的讀取權限即可，靜態頁面本身不會接觸這把金鑰）。
+  - 專案代碼、Email 不在「報價單」表本身，分別跟著「子專案編號」「聯絡人」
+    連結多讀一次對應記錄；子專案連結斷掉的記錄（目前有一筆）專案代碼會
+    留空，不影響其餘欄位。
+  - 本機測試需要 `npx netlify dev`（跟 income-tracker 一樣，純開檔案或
+    `http-server` 連不到 Netlify Function）。
+
 - 報價單 → 請款單交接
   - `Quote-Generator.html` 的「開立請款單 →」會列出付款條件裡的各期別，
     選定一期後把客戶名稱、地址、統一編號、聯絡人、電話、Email、專案名稱、
