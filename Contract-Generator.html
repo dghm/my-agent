@@ -482,6 +482,8 @@ __PAGES__
             <input type="text" id="f_doc_type">
           </div>
         </div>
+        <label>報價單參照</label>
+        <input type="text" id="f_qt_ref" placeholder="例：DH-06-PJ1-QT-1">
 
         <label>文件主標題（可多行，每行會換行顯示）</label>
         <textarea id="f_doc_title" rows="2"></textarea>
@@ -1063,6 +1065,7 @@ function buildDoc() {
   var metaHtml = '<div class="header-meta">' +
     '<div class="meta-item"><span class="label">合約編號：</span><span class="value">' + xmlEsc(ctNo) + '</span></div>' +
     (v('f_execution_date').trim() ? '<div class="meta-item"><span class="label">立約日期：</span><span class="value">' + xmlEsc(v('f_execution_date').trim()) + '</span></div>' : '') +
+    (v('f_qt_ref').trim() ? '<div class="meta-item"><span class="label">報價單參照：</span><span class="value">' + xmlEsc(v('f_qt_ref').trim()) + '</span></div>' : '') +
     (v('f_doc_type').trim() ? '<div class="meta-item"><span class="label">文件性質：</span><span class="value">' + xmlEsc(v('f_doc_type').trim()) + '</span></div>' : '') +
     '</div>';
 
@@ -1220,7 +1223,7 @@ window.addEventListener('beforeunload', function (e) {
    草稿存讀（下載 JSON / 載入 JSON）
    ============================================================ */
 var FIELD_IDS = [
-  'f_ct_no', 'f_banner_label', 'f_execution_date', 'f_doc_type', 'f_doc_title', 'f_subtitle',
+  'f_ct_no', 'f_banner_label', 'f_execution_date', 'f_doc_type', 'f_qt_ref', 'f_doc_title', 'f_subtitle',
   'f_party_a_role', 'f_party_a_company', 'f_party_a_details',
   'f_party_b_role', 'f_party_b_company', 'f_party_b_details',
   'f_proj_name', 'f_scope', 'f_duration', 'f_total_amount', 'f_total_words',

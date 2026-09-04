@@ -2073,6 +2073,7 @@ function buildContractHandoffPayload(draft) {
     source: { quoteNo: String(f.f_qt_no || '').trim() },
     fields: {
       f_doc_title: String(f.f_doc_title || '').trim(),
+      f_qt_ref: String(f.f_qt_no || '').trim(),
       f_party_a_company: String(f.f_client_name || '').trim(),
       f_party_a_details: detailLines.join('\n'),
       f_party_b_role: '乙方',
