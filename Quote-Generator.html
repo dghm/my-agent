@@ -167,9 +167,9 @@
   /* ---- 交接到請款單 ---- */
   .handoff-actions {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-    margin: 0 0 16px; padding-bottom: 16px;
-    border-bottom: 1px solid var(--surface-border);
+    margin: 0 0 10px;
   }
+  .handoff-actions.is-last { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--surface-border); }
   .handoff-actions button {
     border-color: var(--orange);
     background: var(--orange);
@@ -453,6 +453,11 @@ __PAGES__
     <div class="handoff-actions">
       <button type="button" id="to-invoice-btn">開立請款單 →</button>
       <span class="handoff-hint">依付款條件的期別，把客戶資料與該期金額帶到請款單</span>
+    </div>
+
+    <div class="handoff-actions is-last">
+      <button type="button" id="to-contract-btn">產生合約 →</button>
+      <span class="handoff-hint">把客戶資料、服務範圍與完整付款期別帶到合約文件（條文需自行撰寫）</span>
     </div>
 
     <form id="form">
@@ -806,6 +811,21 @@ function xmlEsc(s) {
 function nl2br(s) { return xmlEsc(s).replace(/\n/g, '<br>'); }
 function v(id) { return (document.getElementById(id)||{}).value||''; }
 function fmtNT(n) { return 'NT$ ' + Math.round(n).toLocaleString('zh-TW'); }
+/**
+ * 計價表／勾選方案表／付款卡片的金額欄顯示用：純數字（可含逗號、NT$／$
+ * 前綴）時補上千分位，其餘原樣顯示——金額欄有時候會填「洽詢」「免費」
+ * 之類的文字說明，不能一律當數字處理。
+ */
+function displayAmount(raw) {
+  var s = String(raw == null ? '' : raw).trim();
+  if (!s) return s;
+  var prefix = s.match(/^(NT\$|\$)\s*/i);
+  var body = prefix ? s.slice(prefix[0].length) : s;
+  if (!/^[\d,]+(\.\d+)?$/.test(body)) return s;
+  var num = parseFloat(body.replace(/,/g, ''));
+  if (!isFinite(num)) return s;
+  return (prefix ? prefix[0] : '') + formatAmount(String(Math.round(num)));
+}
 function fmtDateZh(s) {
   if (!s) return '';
   var p = s.split('-');
@@ -1079,13 +1099,13 @@ function buildSecHtml(wrap) {
     } else if (type === 'price') {
       html += '<table class="opt-table"><thead><tr><th style="width:24%">項目</th><th>說明</th><th style="text-align:right;width:20%">' + xmlEsc(priceHead) + '</th></tr></thead><tbody>\n';
       rows.forEach(function (r) {
-        html += '<tr><td class="item-name">' + xmlEsc(r.name) + '</td><td class="desc">' + nl2br(r.desc) + '</td><td class="price">' + xmlEsc(r.price) + '</td></tr>\n';
+        html += '<tr><td class="item-name">' + xmlEsc(r.name) + '</td><td class="desc">' + nl2br(r.desc) + '</td><td class="price">' + xmlEsc(displayAmount(r.price)) + '</td></tr>\n';
       });
       html += '</tbody></table>\n';
     } else {
       html += '<table class="opt-table"><thead><tr><th class="chk">勾選</th><th style="width:26%">方案</th><th>說明</th><th style="text-align:right;width:16%">' + xmlEsc(priceHead) + '</th></tr></thead><tbody>\n';
       rows.forEach(function (r) {
-        html += '<tr><td class="chk">☐</td><td class="item-name">' + xmlEsc(r.name) + '</td><td class="desc">' + nl2br(r.desc) + '</td><td class="price">' + xmlEsc(r.price) + '</td></tr>\n';
+        html += '<tr><td class="chk">☐</td><td class="item-name">' + xmlEsc(r.name) + '</td><td class="desc">' + nl2br(r.desc) + '</td><td class="price">' + xmlEsc(displayAmount(r.price)) + '</td></tr>\n';
       });
       html += '</tbody></table>\n';
     }
@@ -1147,7 +1167,7 @@ function buildPayHtml(wrap) {
     var cols = Math.min(cards.length, 3);
     html += '<div class="payment-grid" style="grid-template-columns:repeat(' + cols + ',1fr)">\n';
     cards.forEach(function (c) {
-      html += '<div class="payment-card"><div class="phase">' + xmlEsc(c.phase) + '</div><div class="amount">' + xmlEsc(c.amount) + '</div><div class="timing">' + nl2br(c.timing) + '</div></div>\n';
+      html += '<div class="payment-card"><div class="phase">' + xmlEsc(c.phase) + '</div><div class="amount">' + xmlEsc(displayAmount(c.amount)) + '</div><div class="timing">' + nl2br(c.timing) + '</div></div>\n';
     });
     html += '</div>\n';
   }
@@ -1683,6 +1703,98 @@ function serviceSummary(draft) {
   return titles.join('、');
 }
 
+/**
+ * 請款單的標準付款條件，跟報價單資料無關——是公司固定政策，不是從報價單
+ * 算出來的。少數 Net 30 客戶開單時自己在請款單上改掉即可。
+ *
+ * 原本這裡直接帶報價單付款卡片的「時點說明」過去，但那一欄有時候會被拿來
+ * 兼放驗收定義之類的補充說明（尤其金額不到 $24,000、不會另外簽合約時），
+ * 整段搬過去會把驗收定義文字錯放到請款單的付款條件欄。這類補充說明留在
+ * 報價單原地，需要的話請自行複製到請款單的「條款與說明」，不在交接時
+ * 自動處理——沒有把握安全地從自然語言裡分辨「期限」跟「定義」。
+ */
+var DEFAULT_PAYMENT_TERMS = '收到發票後 5 個工作天內現金或匯款';
+
+/**
+ * 請款單「單一項目」的說明欄用：列出報價單各區塊逐列的項目名稱（計價表、
+ * 勾選方案表、說明表都算），這樣才看得出實際請款的服務內容是什麼。
+ * `serviceSummary()` 的區塊標題（如「一、專案範圍與規格」）對報價單本身
+ * 是合理的目錄式摘要，但拿來當請款項目說明太籠統、看不出內容——尤其
+ * 現在常態是整份報價只用說明表呈現，不拆單項金額，標題摘要幾乎每次都
+ * 會踩到這個問題。找不到任何項目列時才退回區塊標題。
+ */
+function invoiceItemSummary(draft) {
+  var names = [];
+  (draft.sections || []).forEach(function (sec) {
+    (sec.rows || []).forEach(function (row) {
+      var name = String(row.name || '').trim();
+      if (name) names.push(name);
+    });
+  });
+  if (names.length) return names.join('、');
+  return serviceSummary(draft);
+}
+
+/**
+ * 一次付清時，把報價的計價表／勾選方案表逐列攤成請款單項目，取代原本
+ * 「一個項目、用期別名稱當項目名」的做法——請款單項目該是實際服務明細，
+ * 不是期別包裝。
+ *
+ * 分期的話沒有「這個項目算第幾期」的歸屬資料（報價單表單本身沒有這種
+ * 關聯），沒把握就不猜，退回舊的整期一個項目做法。
+ */
+function flattenQuoteItems(draft, card, index) {
+  var rows = [];
+  (draft.sections || []).forEach(function (sec) {
+    if (sec.type !== 'price' && sec.type !== 'option') return; // 說明表不列金額，不算請款項目
+    (sec.rows || []).forEach(function (row) {
+      var name = String(row.name || '').trim();
+      if (!name) return;
+      rows.push({ name: name, desc: String(row.desc || '').trim(), price: amountToNumber(row.price) });
+    });
+  });
+
+  if (rows.length) return rows;
+
+  // 整份報價只有說明表、沒有計價內容可攤時，退回舊的單一項目做法
+  return [{
+    name: card.phase || ('第 ' + (index + 1) + ' 期'),
+    desc: invoiceItemSummary(draft),
+    price: amountToNumber(card.amount)
+  }];
+}
+
+/**
+ * 請款單「條款與說明」建議草稿，交接時併入 buildHandoffPayload() 的
+ * terms 欄位。固定收尾兩條（範圍聲明、疑義聯繫窗口）逐字帶入；開場白
+ * 與付款指示套固定公式、代入報價單與本期資料；匯款後回報末五碼的提醒
+ * 固定加上，方便作業。分期時第一條加註「本期為 XX（第 N 期／共 M
+ * 期）」，單期不加。開單時使用者仍會親自檢視、依實際情況調整這些文字
+ * （例如沒有報價單編號的案子），這裡只需先把常態內容帶好即可，不用做
+ * 額外防呆。
+ * 「多期合併一次開立」這種特例（金額、期數要重新敘述）不在此模板範圍
+ * 內，遇到時仍需自行改寫第一條——這種情況目前是少數。
+ */
+function buildTermsDraft(draft, card, cards, index, amount) {
+  var f = draft.fields || {};
+  var company = String(f.f_client_name || '').trim();
+  var project = projectNameFromTitle(f.f_doc_title, f.f_client_name);
+  var quoteNo = String(f.f_qt_no || '').trim();
+  var amountText = amount ? 'NT$ ' + formatAmount(amount) : 'NT$ ___';
+  var phaseNote = cards.length > 1
+    ? '，本期為「' + (card.phase || ('第 ' + (index + 1) + ' 期')) + '」（第 ' + (index + 1) + ' 期／共 ' + cards.length + ' 期）'
+    : '';
+  var timing = card.timing || '（付款時點請自行補充）';
+
+  return [
+    '本文件為' + company + '「' + project + '」之正式請款憑證，依報價單 ' + quoteNo + ' 內容開立' + phaseNote + '。',
+    '本期應付金額為 ' + amountText + '，請於' + timing + '，以現金或匯款方式支付至前述帳戶，或依雙方合約另有約定者從其約定。',
+    '匯款完成後，請提供帳號末五碼與匯款時間，以利我方對帳並確認收款。',
+    '文件僅供請款與對帳參考；專案範圍、工作項目、交付內容及雙方權利義務，悉以簽署之報價單為準，範圍外新增需求不在本次請款範圍內。',
+    '若對本次請款金額或載明事項有疑義，請於收受本通知後 3 日內與我方聯繫。'
+  ];
+}
+
 function buildHandoffPayload(draft, cards, index) {
   var f = draft.fields || {};
   var card = cards[index];
@@ -1690,6 +1802,14 @@ function buildHandoffPayload(draft, cards, index) {
   var hint = amount
     ? 'NT$ ' + formatAmount(amount) + '(' + (index + 1) + '/' + cards.length + ')'
     : '';
+
+  var items = cards.length === 1
+    ? flattenQuoteItems(draft, card, index)
+    : [{
+        name: card.phase || ('第 ' + (index + 1) + ' 期'),
+        desc: invoiceItemSummary(draft),
+        price: amount
+      }];
 
   return {
     kind: 'dghm-quote-to-invoice',
@@ -1705,14 +1825,11 @@ function buildHandoffPayload(draft, cards, index) {
       f_contact:       String(f.f_client_contact || '').trim(),
       f_phone:         String(f.f_client_phone || '').trim(),
       f_email:         String(f.f_client_email || '').trim(),
-      f_payment_terms: card.timing,
+      f_payment_terms: DEFAULT_PAYMENT_TERMS,
       f_total_hint:    hint
     },
-    items: [{
-      name: card.phase || ('第 ' + (index + 1) + ' 期'),
-      desc: serviceSummary(draft),
-      price: amount
-    }]
+    items: items,
+    terms: buildTermsDraft(draft, card, cards, index, amount)
   };
 }
 
@@ -1763,6 +1880,233 @@ function buildHandoffPayload(draft, cards, index) {
     }
     dialog.close();
     location.href = 'Invoice-Generator.html';
+  });
+})();
+
+/* ============================================================
+   交接到合約文件
+
+   跟交接到請款單不同：請款單一次只開一期，合約要放完整付款期別
+   （合約是對整個專案的約定，不是單一期款項），所以不需要挑選對話框，
+   按一下直接把整份付款排程交出去。
+
+   條文（articles）比對過三份實際簽過的合約（DH-05/06/11-PJ1-CT-1）後
+   自動代入固定與半固定模板，見下方 buildContractArticles()。
+
+   乙方（DGHM 自己）資料固定不變，每次交接都直接帶入，不依賴瀏覽器
+   暫存裡可能存在的舊值。
+   ============================================================ */
+var CONTRACT_HANDOFF_KEY = 'dghm-quote-to-contract';
+
+/**
+ * 合約條文自動代入模板。依三份實際簽過的合約逐條比對整理：14 條裡有
+ * 8 條三份逐字相同（第五、六、七、八、十、十一、十二、十三條），直接
+ * 照抄；其餘 6 條（第一、二、三、四、九、十四條）句型固定、代入報價單
+ * 資料。
+ *
+ * 「工期起算方式」有兩種寫法（合約生效後起算／以 Kickoff Meeting 為
+ * 準）、素材與功能的具體列舉、第三方服務的實際組合——這些每次都要看
+ * 案子調整，不猜，套用最常見的預設寫法，需要的話請自行改。
+ *
+ * 第四條「費用與付款方式」的中文大寫金額用 {{TOTAL_WORDS}}／
+ * {{TOTAL_AMOUNT}} 佔位，交給 Contract-Generator.html 收到交接資料時，
+ * 用它自己既有的 ntdToChinese() 換算後再取代，避免兩邊各寫一份換算
+ * 邏輯。
+ */
+var CN_DIGIT = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+
+function buildContractPaymentClause(payments) {
+  if (!payments.length) {
+    return '付款期限與方式依本合約「付款條件」節所載為準。';
+  }
+  var first = payments[0];
+  var firstAmount = first.amount ? 'NT$ ' + formatAmount(first.amount) : '（金額依「付款條件」節所載）';
+  var firstText = '第一期' + (first.name || first.phase) + '（' + firstAmount + '）應於' +
+    (first.timing || '合約簽署後約定期限內') + '以現金或匯款方式支付完畢';
+  if (payments.length === 1) return firstText + '。';
+  return firstText + '；其餘各期款項，依本合約「付款條件」節所載時機，以現金或匯款方式於期限內完成支付。';
+}
+
+function buildContractArticles(quoteNo, projectName, duration, payments) {
+  var periodClause = payments.length <= 1
+    ? '依本合約「付款條件」節所載一次付清'
+    : '依本合約「付款條件」節所載分' + (CN_DIGIT[payments.length] || payments.length) + '期支付';
+
+  return [
+    {
+      title: '第一條｜委任目的',
+      body: '甲方委託乙方執行「' + projectName + '」，雙方本著誠信原則締結本合約，並依下列條款辦理。'
+    },
+    {
+      title: '第二條｜服務範圍',
+      body: '本合約服務範圍依附件一《報價單 ' + quoteNo + '》所載項目為準，雙方確認報價單內容後，本合約即具效力。'
+    },
+    {
+      title: '第三條｜製作期間與進度配合',
+      body: [
+        '1. 本合約生效後起算，於' + (duration || '約定期間') + '內完成專案交付。此時程不含甲方延遲提供必要資料或素材所影響之日數。',
+        '2. 甲方應於收到乙方書面請求後 7 個工作天內提供所需素材；若逾期未提供，乙方有權順延時程，此情形不影響原訂付款節點之效力。',
+        '3. 若甲方遲遲未提供必要資訊，致專案進度中斷超過 10 個工作天，乙方得視為甲方自動展延時程，並於適當時機重新排程，不另行賠償或折讓。',
+        '4. 雙方應於重要節點（初稿完成、上線前驗收）以書面方式進行確認，此紀錄可作為進度與責任劃分依據。'
+      ].join('\n')
+    },
+    {
+      title: '第四條｜費用與付款方式',
+      body: '本專案含稅總費用為新台幣{{TOTAL_WORDS}}（NT$ {{TOTAL_AMOUNT}}），' + periodClause + '。' +
+        buildContractPaymentClause(payments)
+    },
+    {
+      title: '第五條｜驗收方式與標準',
+      body: [
+        '1. 驗收依報價單所列功能項目為準，各功能可於測試環境正常執行，即視為驗收通過。',
+        '2. 甲方於乙方交付測試環境後 10 個工作天內完成測試，並以書面通知乙方修正意見。',
+        '3. 乙方應於 5 個工作天內完成修正並再次交付。',
+        '4. 若甲方於交付後 10 個工作天內未提供書面修正意見，乙方得視為甲方同意目前交付內容，並進入下一階段作業與請款。'
+      ].join('\n')
+    },
+    {
+      title: '第六條｜保固與後續支援',
+      body: [
+        '1. 保固期間：自甲方驗收日起算 30 日內。',
+        '2. 保固內容：排除因乙方設計錯誤所導致之問題。',
+        '3. 非保固範圍：甲方或第三方修改內容、主機或平台更新導致之相容問題，均不在保固範圍內。',
+        '4. 保固期滿後，乙方不負任何維護責任，後續需求另行簽署維護合約。'
+      ].join('\n')
+    },
+    {
+      title: '第七條｜著作權歸屬',
+      body: [
+        '1. 完成並驗收通過後，本專案交付成果之著作權歸甲方所有。',
+        '2. 開源套件與第三方授權元件，依原授權條款為準，乙方協助合法使用但不負最終法律責任。',
+        '3. 未被採用之提案或素材，著作權仍屬乙方所有。'
+      ].join('\n')
+    },
+    {
+      title: '第八條｜素材與著作權保證',
+      body: '甲方提供之所有素材（含圖片、文字、品牌資產），保證已取得合法授權或為甲方自有著作；如有侵權情事，由甲方自行承擔法律責任，乙方不負連帶責任。'
+    },
+    {
+      title: '第九條｜第三方服務免責',
+      body: '本專案涉及之第三方服務（含主機、金流、外掛授權、視覺化頁面編輯工具等，請依實際使用項目調整），其服務條款、費用、可用性及政策變更均不在乙方控制範圍內；乙方協助導入及設定，但不對第三方服務之中斷、政策變更或額外費用負責。'
+    },
+    {
+      title: '第十條｜資料保密',
+      body: '雙方對於合作過程中取得之對方營業秘密、客戶資料及技術資訊，負有保密義務；未經對方書面同意，不得對外揭露或用於本案以外之目的。'
+    },
+    {
+      title: '第十一條｜不可抗力',
+      body: '因天災、戰爭、重大疫情、法令限制或其他不可抗力因素，導致本案無法依期進行，雙方應協議調整時程或終止合約，均不負違約責任。'
+    },
+    {
+      title: '第十二條｜合約終止與違約責任',
+      body: [
+        '1. 甲方於製作進度未達 50% 前，得以書面通知乙方終止合約，惟已支付訂金不予退還。',
+        '2. 乙方如無故延遲交付超過 20 個工作天，甲方得終止合約並請求退還未完成比例之費用。'
+      ].join('\n')
+    },
+    {
+      title: '第十三條｜爭議解決',
+      body: '雙方若發生爭議，應先行協調；協調不成時，雙方同意以桃園地方法院為第一審管轄法院。'
+    },
+    {
+      title: '第十四條｜附則',
+      body: [
+        '1. 本合約附件（報價單 ' + quoteNo + '）與主文件具同等效力。',
+        '2. 本合約共兩份，雙方各執一份為憑。',
+        '3. 合約進行中如有需求變更或追加，雙方應簽署補充條款，補充文件與本合約具同等效力。'
+      ].join('\n')
+    }
+  ];
+}
+
+/** 「第一期 · 簽約款」拆成期別／款項名稱；沒有 "·" 分隔號就整段當款項名稱，期別自動編號。 */
+function splitPhaseLabel(raw, index) {
+  var text = String(raw || '').trim();
+  var sep = text.indexOf('·'); // ·
+  if (sep > -1) {
+    return { phase: text.slice(0, sep).trim(), name: text.slice(sep + 1).trim() };
+  }
+  return { phase: '第 ' + (index + 1) + ' 期', name: text };
+}
+
+function buildContractHandoffPayload(draft) {
+  var f = draft.fields || {};
+  var cards = flattenPayCards(draft);
+
+  var detailLines = [];
+  if (f.f_client_vat) detailLines.push('統一編號：' + f.f_client_vat);
+  if (f.f_client_addr) detailLines.push('地址：' + f.f_client_addr);
+  if (f.f_client_contact) detailLines.push('聯絡人：' + f.f_client_contact);
+  if (f.f_client_phone) detailLines.push('電話：' + f.f_client_phone);
+  if (f.f_client_email) detailLines.push('Email：' + f.f_client_email);
+
+  var payments = cards.map(function (card, i) {
+    var split = splitPhaseLabel(card.phase, i);
+    return {
+      phase: split.phase,
+      name: split.name,
+      percent: '', // 全部期別金額都算得出來才補百分比，見下方
+      timing: card.timing || '',
+      amount: amountToNumber(card.amount) // 算不出來（如寫成百分比）留空，不用猜
+    };
+  });
+
+  var allAmountsResolved = payments.length > 0 && payments.every(function (p) { return p.amount !== ''; });
+  var total = 0;
+  if (allAmountsResolved) {
+    total = payments.reduce(function (sum, p) { return sum + Number(p.amount); }, 0);
+    if (total) {
+      payments.forEach(function (p) {
+        p.percent = Math.round((Number(p.amount) / total) * 100) + '%';
+      });
+    }
+  }
+
+  var quoteNo = String(f.f_qt_no || '').trim() || '＿＿＿＿＿＿';
+  var projectName = projectNameFromTitle(f.f_doc_title, f.f_client_name);
+  var duration = String(f.f_duration || '').trim();
+
+  return {
+    kind: 'dghm-quote-to-contract',
+    version: 1,
+    createdAt: new Date().toISOString(),
+    source: { quoteNo: String(f.f_qt_no || '').trim() },
+    fields: {
+      f_doc_title: String(f.f_doc_title || '').trim(),
+      f_qt_ref: String(f.f_qt_no || '').trim(),
+      f_party_a_company: String(f.f_client_name || '').trim(),
+      f_party_a_details: detailLines.join('\n'),
+      f_party_b_role: '乙方',
+      f_party_b_company: '萬能數維有限公司',
+      f_party_b_details: '桃園楊梅市梅高路 120 巷 33 號\n統一編號：60458287\n聯絡人：謝萬錤\n電話 / Email：0937-805149 / help@dghm.tw',
+      f_proj_name: projectName,
+      f_scope: '依附件一《報價單 ' + quoteNo + '》所載內容為準',
+      f_duration: duration,
+      f_total_amount: allAmountsResolved && total ? String(Math.round(total)) : '',
+      f_sig_desc: '本合約經雙方簽署後具法律效力，付款條件及交付範圍依本文件所載內容執行。'
+    },
+    payments: payments,
+    payment_note:
+      '· 訂金到位前，不進行任何開發作業，亦不交付可執行之技術文件。\n' +
+      '· 付款方式：現金或匯款\n' +
+      '· 付款帳號：玉山銀行楊梅分行（代號 808）｜ 帳戶名稱：萬能數維有限公司 ｜ 帳號：0369-940-032822',
+    articles: buildContractArticles(quoteNo, projectName, duration, payments)
+  };
+}
+
+(function () {
+  var btn = document.getElementById('to-contract-btn');
+  if (!btn) return;
+  btn.addEventListener('click', function () {
+    var draft = collectDraft();
+    var payload = buildContractHandoffPayload(draft);
+    try {
+      localStorage.setItem(CONTRACT_HANDOFF_KEY, JSON.stringify(payload));
+    } catch (error) {
+      alert('無法暫存交接資料，請確認瀏覽器允許本機儲存。');
+      return;
+    }
+    location.href = 'Contract-Generator.html';
   });
 })();
 

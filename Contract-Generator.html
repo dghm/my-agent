@@ -164,6 +164,22 @@
   button.secondary { border-color: var(--surface-border); }
   button.secondary:hover { border-color: var(--navy-text); }
 
+  /* ---- 由報價單帶入的提示 ---- */
+  .handoff-banner {
+    display: flex; align-items: flex-start; gap: 10px;
+    margin: 0 0 16px; padding: 12px 14px;
+    border-radius: var(--radius, 16px);
+    background: color-mix(in srgb, var(--orange) 10%, var(--surface-panel-bg));
+    color: var(--surface-text); font-size: 12px; line-height: 1.6;
+  }
+  .handoff-banner strong { color: var(--orange); }
+  .handoff-banner button {
+    margin-left: auto; flex-shrink: 0; padding: 2px 8px;
+    border: 0; border-radius: var(--radius-xs, 8px);
+    background: transparent; color: var(--surface-text-muted); font-size: 15px; line-height: 1;
+  }
+  .handoff-banner button:hover { color: var(--surface-text); }
+
   /* ---- Output panel ---- */
   .output-panel { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow: hidden; }
   .output-toolbar {
@@ -466,6 +482,8 @@ __PAGES__
             <input type="text" id="f_doc_type">
           </div>
         </div>
+        <label>報價單參照</label>
+        <input type="text" id="f_qt_ref" placeholder="例：DH-06-PJ1-QT-1">
 
         <label>文件主標題（可多行，每行會換行顯示）</label>
         <textarea id="f_doc_title" rows="2"></textarea>
@@ -985,7 +1003,7 @@ function buildPaymentsHtml() {
   if (rows.length) {
     html += '<table class="payment-table">\n<thead><tr><th>期別</th><th>名稱</th><th>比例</th><th>付款時機</th><th>金額</th></tr></thead>\n<tbody>\n';
     rows.forEach(function (row) {
-      html += '<tr><td>' + xmlEsc(row.phase) + '</td><td>' + xmlEsc(row.name) + '</td><td>' + xmlEsc(row.percent) + '</td><td>' + nl2br(row.timing) + '</td><td>' + xmlEsc(row.amount) + '</td></tr>\n';
+      html += '<tr><td>' + xmlEsc(row.phase) + '</td><td>' + xmlEsc(row.name) + '</td><td>' + xmlEsc(row.percent) + '</td><td>' + nl2br(row.timing) + '</td><td>' + xmlEsc(formatTotalDisplay(row.amount)) + '</td></tr>\n';
     });
     html += '</tbody>\n</table>\n';
   }
@@ -1047,6 +1065,7 @@ function buildDoc() {
   var metaHtml = '<div class="header-meta">' +
     '<div class="meta-item"><span class="label">合約編號：</span><span class="value">' + xmlEsc(ctNo) + '</span></div>' +
     (v('f_execution_date').trim() ? '<div class="meta-item"><span class="label">立約日期：</span><span class="value">' + xmlEsc(v('f_execution_date').trim()) + '</span></div>' : '') +
+    (v('f_qt_ref').trim() ? '<div class="meta-item"><span class="label">報價單參照：</span><span class="value">' + xmlEsc(v('f_qt_ref').trim()) + '</span></div>' : '') +
     (v('f_doc_type').trim() ? '<div class="meta-item"><span class="label">文件性質：</span><span class="value">' + xmlEsc(v('f_doc_type').trim()) + '</span></div>' : '') +
     '</div>';
 
@@ -1204,7 +1223,7 @@ window.addEventListener('beforeunload', function (e) {
    草稿存讀（下載 JSON / 載入 JSON）
    ============================================================ */
 var FIELD_IDS = [
-  'f_ct_no', 'f_banner_label', 'f_execution_date', 'f_doc_type', 'f_doc_title', 'f_subtitle',
+  'f_ct_no', 'f_banner_label', 'f_execution_date', 'f_doc_type', 'f_qt_ref', 'f_doc_title', 'f_subtitle',
   'f_party_a_role', 'f_party_a_company', 'f_party_a_details',
   'f_party_b_role', 'f_party_b_company', 'f_party_b_details',
   'f_proj_name', 'f_scope', 'f_duration', 'f_total_amount', 'f_total_words',
@@ -1364,7 +1383,91 @@ document.getElementById('f_total_amount').addEventListener('input', function () 
 });
 if (!restoreSessionDraft()) _suspendSessionSave = false;
 
+/* ============================================================
+   由報價單帶入（Quote-Generator 寫入 localStorage，單次取用）
+
+   設定客戶方（甲方）資料、乙方（DGHM 自己）固定資料、專案名稱、服務
+   範圍摘要、工期、總金額（僅在每期金額都能算出數字時才帶）、完整
+   付款期別，以及合約條文（articles）——條文比對過三份實際簽過的合約
+   後套用固定／半固定模板，仍是法律文字，帶過來後務必自行檢視確認，
+   不是最終定稿。
+   ============================================================ */
+var _handoffApplied = false;
+
 (function () {
+  var KEY = 'dghm-quote-to-contract';
+  var raw = null;
+  try { raw = localStorage.getItem(KEY); } catch (error) { return; }
+  if (!raw) return;
+
+  // 交接資料只用一次，先清掉再處理，避免重整時重複套用
+  try { localStorage.removeItem(KEY); } catch (error) {}
+
+  var payload;
+  try { payload = JSON.parse(raw); } catch (error) { return; }
+  if (!payload || payload.kind !== 'dghm-quote-to-contract') return;
+
+  // 超過一小時的交接視為過期，避免帶入早已忘記的舊資料
+  var age = Date.now() - Date.parse(payload.createdAt || '');
+  if (isFinite(age) && age > 60 * 60 * 1000) return;
+
+  Object.keys(payload.fields || {}).forEach(function (id) {
+    var el = document.getElementById(id);
+    var value = payload.fields[id];
+    if (el && value) el.value = value;
+  });
+
+  // 大寫金額跟著總金額一起換算（沿用這支檔案自己的 ntdToChinese，避免兩邊各寫一份換算邏輯）
+  var totalWords = '';
+  if (payload.fields && payload.fields.f_total_amount) {
+    totalWords = ntdToChinese(payload.fields.f_total_amount);
+    document.getElementById('f_total_words').value = totalWords;
+  }
+
+  if (payload.payments && payload.payments.length) {
+    document.getElementById('pay-tbody').innerHTML = '';
+    payload.payments.forEach(function (p) { addPayment(p); });
+  }
+
+  if (typeof payload.payment_note === 'string' && payload.payment_note) {
+    document.getElementById('f_payment_note').value = payload.payment_note;
+  }
+
+  // 第四條的中文大寫金額在報價單那邊沒辦法換算（沒有 ntdToChinese），用佔位字串帶過來，這裡換算好再取代
+  if (payload.articles && payload.articles.length) {
+    document.getElementById('art-list').innerHTML = '';
+    payload.articles.forEach(function (a) {
+      addArticle({
+        title: a.title,
+        body: String(a.body || '')
+          .replace(/\{\{TOTAL_WORDS\}\}/g, totalWords || '＿＿＿＿＿＿')
+          .replace(/\{\{TOTAL_AMOUNT\}\}/g, payload.fields && payload.fields.f_total_amount ? Number(payload.fields.f_total_amount).toLocaleString('zh-TW') : '＿＿＿＿＿＿'),
+        page: a.page || ''
+      });
+    });
+  }
+
+  _handoffApplied = true;
+  refreshOutput();
+
+  var quoteNo = (payload.source && payload.source.quoteNo) || '';
+  var missingAmount = !payload.fields || !payload.fields.f_total_amount;
+  var banner = document.createElement('div');
+  banner.className = 'handoff-banner';
+  banner.innerHTML =
+    '<span><strong>已由報價單帶入</strong>' +
+    (quoteNo ? '（' + esc(quoteNo) + '）' : '') +
+    '　條文已套用模板，請自行檢視確認、確認甲乙雙方資料' +
+    (missingAmount ? '，並補上總金額（有付款期別金額無法直接算出，未自動帶入）' : '') +
+    '。</span>' +
+    '<button type="button" aria-label="關閉提示">×</button>';
+  banner.querySelector('button').addEventListener('click', function () { banner.remove(); });
+  var panel = document.querySelector('.form-panel');
+  if (panel) panel.insertBefore(banner, panel.firstChild);
+})();
+
+(function () {
+  if (_handoffApplied) return;
   if (_sessionRestored) return;
   var params = new URLSearchParams(window.location.search);
   var company = params.get('company');
