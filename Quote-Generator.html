@@ -1892,6 +1892,9 @@ function buildHandoffPayload(draft, cards, index) {
 
    條文（articles）比對過三份實際簽過的合約（DH-05/06/11-PJ1-CT-1）後
    自動代入固定與半固定模板，見下方 buildContractArticles()。
+
+   乙方（DGHM 自己）資料固定不變，每次交接都直接帶入，不依賴瀏覽器
+   暫存裡可能存在的舊值。
    ============================================================ */
 var CONTRACT_HANDOFF_KEY = 'dghm-quote-to-contract';
 
@@ -2072,6 +2075,9 @@ function buildContractHandoffPayload(draft) {
       f_doc_title: String(f.f_doc_title || '').trim(),
       f_party_a_company: String(f.f_client_name || '').trim(),
       f_party_a_details: detailLines.join('\n'),
+      f_party_b_role: '乙方',
+      f_party_b_company: '萬能數維有限公司',
+      f_party_b_details: '桃園楊梅市梅高路 120 巷 33 號\n統一編號：60458287\n聯絡人：謝萬錤\n電話 / Email：0937-805149 / help@dghm.tw',
       f_proj_name: projectName,
       f_scope: '依附件一《報價單 ' + quoteNo + '》所載內容為準',
       f_duration: duration,
