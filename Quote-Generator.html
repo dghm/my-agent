@@ -167,9 +167,9 @@
   /* ---- 交接到請款單 ---- */
   .handoff-actions {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-    margin: 0 0 16px; padding-bottom: 16px;
-    border-bottom: 1px solid var(--surface-border);
+    margin: 0 0 10px;
   }
+  .handoff-actions.is-last { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--surface-border); }
   .handoff-actions button {
     border-color: var(--orange);
     background: var(--orange);
@@ -453,6 +453,11 @@ __PAGES__
     <div class="handoff-actions">
       <button type="button" id="to-invoice-btn">開立請款單 →</button>
       <span class="handoff-hint">依付款條件的期別，把客戶資料與該期金額帶到請款單</span>
+    </div>
+
+    <div class="handoff-actions is-last">
+      <button type="button" id="to-contract-btn">產生合約 →</button>
+      <span class="handoff-hint">把客戶資料、服務範圍與完整付款期別帶到合約文件（條文需自行撰寫）</span>
     </div>
 
     <form id="form">
@@ -1763,6 +1768,94 @@ function buildHandoffPayload(draft, cards, index) {
     }
     dialog.close();
     location.href = 'Invoice-Generator.html';
+  });
+})();
+
+/* ============================================================
+   交接到合約文件
+
+   跟交接到請款單不同：請款單一次只開一期，合約要放完整付款期別
+   （合約是對整個專案的約定，不是單一期款項），所以不需要挑選對話框，
+   按一下直接把整份付款排程交出去。
+
+   條文（articles）是法律文字，不猜、不自動生成——留給使用者自己撰寫。
+   ============================================================ */
+var CONTRACT_HANDOFF_KEY = 'dghm-quote-to-contract';
+
+/** 「第一期 · 簽約款」拆成期別／款項名稱；沒有 "·" 分隔號就整段當款項名稱，期別自動編號。 */
+function splitPhaseLabel(raw, index) {
+  var text = String(raw || '').trim();
+  var sep = text.indexOf('·'); // ·
+  if (sep > -1) {
+    return { phase: text.slice(0, sep).trim(), name: text.slice(sep + 1).trim() };
+  }
+  return { phase: '第 ' + (index + 1) + ' 期', name: text };
+}
+
+function buildContractHandoffPayload(draft) {
+  var f = draft.fields || {};
+  var cards = flattenPayCards(draft);
+
+  var detailLines = [];
+  if (f.f_client_vat) detailLines.push('統一編號：' + f.f_client_vat);
+  if (f.f_client_addr) detailLines.push('地址：' + f.f_client_addr);
+  if (f.f_client_contact) detailLines.push('聯絡人：' + f.f_client_contact);
+  if (f.f_client_phone) detailLines.push('電話：' + f.f_client_phone);
+  if (f.f_client_email) detailLines.push('Email：' + f.f_client_email);
+
+  var payments = cards.map(function (card, i) {
+    var split = splitPhaseLabel(card.phase, i);
+    return {
+      phase: split.phase,
+      name: split.name,
+      percent: '', // 全部期別金額都算得出來才補百分比，見下方
+      timing: card.timing || '',
+      amount: amountToNumber(card.amount) // 算不出來（如寫成百分比）留空，不用猜
+    };
+  });
+
+  var allAmountsResolved = payments.length > 0 && payments.every(function (p) { return p.amount !== ''; });
+  var total = 0;
+  if (allAmountsResolved) {
+    total = payments.reduce(function (sum, p) { return sum + Number(p.amount); }, 0);
+    if (total) {
+      payments.forEach(function (p) {
+        p.percent = Math.round((Number(p.amount) / total) * 100) + '%';
+      });
+    }
+  }
+
+  return {
+    kind: 'dghm-quote-to-contract',
+    version: 1,
+    createdAt: new Date().toISOString(),
+    source: { quoteNo: String(f.f_qt_no || '').trim() },
+    fields: {
+      f_doc_title: String(f.f_doc_title || '').trim(),
+      f_party_a_company: String(f.f_client_name || '').trim(),
+      f_party_a_details: detailLines.join('\n'),
+      f_proj_name: projectNameFromTitle(f.f_doc_title, f.f_client_name),
+      f_scope: serviceSummary(draft),
+      f_duration: String(f.f_duration || '').trim(),
+      f_total_amount: allAmountsResolved && total ? String(Math.round(total)) : ''
+    },
+    payments: payments
+  };
+}
+
+(function () {
+  var btn = document.getElementById('to-contract-btn');
+  if (!btn) return;
+  btn.addEventListener('click', function () {
+    var draft = collectDraft();
+    var payload = buildContractHandoffPayload(draft);
+    try {
+      localStorage.setItem(CONTRACT_HANDOFF_KEY, JSON.stringify(payload));
+    } catch (error) {
+      alert('無法暫存交接資料，請確認瀏覽器允許本機儲存。');
+      return;
+    }
+    location.href = 'Contract-Generator.html';
   });
 })();
 

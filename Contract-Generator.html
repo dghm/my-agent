@@ -164,6 +164,22 @@
   button.secondary { border-color: var(--surface-border); }
   button.secondary:hover { border-color: var(--navy-text); }
 
+  /* ---- 由報價單帶入的提示 ---- */
+  .handoff-banner {
+    display: flex; align-items: flex-start; gap: 10px;
+    margin: 0 0 16px; padding: 12px 14px;
+    border-radius: var(--radius, 16px);
+    background: color-mix(in srgb, var(--orange) 10%, var(--surface-panel-bg));
+    color: var(--surface-text); font-size: 12px; line-height: 1.6;
+  }
+  .handoff-banner strong { color: var(--orange); }
+  .handoff-banner button {
+    margin-left: auto; flex-shrink: 0; padding: 2px 8px;
+    border: 0; border-radius: var(--radius-xs, 8px);
+    background: transparent; color: var(--surface-text-muted); font-size: 15px; line-height: 1;
+  }
+  .handoff-banner button:hover { color: var(--surface-text); }
+
   /* ---- Output panel ---- */
   .output-panel { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow: hidden; }
   .output-toolbar {
@@ -1364,7 +1380,71 @@ document.getElementById('f_total_amount').addEventListener('input', function () 
 });
 if (!restoreSessionDraft()) _suspendSessionSave = false;
 
+/* ============================================================
+   由報價單帶入（Quote-Generator 寫入 localStorage，單次取用）
+
+   只設定明確帶得過來的欄位：客戶方（甲方）資料、專案名稱、服務範圍
+   摘要、工期、總金額（僅在每期金額都能算出數字時才帶）、完整付款期別。
+   合約條文（articles）與乙方（DGHM 自己）資料完全不動——條文是法律
+   文字，不猜、不自動生成；乙方資料通常已存在瀏覽器暫存裡，沒有理由
+   跟著報價單覆蓋掉。
+   ============================================================ */
+var _handoffApplied = false;
+
 (function () {
+  var KEY = 'dghm-quote-to-contract';
+  var raw = null;
+  try { raw = localStorage.getItem(KEY); } catch (error) { return; }
+  if (!raw) return;
+
+  // 交接資料只用一次，先清掉再處理，避免重整時重複套用
+  try { localStorage.removeItem(KEY); } catch (error) {}
+
+  var payload;
+  try { payload = JSON.parse(raw); } catch (error) { return; }
+  if (!payload || payload.kind !== 'dghm-quote-to-contract') return;
+
+  // 超過一小時的交接視為過期，避免帶入早已忘記的舊資料
+  var age = Date.now() - Date.parse(payload.createdAt || '');
+  if (isFinite(age) && age > 60 * 60 * 1000) return;
+
+  Object.keys(payload.fields || {}).forEach(function (id) {
+    var el = document.getElementById(id);
+    var value = payload.fields[id];
+    if (el && value) el.value = value;
+  });
+
+  // 大寫金額跟著總金額一起換算（沿用這支檔案自己的 ntdToChinese，避免兩邊各寫一份換算邏輯）
+  if (payload.fields && payload.fields.f_total_amount) {
+    document.getElementById('f_total_words').value = ntdToChinese(payload.fields.f_total_amount);
+  }
+
+  if (payload.payments && payload.payments.length) {
+    document.getElementById('pay-tbody').innerHTML = '';
+    payload.payments.forEach(function (p) { addPayment(p); });
+  }
+
+  _handoffApplied = true;
+  refreshOutput();
+
+  var quoteNo = (payload.source && payload.source.quoteNo) || '';
+  var missingAmount = !payload.fields || !payload.fields.f_total_amount;
+  var banner = document.createElement('div');
+  banner.className = 'handoff-banner';
+  banner.innerHTML =
+    '<span><strong>已由報價單帶入</strong>' +
+    (quoteNo ? '（' + esc(quoteNo) + '）' : '') +
+    '　請撰寫合約條文、確認甲乙雙方資料' +
+    (missingAmount ? '，並補上總金額（有付款期別金額無法直接算出，未自動帶入）' : '') +
+    '。</span>' +
+    '<button type="button" aria-label="關閉提示">×</button>';
+  banner.querySelector('button').addEventListener('click', function () { banner.remove(); });
+  var panel = document.querySelector('.form-panel');
+  if (panel) panel.insertBefore(banner, panel.firstChild);
+})();
+
+(function () {
+  if (_handoffApplied) return;
   if (_sessionRestored) return;
   var params = new URLSearchParams(window.location.search);
   var company = params.get('company');
