@@ -1383,10 +1383,11 @@ if (!restoreSessionDraft()) _suspendSessionSave = false;
 /* ============================================================
    由報價單帶入（Quote-Generator 寫入 localStorage，單次取用）
 
-   只設定明確帶得過來的欄位：客戶方（甲方）資料、專案名稱、服務範圍
-   摘要、工期、總金額（僅在每期金額都能算出數字時才帶）、完整付款期別。
-   合約條文（articles）與乙方（DGHM 自己）資料完全不動——條文是法律
-   文字，不猜、不自動生成；乙方資料通常已存在瀏覽器暫存裡，沒有理由
+   設定客戶方（甲方）資料、專案名稱、服務範圍摘要、工期、總金額（僅在
+   每期金額都能算出數字時才帶）、完整付款期別，以及合約條文（articles）
+   ——條文比對過三份實際簽過的合約後套用固定／半固定模板，仍是法律
+   文字，帶過來後務必自行檢視確認，不是最終定稿。
+   乙方（DGHM 自己）資料完全不動，通常已存在瀏覽器暫存裡，沒有理由
    跟著報價單覆蓋掉。
    ============================================================ */
 var _handoffApplied = false;
@@ -1415,13 +1416,33 @@ var _handoffApplied = false;
   });
 
   // 大寫金額跟著總金額一起換算（沿用這支檔案自己的 ntdToChinese，避免兩邊各寫一份換算邏輯）
+  var totalWords = '';
   if (payload.fields && payload.fields.f_total_amount) {
-    document.getElementById('f_total_words').value = ntdToChinese(payload.fields.f_total_amount);
+    totalWords = ntdToChinese(payload.fields.f_total_amount);
+    document.getElementById('f_total_words').value = totalWords;
   }
 
   if (payload.payments && payload.payments.length) {
     document.getElementById('pay-tbody').innerHTML = '';
     payload.payments.forEach(function (p) { addPayment(p); });
+  }
+
+  if (typeof payload.payment_note === 'string' && payload.payment_note) {
+    document.getElementById('f_payment_note').value = payload.payment_note;
+  }
+
+  // 第四條的中文大寫金額在報價單那邊沒辦法換算（沒有 ntdToChinese），用佔位字串帶過來，這裡換算好再取代
+  if (payload.articles && payload.articles.length) {
+    document.getElementById('art-list').innerHTML = '';
+    payload.articles.forEach(function (a) {
+      addArticle({
+        title: a.title,
+        body: String(a.body || '')
+          .replace(/\{\{TOTAL_WORDS\}\}/g, totalWords || '＿＿＿＿＿＿')
+          .replace(/\{\{TOTAL_AMOUNT\}\}/g, payload.fields && payload.fields.f_total_amount ? Number(payload.fields.f_total_amount).toLocaleString('zh-TW') : '＿＿＿＿＿＿'),
+        page: a.page || ''
+      });
+    });
   }
 
   _handoffApplied = true;
@@ -1434,7 +1455,7 @@ var _handoffApplied = false;
   banner.innerHTML =
     '<span><strong>已由報價單帶入</strong>' +
     (quoteNo ? '（' + esc(quoteNo) + '）' : '') +
-    '　請撰寫合約條文、確認甲乙雙方資料' +
+    '　條文已套用模板，請自行檢視確認、確認甲乙雙方資料' +
     (missingAmount ? '，並補上總金額（有付款期別金額無法直接算出，未自動帶入）' : '') +
     '。</span>' +
     '<button type="button" aria-label="關閉提示">×</button>';

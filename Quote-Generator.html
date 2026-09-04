@@ -1890,9 +1890,131 @@ function buildHandoffPayload(draft, cards, index) {
    （合約是對整個專案的約定，不是單一期款項），所以不需要挑選對話框，
    按一下直接把整份付款排程交出去。
 
-   條文（articles）是法律文字，不猜、不自動生成——留給使用者自己撰寫。
+   條文（articles）比對過三份實際簽過的合約（DH-05/06/11-PJ1-CT-1）後
+   自動代入固定與半固定模板，見下方 buildContractArticles()。
    ============================================================ */
 var CONTRACT_HANDOFF_KEY = 'dghm-quote-to-contract';
+
+/**
+ * 合約條文自動代入模板。依三份實際簽過的合約逐條比對整理：14 條裡有
+ * 8 條三份逐字相同（第五、六、七、八、十、十一、十二、十三條），直接
+ * 照抄；其餘 6 條（第一、二、三、四、九、十四條）句型固定、代入報價單
+ * 資料。
+ *
+ * 「工期起算方式」有兩種寫法（合約生效後起算／以 Kickoff Meeting 為
+ * 準）、素材與功能的具體列舉、第三方服務的實際組合——這些每次都要看
+ * 案子調整，不猜，套用最常見的預設寫法，需要的話請自行改。
+ *
+ * 第四條「費用與付款方式」的中文大寫金額用 {{TOTAL_WORDS}}／
+ * {{TOTAL_AMOUNT}} 佔位，交給 Contract-Generator.html 收到交接資料時，
+ * 用它自己既有的 ntdToChinese() 換算後再取代，避免兩邊各寫一份換算
+ * 邏輯。
+ */
+var CN_DIGIT = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+
+function buildContractPaymentClause(payments) {
+  if (!payments.length) {
+    return '付款期限與方式依本合約「付款條件」節所載為準。';
+  }
+  var first = payments[0];
+  var firstAmount = first.amount ? 'NT$ ' + formatAmount(first.amount) : '（金額依「付款條件」節所載）';
+  var firstText = '第一期' + (first.name || first.phase) + '（' + firstAmount + '）應於' +
+    (first.timing || '合約簽署後約定期限內') + '以現金或匯款方式支付完畢';
+  if (payments.length === 1) return firstText + '。';
+  return firstText + '；其餘各期款項，依本合約「付款條件」節所載時機，以現金或匯款方式於期限內完成支付。';
+}
+
+function buildContractArticles(quoteNo, projectName, duration, payments) {
+  var periodClause = payments.length <= 1
+    ? '依本合約「付款條件」節所載一次付清'
+    : '依本合約「付款條件」節所載分' + (CN_DIGIT[payments.length] || payments.length) + '期支付';
+
+  return [
+    {
+      title: '第一條｜委任目的',
+      body: '甲方委託乙方執行「' + projectName + '」，雙方本著誠信原則締結本合約，並依下列條款辦理。'
+    },
+    {
+      title: '第二條｜服務範圍',
+      body: '本合約服務範圍依附件一《報價單 ' + quoteNo + '》所載項目為準，雙方確認報價單內容後，本合約即具效力。'
+    },
+    {
+      title: '第三條｜製作期間與進度配合',
+      body: [
+        '1. 本合約生效後起算，於' + (duration || '約定期間') + '內完成專案交付。此時程不含甲方延遲提供必要資料或素材所影響之日數。',
+        '2. 甲方應於收到乙方書面請求後 7 個工作天內提供所需素材；若逾期未提供，乙方有權順延時程，此情形不影響原訂付款節點之效力。',
+        '3. 若甲方遲遲未提供必要資訊，致專案進度中斷超過 10 個工作天，乙方得視為甲方自動展延時程，並於適當時機重新排程，不另行賠償或折讓。',
+        '4. 雙方應於重要節點（初稿完成、上線前驗收）以書面方式進行確認，此紀錄可作為進度與責任劃分依據。'
+      ].join('\n')
+    },
+    {
+      title: '第四條｜費用與付款方式',
+      body: '本專案含稅總費用為新台幣{{TOTAL_WORDS}}（NT$ {{TOTAL_AMOUNT}}），' + periodClause + '。' +
+        buildContractPaymentClause(payments)
+    },
+    {
+      title: '第五條｜驗收方式與標準',
+      body: [
+        '1. 驗收依報價單所列功能項目為準，各功能可於測試環境正常執行，即視為驗收通過。',
+        '2. 甲方於乙方交付測試環境後 10 個工作天內完成測試，並以書面通知乙方修正意見。',
+        '3. 乙方應於 5 個工作天內完成修正並再次交付。',
+        '4. 若甲方於交付後 10 個工作天內未提供書面修正意見，乙方得視為甲方同意目前交付內容，並進入下一階段作業與請款。'
+      ].join('\n')
+    },
+    {
+      title: '第六條｜保固與後續支援',
+      body: [
+        '1. 保固期間：自甲方驗收日起算 30 日內。',
+        '2. 保固內容：排除因乙方設計錯誤所導致之問題。',
+        '3. 非保固範圍：甲方或第三方修改內容、主機或平台更新導致之相容問題，均不在保固範圍內。',
+        '4. 保固期滿後，乙方不負任何維護責任，後續需求另行簽署維護合約。'
+      ].join('\n')
+    },
+    {
+      title: '第七條｜著作權歸屬',
+      body: [
+        '1. 完成並驗收通過後，本專案交付成果之著作權歸甲方所有。',
+        '2. 開源套件與第三方授權元件，依原授權條款為準，乙方協助合法使用但不負最終法律責任。',
+        '3. 未被採用之提案或素材，著作權仍屬乙方所有。'
+      ].join('\n')
+    },
+    {
+      title: '第八條｜素材與著作權保證',
+      body: '甲方提供之所有素材（含圖片、文字、品牌資產），保證已取得合法授權或為甲方自有著作；如有侵權情事，由甲方自行承擔法律責任，乙方不負連帶責任。'
+    },
+    {
+      title: '第九條｜第三方服務免責',
+      body: '本專案涉及之第三方服務（含主機、金流、外掛授權、視覺化頁面編輯工具等，請依實際使用項目調整），其服務條款、費用、可用性及政策變更均不在乙方控制範圍內；乙方協助導入及設定，但不對第三方服務之中斷、政策變更或額外費用負責。'
+    },
+    {
+      title: '第十條｜資料保密',
+      body: '雙方對於合作過程中取得之對方營業秘密、客戶資料及技術資訊，負有保密義務；未經對方書面同意，不得對外揭露或用於本案以外之目的。'
+    },
+    {
+      title: '第十一條｜不可抗力',
+      body: '因天災、戰爭、重大疫情、法令限制或其他不可抗力因素，導致本案無法依期進行，雙方應協議調整時程或終止合約，均不負違約責任。'
+    },
+    {
+      title: '第十二條｜合約終止與違約責任',
+      body: [
+        '1. 甲方於製作進度未達 50% 前，得以書面通知乙方終止合約，惟已支付訂金不予退還。',
+        '2. 乙方如無故延遲交付超過 20 個工作天，甲方得終止合約並請求退還未完成比例之費用。'
+      ].join('\n')
+    },
+    {
+      title: '第十三條｜爭議解決',
+      body: '雙方若發生爭議，應先行協調；協調不成時，雙方同意以桃園地方法院為第一審管轄法院。'
+    },
+    {
+      title: '第十四條｜附則',
+      body: [
+        '1. 本合約附件（報價單 ' + quoteNo + '）與主文件具同等效力。',
+        '2. 本合約共兩份，雙方各執一份為憑。',
+        '3. 合約進行中如有需求變更或追加，雙方應簽署補充條款，補充文件與本合約具同等效力。'
+      ].join('\n')
+    }
+  ];
+}
 
 /** 「第一期 · 簽約款」拆成期別／款項名稱；沒有 "·" 分隔號就整段當款項名稱，期別自動編號。 */
 function splitPhaseLabel(raw, index) {
@@ -1937,6 +2059,10 @@ function buildContractHandoffPayload(draft) {
     }
   }
 
+  var quoteNo = String(f.f_qt_no || '').trim() || '＿＿＿＿＿＿';
+  var projectName = projectNameFromTitle(f.f_doc_title, f.f_client_name);
+  var duration = String(f.f_duration || '').trim();
+
   return {
     kind: 'dghm-quote-to-contract',
     version: 1,
@@ -1946,12 +2072,17 @@ function buildContractHandoffPayload(draft) {
       f_doc_title: String(f.f_doc_title || '').trim(),
       f_party_a_company: String(f.f_client_name || '').trim(),
       f_party_a_details: detailLines.join('\n'),
-      f_proj_name: projectNameFromTitle(f.f_doc_title, f.f_client_name),
-      f_scope: serviceSummary(draft),
-      f_duration: String(f.f_duration || '').trim(),
-      f_total_amount: allAmountsResolved && total ? String(Math.round(total)) : ''
+      f_proj_name: projectName,
+      f_scope: '依附件一《報價單 ' + quoteNo + '》所載內容為準',
+      f_duration: duration,
+      f_total_amount: allAmountsResolved && total ? String(Math.round(total)) : '',
+      f_sig_desc: '本合約經雙方簽署後具法律效力，付款條件及交付範圍依本文件所載內容執行。'
     },
-    payments: payments
+    payments: payments,
+    payment_note:
+      '· 訂金到位前，不進行任何開發作業，亦不交付可執行之技術文件。\n' +
+      '· 付款方式：現金或匯款 ｜ 玉山銀行楊梅分行（代號 808）｜ 帳戶名稱：萬能數維有限公司 ｜ 帳號：0369-940-032822',
+    articles: buildContractArticles(quoteNo, projectName, duration, payments)
   };
 }
 
