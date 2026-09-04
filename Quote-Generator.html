@@ -1724,6 +1724,33 @@ function flattenQuoteItems(draft, card, index) {
   }];
 }
 
+/**
+ * 【草稿中，尚未確定是否採用】請款單「條款與說明」建議草稿。
+ * 固定收尾兩條（範圍聲明、疑義聯繫窗口）逐字帶入；開場白與付款指示套
+ * 固定公式、代入報價單與本期資料；匯款後回報末五碼的提醒預設加上。
+ * 「多期合併一次開立」這種特例（金額、期數要重新敘述）不在此模板範圍
+ * 內，遇到時仍需自行改寫第一條——這種情況目前是少數。
+ */
+function buildTermsDraft(draft, card, cards, index, amount) {
+  var f = draft.fields || {};
+  var company = String(f.f_client_name || '').trim();
+  var project = projectNameFromTitle(f.f_doc_title, f.f_client_name);
+  var quoteNo = String(f.f_qt_no || '').trim();
+  var amountText = amount ? 'NT$ ' + formatAmount(amount) : 'NT$ ___';
+  var phaseNote = cards.length > 1
+    ? '，本期為「' + (card.phase || ('第 ' + (index + 1) + ' 期')) + '」（第 ' + (index + 1) + ' 期／共 ' + cards.length + ' 期）'
+    : '';
+  var timing = card.timing || '（付款時點請自行補充）';
+
+  return [
+    '本文件為' + company + '「' + project + '」之正式請款憑證，依報價單 ' + quoteNo + ' 內容開立' + phaseNote + '。',
+    '本期應付金額為 ' + amountText + '，請於' + timing + '，以現金或匯款方式支付至前述帳戶，或依雙方合約另有約定者從其約定。',
+    '匯款完成後，請提供帳號末五碼與匯款時間，以利我方對帳並確認收款。',
+    '文件僅供請款與對帳參考；專案範圍、工作項目、交付內容及雙方權利義務，悉以簽署之報價單為準，範圍外新增需求不在本次請款範圍內。',
+    '若對本次請款金額或載明事項有疑義，請於收受本通知後 3 日內與我方聯繫。'
+  ];
+}
+
 function buildHandoffPayload(draft, cards, index) {
   var f = draft.fields || {};
   var card = cards[index];
@@ -1757,7 +1784,8 @@ function buildHandoffPayload(draft, cards, index) {
       f_payment_terms: DEFAULT_PAYMENT_TERMS,
       f_total_hint:    hint
     },
-    items: items
+    items: items,
+    terms: buildTermsDraft(draft, card, cards, index, amount)
   };
 }
 
