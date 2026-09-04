@@ -1001,7 +1001,7 @@ function buildPaymentsHtml() {
   if (rows.length) {
     html += '<table class="payment-table">\n<thead><tr><th>期別</th><th>名稱</th><th>比例</th><th>付款時機</th><th>金額</th></tr></thead>\n<tbody>\n';
     rows.forEach(function (row) {
-      html += '<tr><td>' + xmlEsc(row.phase) + '</td><td>' + xmlEsc(row.name) + '</td><td>' + xmlEsc(row.percent) + '</td><td>' + nl2br(row.timing) + '</td><td>' + xmlEsc(row.amount) + '</td></tr>\n';
+      html += '<tr><td>' + xmlEsc(row.phase) + '</td><td>' + xmlEsc(row.name) + '</td><td>' + xmlEsc(row.percent) + '</td><td>' + nl2br(row.timing) + '</td><td>' + xmlEsc(formatTotalDisplay(row.amount)) + '</td></tr>\n';
     });
     html += '</tbody>\n</table>\n';
   }

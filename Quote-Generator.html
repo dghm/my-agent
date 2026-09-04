@@ -811,6 +811,21 @@ function xmlEsc(s) {
 function nl2br(s) { return xmlEsc(s).replace(/\n/g, '<br>'); }
 function v(id) { return (document.getElementById(id)||{}).value||''; }
 function fmtNT(n) { return 'NT$ ' + Math.round(n).toLocaleString('zh-TW'); }
+/**
+ * 計價表／勾選方案表／付款卡片的金額欄顯示用：純數字（可含逗號、NT$／$
+ * 前綴）時補上千分位，其餘原樣顯示——金額欄有時候會填「洽詢」「免費」
+ * 之類的文字說明，不能一律當數字處理。
+ */
+function displayAmount(raw) {
+  var s = String(raw == null ? '' : raw).trim();
+  if (!s) return s;
+  var prefix = s.match(/^(NT\$|\$)\s*/i);
+  var body = prefix ? s.slice(prefix[0].length) : s;
+  if (!/^[\d,]+(\.\d+)?$/.test(body)) return s;
+  var num = parseFloat(body.replace(/,/g, ''));
+  if (!isFinite(num)) return s;
+  return (prefix ? prefix[0] : '') + formatAmount(String(Math.round(num)));
+}
 function fmtDateZh(s) {
   if (!s) return '';
   var p = s.split('-');
@@ -1084,13 +1099,13 @@ function buildSecHtml(wrap) {
     } else if (type === 'price') {
       html += '<table class="opt-table"><thead><tr><th style="width:24%">項目</th><th>說明</th><th style="text-align:right;width:20%">' + xmlEsc(priceHead) + '</th></tr></thead><tbody>\n';
       rows.forEach(function (r) {
-        html += '<tr><td class="item-name">' + xmlEsc(r.name) + '</td><td class="desc">' + nl2br(r.desc) + '</td><td class="price">' + xmlEsc(r.price) + '</td></tr>\n';
+        html += '<tr><td class="item-name">' + xmlEsc(r.name) + '</td><td class="desc">' + nl2br(r.desc) + '</td><td class="price">' + xmlEsc(displayAmount(r.price)) + '</td></tr>\n';
       });
       html += '</tbody></table>\n';
     } else {
       html += '<table class="opt-table"><thead><tr><th class="chk">勾選</th><th style="width:26%">方案</th><th>說明</th><th style="text-align:right;width:16%">' + xmlEsc(priceHead) + '</th></tr></thead><tbody>\n';
       rows.forEach(function (r) {
-        html += '<tr><td class="chk">☐</td><td class="item-name">' + xmlEsc(r.name) + '</td><td class="desc">' + nl2br(r.desc) + '</td><td class="price">' + xmlEsc(r.price) + '</td></tr>\n';
+        html += '<tr><td class="chk">☐</td><td class="item-name">' + xmlEsc(r.name) + '</td><td class="desc">' + nl2br(r.desc) + '</td><td class="price">' + xmlEsc(displayAmount(r.price)) + '</td></tr>\n';
       });
       html += '</tbody></table>\n';
     }
@@ -1152,7 +1167,7 @@ function buildPayHtml(wrap) {
     var cols = Math.min(cards.length, 3);
     html += '<div class="payment-grid" style="grid-template-columns:repeat(' + cols + ',1fr)">\n';
     cards.forEach(function (c) {
-      html += '<div class="payment-card"><div class="phase">' + xmlEsc(c.phase) + '</div><div class="amount">' + xmlEsc(c.amount) + '</div><div class="timing">' + nl2br(c.timing) + '</div></div>\n';
+      html += '<div class="payment-card"><div class="phase">' + xmlEsc(c.phase) + '</div><div class="amount">' + xmlEsc(displayAmount(c.amount)) + '</div><div class="timing">' + nl2br(c.timing) + '</div></div>\n';
     });
     html += '</div>\n';
   }
