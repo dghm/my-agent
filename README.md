@@ -15,8 +15,23 @@
 ## 主要檔案用途
 
 - `index.html`
-  - Dashboard 主頁（左側工具選單 + 右側預覽區）。
-  - 可切換各工具頁面（客戶訪談、Section 生成、社群文案）或查看 CLI 工具資訊。
+  - Dashboard 主頁（工作台總覽）。
+  - 顯示客戶案件流程 01–06 與快速入口，各卡片連往對應工具。
+
+- `app-shell.css` / `app-shell.js` / `tool-registry.js`
+  - 所有工具頁共用的外框：單一側邊選單（6 個類別群組、18 個工具）＋ 頂列。
+  - 側欄支援搜尋（含口語別名，例如「請款」找得到「應收帳款通知」）、
+    群組折疊（狀態記憶於 localStorage）、收合成 64px 圖示列。
+  - 頁面掛載方式：`<body data-tool="工具 id">` ＋ `mountAppShell({ activeTool: '工具 id' })`，
+    工具 id 定義於 `tool-registry.js`。
+  - 目前已套用的頁面：`index`、`skill-toolbox`、`client-brief`、`design-system`、
+    `work-schedule`、`Quote-Generator`、`Contract-Generator`、`Invoice-Generator`。
+    其餘頁面（`income-tracker`、`meeting-notes`、`clear-todo`、`qr-generator`、
+    `wechat-h5-card`、`user-guide-generator`、`brand-guideline-generator`、
+    `social-ui`、`breakdance-section-generator`）尚未掛殼，側欄以橘色小圓點標示。
+
+- `ui-proposal.html`
+  - UI 整理提案原型（不影響實際頁面），內建「設計說明」面板記錄改動理由。
 
 - `tool-api-server.js`
   - 本專案的 API 後端（Node.js HTTP server）。
@@ -45,6 +60,49 @@
   - 「匯入請款單 JSON」按鈕可讀取 `Invoice-Generator.html` 匯出的請款單 JSON，自動帶入案件、客戶、專案代碼、期數說明、金額（項目加總）、通知單號、發票號碼、開立日期、付款期限、付款條件，確認金額與狀態後按「儲存登記」即完成登記。
   - 資料透過 `netlify/functions/income.js` 的 `/api/income/*` 讀寫，存於 Netlify Blobs。
   - 儲存登記後可在「附件」區上傳請款單／發票掃描檔（單檔上限 10MB），附件附加於該筆收入登記紀錄，可點擊檢視或刪除，存於獨立的 Netlify Blobs store（`income-attachments`）。
+
+- 預覽即時更新，不重載、不跳動
+  - `Quote-Generator.html`、`Invoice-Generator.html`、`Contract-Generator.html`
+    的右側 A4 預覽原本每次 `oninput` 都重新指派 `iframe.srcdoc`，等同整份
+    重新載入，捲動位置會跳回最上方。
+  - 改為 `applyOutput()` 內的 `paintPreview()`：首次渲染仍用 `srcdoc` 建立
+    文件，之後輸入變動改為直接以 `DOMParser` 解析新內容、原地替換
+    `iframe.contentDocument.body`，不重載頁面，捲動位置與焦點不受影響。
+  - 連續輸入以 `refreshOutput()` 做 250ms 去抖動，停止打字後才重畫一次；
+    複製、下載、預覽、列印等需要立即取得最新內容的操作改呼叫
+    `flushOutput()`，跳過去抖動直接刷新。
+  - 內容與上次相同時 `applyOutput()` 直接跳過，不做任何 DOM 操作。
+  - 預覽文件本身不含 `<script>`，僅以 `innerHTML` 替換 body 不會遺漏行為；
+    同源存取失敗時（少見的瀏覽器政策限制）退回原本的 `srcdoc` 寫法。
+
+- 草稿 JSON 的格式辨識
+  - 各工具的草稿都帶 `kind` 標記：`dghm-quote-draft`、`dghm-invoice-draft`、
+    `dghm-contract-draft`。載入前以 `dghm-ui.js` 的 `checkDraftKind()` 驗證，
+    載錯檔案會明確說明（例如「這是報價單草稿，不是請款單草稿」），
+    而不是安靜地把表單清空又填不進東西。
+  - 涵蓋報價單、請款單、合約的「載入草稿 JSON」與收入登記的「匯入請款單 JSON」。
+  - 加上標記之前存的舊草稿沒有 `kind`，改以欄位結構判斷，仍可正常載入。
+
+- 圖示內嵌
+  - `Quote-Generator.html`、`Invoice-Generator.html`、`Contract-Generator.html`
+    的工具列圖示原本以 CSS mask 從 cdn.jsdelivr.net 載入，網路不通時整排按鈕
+    會變成空白方塊。現已改為內嵌 SVG sprite（每檔開頭的 `.icon-sprite`），
+    以 `<svg class="action-icon"><use href="#i-名稱"></use></svg>` 引用。
+  - 來源：lucide-static 0.552.0（6 個）與 remixicon 4.9.1（4 個）。
+  - remixicon 是實心字形，以 `.action-icon.is-filled` 改為填色不描邊。
+  - 動態切換圖示請用 `setActionIcon(元素, '名稱')`，建立新圖示用
+    `actionIcon('名稱', 是否實心)`。
+  - 三支檔案仍以 `@import` 從 Google Fonts 載入 K2D 與 Noto Sans TC；
+    離線時會退回系統字型，版面不會壞掉但字體不同。
+
+- 報價單 → 請款單交接
+  - `Quote-Generator.html` 的「開立請款單 →」會列出付款條件裡的各期別，
+    選定一期後把客戶名稱、地址、統一編號、聯絡人、電話、Email、專案名稱、
+    專案代碼與該期金額，透過 localStorage 的 `dghm-quote-to-invoice`
+    交給 `Invoice-Generator.html`。
+  - 交接資料單次取用（讀取後即清除），超過 1 小時視為過期不套用。
+  - 請款單編號與開立日期刻意留空，由開單時自行填寫。
+  - 期別金額若寫成百分比（如「40%」）無法換算，金額欄會留空待補。
 
 - `qr-generator.html`
   - 靜態 QR Code 產生器（完全離線，QR 編碼引擎內建於檔案中，不依賴外部服務或 CDN，產生的 QR Code 永不過期）。

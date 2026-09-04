@@ -50,15 +50,6 @@ function initColumnResize(options) {
   var minEditor = options.minEditor || 360;
   var minPreview = options.minPreview || 280;
 
-  function collapsedExtra() {
-    if (!document.body.classList.contains('is-nav-collapsed')) return 0;
-    if (window.matchMedia('(max-width: 900px)').matches) return 0;
-    var styles = getComputedStyle(document.documentElement);
-    var rail = parseFloat(styles.getPropertyValue('--shell-rail-width')) || 68;
-    var menu = parseFloat(styles.getPropertyValue('--shell-menu-width')) || 238;
-    return rail + menu;
-  }
-
   function applyBase(width) {
     page.style.setProperty('--editor-col-width', Math.round(width) + 'px');
   }
@@ -76,13 +67,13 @@ function initColumnResize(options) {
     var startWidth = editor.getBoundingClientRect().width;
 
     function onMove(moveEvent) {
-      var extra = collapsedExtra();
+      // 側欄收合後多出來的寬度直接留給預覽區，編輯欄維持設定寬度，
+      // 因此不再需要針對收合狀態做補償計算。
       var pageWidth = page.getBoundingClientRect().width;
       var handleWidth = handle.getBoundingClientRect().width;
-      var nextVisual = startWidth + (moveEvent.clientX - startX);
-      var maxVisual = pageWidth - minPreview - handleWidth;
-      nextVisual = Math.max(minEditor + extra, Math.min(maxVisual, nextVisual));
-      applyBase(Math.max(minEditor, nextVisual - extra));
+      var maxWidth = pageWidth - minPreview - handleWidth;
+      var next = startWidth + (moveEvent.clientX - startX);
+      applyBase(Math.max(minEditor, Math.min(maxWidth, next)));
     }
 
     function onUp() {
@@ -99,4 +90,50 @@ function initColumnResize(options) {
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
   });
+}
+
+
+/* ============================================================
+   草稿 JSON 的格式辨識
+
+   各工具的草稿都帶有 kind 標記（dghm-quote-draft / dghm-invoice-draft
+   / dghm-contract-draft）。載入前先驗，避免把報價草稿餵給請款單這類
+   「不會報錯、但欄位全空」的情況。
+
+   舊版草稿沒有 kind，改以結構特徵判斷，維持可載入。
+   ============================================================ */
+var DGHM_DRAFT_LABELS = {
+  'dghm-quote-draft': '報價單草稿',
+  'dghm-invoice-draft': '請款單草稿',
+  'dghm-contract-draft': '合約草稿',
+  'dghm-quote-to-invoice': '報價單交接資料'
+};
+
+/**
+ * 檢查草稿是否屬於預期的工具。
+ * @param {*} draft 解析後的 JSON
+ * @param {string} expected 預期的 kind，例如 'dghm-invoice-draft'
+ * @param {function(object):boolean} [looksRight] 舊版草稿（無 kind）的結構判斷
+ * @returns {{ok: boolean, reason: string}}
+ */
+function checkDraftKind(draft, expected, looksRight) {
+  if (!draft || typeof draft !== 'object' || Array.isArray(draft)) {
+    return { ok: false, reason: '這不是有效的草稿檔案。' };
+  }
+
+  var kind = draft.kind;
+
+  if (kind === expected) return { ok: true, reason: '' };
+
+  if (typeof kind === 'string' && kind) {
+    var name = DGHM_DRAFT_LABELS[kind] || ('「' + kind + '」');
+    var want = DGHM_DRAFT_LABELS[expected] || expected;
+    return { ok: false, reason: '這是' + name + '，不是' + want + '，無法在這裡載入。' };
+  }
+
+  // 沒有 kind：可能是加上標記之前存的舊草稿
+  if (typeof looksRight === 'function' && looksRight(draft)) {
+    return { ok: true, reason: '' };
+  }
+  return { ok: false, reason: '無法辨識這個草稿的格式，請確認選到正確的檔案。' };
 }

@@ -17,6 +17,18 @@
   --surface-text-muted: #4B5565;
   --surface-input-bg:   #ffffff;
   --surface-input-border: #D0D5DD;
+
+  --surface-text-faint: #8A93A0;
+  --navy-soft:          #E8EEF9;
+  --focus-ring:         rgba(13,47,110,.14);
+
+  /* 形狀與陰影：以圓角＋柔和陰影表達層次，不使用邊緣強調色條 */
+  --radius:      16px;
+  --radius-sm:   10px;
+  --radius-xs:    8px;
+  --shadow-sm: 0 1px 2px rgba(16,24,40,.04), 0 4px 12px rgba(16,24,40,.05);
+  --shadow-md: 0 2px 4px rgba(16,24,40,.04), 0 12px 28px rgba(16,24,40,.09);
+  --shadow-lg: 0 8px 20px rgba(16,24,40,.08), 0 24px 48px rgba(16,24,40,.12);
 }
 
 :root[data-theme="dark"] {
@@ -28,6 +40,13 @@
   --surface-input-bg:     #2a313d;
   --surface-input-border: #3d4654;
   --navy-text:            #7FA8E8;   /* navy shifted to a readable light-blue in dark mode */
+
+  --surface-text-faint:   #7C8697;
+  --navy-soft:            #24304A;
+  --focus-ring:           rgba(127,168,232,.22);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.30), 0 4px 12px rgba(0,0,0,.25);
+  --shadow-md: 0 2px 4px rgba(0,0,0,.30), 0 12px 28px rgba(0,0,0,.35);
+  --shadow-lg: 0 8px 20px rgba(0,0,0,.35), 0 24px 48px rgba(0,0,0,.45);
 }
 
 /* ---- Base ---- */

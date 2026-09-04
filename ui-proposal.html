@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DGHM 工作台 UI 提案原型</title>
+<link rel="icon" href="favicon.svg">
+<style>
+/* ============================================================
+   DGHM Tools — UI 整理提案原型
+   單一檔案，不影響現有任何頁面。
+   ============================================================ */
+
+:root {
+  --navy:        #0D2F6E;
+  --navy-soft:   #E8EEF9;
+  --navy-text:   #0D2F6E;
+  --orange:      #E5622A;
+
+  --bg:          #F4F6F8;
+  --panel:       #FFFFFF;
+  --border:      #E4E8ED;
+  --text:        #1F2933;
+  --muted:       #5A6572;
+  --faint:       #8A93A0;
+  --input-bg:    #FFFFFF;
+  --input-border:#D6DBE2;
+
+  --radius:      16px;
+  --radius-sm:   10px;
+  --radius-xs:   8px;
+
+  --shadow-sm: 0 1px 2px rgba(16,24,40,.04), 0 4px 12px rgba(16,24,40,.05);
+  --shadow-md: 0 2px 4px rgba(16,24,40,.04), 0 12px 28px rgba(16,24,40,.09);
+  --shadow-lg: 0 8px 20px rgba(16,24,40,.08), 0 24px 48px rgba(16,24,40,.12);
+
+  --sidebar-w:  264px;
+  --topbar-h:   62px;
+}
+
+:root[data-theme="dark"] {
+  --navy:        #7FA8E8;
+  --navy-soft:   #24304A;
+  --navy-text:   #9CBDF0;
+  --orange:      #F0824F;
+
+  --bg:          #14181F;
+  --panel:       #1E242E;
+  --border:      #2F3742;
+  --text:        #E6E9EF;
+  --muted:       #AEB7C4;
+  --faint:       #7C8697;
+  --input-bg:    #262D38;
+  --input-border:#39414F;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.3), 0 4px 12px rgba(0,0,0,.25);
+  --shadow-md: 0 2px 4px rgba(0,0,0,.3), 0 12px 28px rgba(0,0,0,.35);
+  --shadow-lg: 0 8px 20px rgba(0,0,0,.35), 0 24px 48px rgba(0,0,0,.45);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font: inherit; cursor: pointer; }
+
+/* ---------- Shell：兩欄（側欄 + 工作區），不再有獨立 rail ---------- */
+
+.shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  height: 100vh;
+  transition: grid-template-columns .22s ease;
+}
+.shell.is-collapsed { grid-template-columns: 64px minmax(0, 1fr); }
+
+/* ---------- 側欄 ---------- */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 14px 12px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.sb-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 14px;
+  text-decoration: none;
+  color: var(--text);
+}
+.sb-brand-mark {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px; height: 32px;
+  border-radius: var(--radius-xs);
+  background: var(--navy);
+  color: #fff;
+  font-size: 13px; font-weight: 800; letter-spacing: -.02em;
+}
+:root[data-theme="dark"] .sb-brand-mark { color: #14181F; }
+.sb-brand-text strong { display: block; font-size: 14px; }
+.sb-brand-text span { display: block; font-size: 11px; color: var(--faint); }
+
+.sb-search {
+  position: relative;
+  margin-bottom: 12px;
+}
+.sb-search input {
+  width: 100%;
+  padding: 8px 10px 8px 30px;
+  font: inherit; font-size: 13px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+}
+.sb-search input:focus {
+  outline: none;
+  background: var(--input-bg);
+  border-color: var(--navy);
+  box-shadow: 0 0 0 3px var(--navy-soft);
+}
+.sb-search svg {
+  position: absolute; left: 9px; top: 50%;
+  width: 15px; height: 15px;
+  transform: translateY(-50%);
+  fill: none; stroke: var(--faint); stroke-width: 2;
+  pointer-events: none;
+}
+
+.sb-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0 -4px;
+  padding: 0 4px;
+  scrollbar-width: thin;
+}
+
+.sb-group + .sb-group { margin-top: 2px; }
+
+.sb-group-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px; font-weight: 700; letter-spacing: .06em;
+  text-align: left;
+}
+.sb-group-head:hover { background: var(--bg); color: var(--text); }
+.sb-group-head svg.gi {
+  flex-shrink: 0;
+  width: 16px; height: 16px;
+  fill: none; stroke: currentColor; stroke-width: 1.7;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.sb-group-head .caret {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 13px; height: 13px;
+  fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+  transition: transform .18s ease;
+}
+.sb-group.is-open .sb-group-head .caret { transform: rotate(90deg); }
+.sb-group.is-open .sb-group-head { color: var(--text); }
+
+.sb-tools { display: none; padding: 2px 0 6px 0; }
+.sb-group.is-open .sb-tools { display: block; }
+
+.sb-tool {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px 8px 35px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: left;
+}
+.sb-tool:hover { background: var(--bg); color: var(--text); }
+.sb-tool.is-active {
+  background: var(--navy-soft);
+  color: var(--navy-text);
+  font-weight: 700;
+}
+.sb-tool.is-planned { color: var(--faint); cursor: not-allowed; }
+.sb-tool.is-planned:hover { background: transparent; }
+
+/* 舊版：低調小圓點，不再是滿版徽章 */
+.sb-dot {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--orange);
+  opacity: .55;
+}
+.sb-tag {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--faint);
+  font-size: 10px; font-weight: 700;
+}
+
+.sb-foot {
+  flex-shrink: 0;
+  padding-top: 10px;
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.sb-collapse {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+}
+.sb-collapse:hover { background: var(--bg); color: var(--text); }
+.sb-collapse svg {
+  flex-shrink: 0;
+  width: 16px; height: 16px;
+  fill: none; stroke: currentColor; stroke-width: 1.8;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* 收合狀態：只留圖示，不是另開一欄 */
+.shell.is-collapsed .sb-brand-text,
+.shell.is-collapsed .sb-search,
+.shell.is-collapsed .sb-tools,
+.shell.is-collapsed .sb-group-head span,
+.shell.is-collapsed .sb-group-head .caret,
+.shell.is-collapsed .sb-collapse span { display: none; }
+.shell.is-collapsed .sidebar { padding-left: 10px; padding-right: 10px; align-items: center; }
+.shell.is-collapsed .sb-brand { padding: 6px 0 14px; }
+.shell.is-collapsed .sb-group-head,
+.shell.is-collapsed .sb-collapse { justify-content: center; padding: 10px; }
+.shell.is-collapsed .sb-group-head.has-active { background: var(--navy-soft); color: var(--navy-text); }
+.shell.is-collapsed .sb-foot { width: 100%; }
+
+/* ---------- 主區 ---------- */
+
+.main {
+  display: grid;
+  grid-template-rows: var(--topbar-h) minmax(0, 1fr);
+  min-width: 0; min-height: 0;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 20px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.crumb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--faint);
+}
+.crumb strong { color: var(--text); font-size: 15px; font-weight: 700; }
+.crumb .sep { opacity: .5; }
+
+.tb-spacer { flex: 1; }
+
+.project-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 300px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 12px;
+  box-shadow: var(--shadow-sm);
+}
+.project-chip:hover { border-color: var(--navy); }
+.project-chip .pc-label { color: var(--faint); }
+.project-chip .pc-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.project-chip svg { flex-shrink: 0; width: 13px; height: 13px; fill: none; stroke: var(--faint); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.icon-btn {
+  display: grid; place-items: center;
+  flex-shrink: 0;
+  width: 34px; height: 34px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 15px; line-height: 1;
+}
+.icon-btn:hover { border-color: var(--navy); color: var(--navy-text); }
+
+.workspace {
+  min-width: 0; min-height: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+.screen { display: none; height: 100%; min-height: 0; }
+.screen.is-active { display: block; }
+
+/* ---------- 首頁 ---------- */
+
+.home-scroll { height: 100%; overflow-y: auto; }
+.home-inner { max-width: 1080px; margin: 0 auto; padding: 32px 28px 56px; }
+
+.home-hero {
+  padding: 26px 28px;
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow-md);
+}
+.home-hero .kicker { margin: 0 0 6px; color: var(--orange); font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+.home-hero h1 { margin: 0 0 6px; font-size: 22px; color: var(--navy-text); }
+.home-hero p { margin: 0 0 18px; color: var(--muted); font-size: 13px; max-width: 56ch; }
+
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 16px;
+  border: 0; border-radius: var(--radius-xs);
+  background: var(--navy); color: #fff;
+  font-size: 13px; font-weight: 700;
+  box-shadow: var(--shadow-sm);
+}
+:root[data-theme="dark"] .btn-primary { color: #14181F; }
+.btn-primary:hover { filter: brightness(1.1); }
+
+.sec-head { display: flex; align-items: baseline; gap: 12px; margin: 32px 0 14px; }
+.sec-head h2 { margin: 0; font-size: 16px; color: var(--navy-text); }
+.sec-head p { margin: 0; color: var(--faint); font-size: 12px; }
+
+.flow { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 12px; }
+.flow-card {
+  display: block; width: 100%; min-width: 0;
+  padding: 16px 14px;
+  border: 0; border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+.flow-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.flow-card .no { display: block; margin-bottom: 8px; color: var(--faint); font-size: 11px; font-weight: 700; letter-spacing: .08em; }
+.flow-card h3 { margin: 0 0 4px; font-size: 14px; color: var(--text); }
+.flow-card p { margin: 0; color: var(--faint); font-size: 11px; }
+.flow-card.is-accent .no { color: var(--orange); }
+
+.mini-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+.mini-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 0; border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+  color: var(--text); font-size: 13px; text-align: left;
+}
+.mini-card:hover { box-shadow: var(--shadow-md); color: var(--navy-text); }
+.mini-card span:last-child { color: var(--faint); }
+
+/* ---------- 工具頁：編輯 + 預覽 ---------- */
+
+.split { display: flex; height: 100%; min-height: 0; }
+
+.editor-col {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 var(--editor-w, 460px);
+  min-width: 0; min-height: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  transition: flex-basis .22s ease;
+}
+.split.is-preview-full .editor-col { flex-basis: 0; overflow: hidden; border-right: 0; }
+
+.editor-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 18px 8px; }
+
+.acc { margin-bottom: 10px; border-radius: var(--radius); background: var(--bg); overflow: hidden; }
+.acc-head {
+  display: flex; align-items: center; gap: 9px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0; background: transparent;
+  color: var(--text); font-size: 13px; font-weight: 700; text-align: left;
+}
+.acc-head .idx { color: var(--faint); font-size: 11px; font-weight: 700; letter-spacing: .06em; }
+.acc-head .caret {
+  margin-left: auto; flex-shrink: 0;
+  width: 14px; height: 14px;
+  fill: none; stroke: var(--faint); stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+  transition: transform .18s ease;
+}
+.acc.is-open .acc-head .caret { transform: rotate(90deg); }
+.acc-body { display: none; padding: 0 14px 14px; }
+.acc.is-open .acc-body { display: block; }
+
+.acc-body label { display: block; margin: 10px 0 4px; color: var(--muted); font-size: 12px; }
+.acc-body label:first-child { margin-top: 0; }
+.acc-body input, .acc-body textarea, .acc-body select {
+  width: 100%;
+  padding: 7px 10px;
+  font: inherit; font-size: 13px;
+  color: var(--text);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-xs);
+}
+.acc-body input:focus, .acc-body textarea:focus, .acc-body select:focus {
+  outline: none; border-color: var(--navy);
+  box-shadow: 0 0 0 3px var(--navy-soft);
+}
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* 固定底部操作列：所有工具共用同一組位置 */
+.editor-foot {
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 18px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 16px rgba(16,24,40,.04);
+}
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 12px;
+}
+.btn-ghost:hover { border-color: var(--navy); color: var(--navy-text); }
+.editor-foot .grow { flex: 1; }
+.save-hint { color: var(--faint); font-size: 11px; }
+
+/* 拖曳分隔線 */
+.handle {
+  flex: 0 0 7px;
+  margin: 0 -3px;
+  position: relative; z-index: 3;
+  cursor: col-resize;
+  touch-action: none;
+}
+.handle::before {
+  content: ''; position: absolute; inset: 0 auto 0 3px;
+  width: 1px; background: var(--border);
+}
+.handle:hover::before, .handle.is-drag::before { left: 2px; width: 3px; background: var(--navy); }
+.split.is-preview-full .handle { display: none; }
+body.is-resizing { cursor: col-resize; user-select: none; }
+
+.preview-col {
+  display: flex; flex-direction: column;
+  flex: 1; min-width: 0; min-height: 0;
+  padding: 14px 18px 18px;
+}
+
+.preview-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+}
+.segmented button {
+  padding: 5px 14px;
+  border: 0; border-radius: 7px;
+  background: transparent;
+  color: var(--muted); font-size: 12px;
+}
+.segmented button.is-active { background: var(--navy); color: #fff; font-weight: 700; }
+:root[data-theme="dark"] .segmented button.is-active { color: #14181F; }
+
+.preview-stage {
+  flex: 1; min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  place-items: start center;
+  padding: 20px;
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+}
+
+/* A4 假頁面 */
+.a4 {
+  width: 100%; max-width: 660px;
+  border-radius: 6px;
+  background: #fff;
+  color: #1f2933;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.a4-head { padding: 22px 26px 18px; background: #0D2F6E; color: #fff; }
+.a4-head .co { font-size: 10px; letter-spacing: .16em; opacity: .75; }
+.a4-head h2 { margin: 8px 0 3px; font-size: 17px; }
+.a4-head p { margin: 0; font-size: 11px; opacity: .78; }
+.a4-body { padding: 20px 26px 26px; }
+.a4-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+.a4-meta div { font-size: 11px; }
+.a4-meta span { display: block; color: #8A93A0; font-size: 9px; letter-spacing: .08em; margin-bottom: 2px; }
+.a4-cat { margin: 16px 0 6px; color: #E5622A; font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+.a4 table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.a4 th { padding: 6px 0; border-bottom: 1px solid #E4E8ED; color: #8A93A0; font-size: 9px; font-weight: 700; letter-spacing: .06em; text-align: left; }
+.a4 td { padding: 8px 0; border-bottom: 1px solid #F1F3F6; }
+.a4 td:last-child, .a4 th:last-child { text-align: right; }
+.a4-total { display: flex; justify-content: flex-end; gap: 26px; margin-top: 14px; font-size: 12px; }
+.a4-total strong { color: #0D2F6E; font-size: 15px; }
+
+/* ---------- 通用清單頁（Skill／收入） ---------- */
+
+.list-page { display: flex; height: 100%; min-height: 0; }
+.list-col {
+  flex: 0 0 340px;
+  display: flex; flex-direction: column;
+  min-height: 0;
+  padding: 18px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+}
+.list-col h2 { margin: 0 0 4px; font-size: 16px; color: var(--navy-text); }
+.list-col > p { margin: 0 0 16px; color: var(--faint); font-size: 12px; }
+.list-items { flex: 1; min-height: 0; overflow-y: auto; display: grid; gap: 8px; align-content: start; }
+.list-item {
+  width: 100%;
+  padding: 12px 14px;
+  border: 0; border-radius: var(--radius);
+  background: var(--bg);
+  text-align: left; color: var(--text);
+}
+.list-item:hover { box-shadow: var(--shadow-sm); }
+.list-item.is-active { background: var(--navy-soft); color: var(--navy-text); }
+.list-item strong { display: block; font-size: 13px; }
+.list-item span { display: block; margin-top: 2px; color: var(--faint); font-size: 11px; }
+.list-item.is-active span { color: var(--navy-text); opacity: .75; }
+
+.detail-col { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; padding: 26px 30px; }
+.detail-card {
+  padding: 24px 26px;
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+}
+.detail-card h2 { margin: 0 0 8px; font-size: 18px; color: var(--navy-text); }
+.detail-card p { color: var(--muted); font-size: 13px; }
+.detail-card pre {
+  margin: 16px 0 0; padding: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--muted);
+  font-family: "SF Mono", Menlo, monospace; font-size: 11px;
+  overflow-x: auto;
+}
+
+.placeholder { display: grid; place-items: center; height: 100%; padding: 40px; }
+.placeholder-inner {
+  max-width: 420px;
+  padding: 30px 32px;
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+.placeholder-inner h2 { margin: 0 0 8px; font-size: 17px; color: var(--navy-text); }
+.placeholder-inner p { margin: 0; color: var(--muted); font-size: 13px; }
+
+/* ---------- 設計說明面板 ---------- */
+
+.notes-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 13px;
+  border: 1px solid var(--orange);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--orange);
+  font-size: 12px; font-weight: 700;
+}
+.notes-btn:hover { background: var(--orange); color: #fff; }
+
+.notes-scrim {
+  position: fixed; inset: 0; z-index: 40;
+  background: rgba(16,24,40,.4);
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s ease;
+}
+.notes-scrim.is-open { opacity: 1; pointer-events: auto; }
+
+.notes {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 50;
+  width: min(440px, 92vw);
+  padding: 24px 26px 32px;
+  background: var(--panel);
+  box-shadow: var(--shadow-lg);
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform .24s ease;
+}
+.notes.is-open { transform: none; }
+.notes h2 { margin: 0 0 6px; font-size: 17px; color: var(--navy-text); }
+.notes > p { margin: 0 0 20px; color: var(--faint); font-size: 12px; }
+.note {
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+.note h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-size: 13px; color: var(--text); }
+.note h3 em {
+  display: grid; place-items: center;
+  flex-shrink: 0;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--navy); color: #fff;
+  font-style: normal; font-size: 11px; font-weight: 700;
+}
+:root[data-theme="dark"] .note h3 em { color: #14181F; }
+.note p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.note code {
+  padding: 1px 5px; border-radius: 4px;
+  background: var(--panel); color: var(--orange);
+  font-size: 11px;
+}
+.notes-close {
+  position: absolute; top: 18px; right: 20px;
+  width: 30px; height: 30px;
+  display: grid; place-items: center;
+  border: 0; border-radius: var(--radius-xs);
+  background: var(--bg); color: var(--muted);
+  font-size: 16px; line-height: 1;
+}
+
+/* ---------- 響應式：不再有 min-width: 980px 的硬限制 ---------- */
+
+@media (max-width: 1080px) {
+  .flow { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .mini-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .editor-col { flex-basis: 400px; }
+}
+
+@media (max-width: 860px) {
+  .shell { grid-template-columns: 64px minmax(0,1fr); }
+  .shell .sb-brand-text, .shell .sb-search, .shell .sb-tools,
+  .shell .sb-group-head span, .shell .sb-group-head .caret, .shell .sb-collapse span { display: none; }
+  .sidebar { padding-left: 10px; padding-right: 10px; align-items: center; }
+  .sb-group-head, .sb-collapse { justify-content: center; padding: 10px; }
+  .sb-group-head.has-active { background: var(--navy-soft); color: var(--navy-text); }
+  .project-chip { max-width: 180px; }
+  .list-col { flex-basis: 260px; }
+}
+
+@media (max-width: 720px) {
+  .flow { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .mini-grid { grid-template-columns: 1fr; }
+  .home-inner { padding: 22px 18px 40px; }
+  /* 手機：編輯／預覽改成分頁切換，不並排 */
+  .split .preview-col { display: none; }
+  .split .handle { display: none; }
+  .editor-col { flex: 1 1 auto; border-right: 0; }
+  .split.is-preview-full .preview-col { display: flex; }
+  .split.is-preview-full .editor-col { display: none; }
+  .list-page { flex-direction: column; }
+  .list-col { flex: 0 0 auto; max-height: 40%; border-right: 0; border-bottom: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+
+<div class="shell" id="shell">
+
+  <!-- ============ 單一側欄：類別群組 + 群組內工具 ============ -->
+  <aside class="sidebar">
+    <a class="sb-brand" href="#" onclick="go('home');return false;">
+      <span class="sb-brand-mark">DG</span>
+      <span class="sb-brand-text">
+        <strong>DGHM 工作台</strong>
+        <span>Tools Workspace</span>
+      </span>
+    </a>
+
+    <div class="sb-search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="search" id="tool-search" placeholder="搜尋工具…" aria-label="搜尋工具">
+    </div>
+
+    <div class="sb-scroll" id="sb-scroll"></div>
+
+    <div class="sb-foot">
+      <button class="sb-collapse" id="collapse-btn" type="button">
+        <svg viewBox="0 0 24 24"><path d="m14 6-6 6 6 6"/><path d="M20 4v16"/></svg>
+        <span>收合選單</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ============ 主區 ============ -->
+  <div class="main">
+    <header class="topbar">
+      <div class="crumb">
+        <span id="crumb-group">工作台</span>
+        <span class="sep">›</span>
+        <strong id="crumb-tool">總覽</strong>
+      </div>
+
+      <div class="tb-spacer"></div>
+
+      <button class="notes-btn" type="button" id="notes-open">✦ 設計說明</button>
+
+      <button class="project-chip" type="button" title="切換目前案件">
+        <span class="pc-label">案件</span>
+        <span class="pc-name">MSK-2026 麥司克官網搬遷</span>
+        <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+
+      <button class="icon-btn" type="button" id="theme-btn" title="切換深色／淺色">🌙</button>
+      <button class="icon-btn" type="button" title="帳號">👤</button>
+    </header>
+
+    <main class="workspace">
+
+      <!-- ---------- 首頁 ---------- -->
+      <section class="screen is-active" data-screen="home">
+        <div class="home-scroll">
+          <div class="home-inner">
+            <div class="home-hero">
+              <p class="kicker">今天從這裡開始</p>
+              <h1>目前有 3 個案件在進行</h1>
+              <p>麥司克官網搬遷等待報價確認、合信旺旺第二期請款可開立、達美專案設計系統待交付。</p>
+              <button class="btn-primary" type="button" onclick="go('quote')">繼續編輯報價單 →</button>
+            </div>
+
+            <div class="sec-head">
+              <h2>客戶案件流程</h2>
+              <p>依工作階段開啟對應工具</p>
+            </div>
+            <div class="flow">
+              <button class="flow-card" type="button" onclick="go('brief')"><span class="no">01</span><h3>需求訪談</h3><p>客戶 Brief</p></button>
+              <button class="flow-card is-accent" type="button" onclick="go('quote')"><span class="no">02</span><h3>範圍與價格</h3><p>服務報價單</p></button>
+              <button class="flow-card" type="button" onclick="go('contract')"><span class="no">03</span><h3>簽約</h3><p>合約文件</p></button>
+              <button class="flow-card" type="button" onclick="go('meetings')"><span class="no">04</span><h3>專案溝通</h3><p>會議記錄</p></button>
+              <button class="flow-card is-accent" type="button" onclick="go('invoice')"><span class="no">05</span><h3>提出請款</h3><p>應收帳款通知</p></button>
+              <button class="flow-card" type="button" onclick="go('income')"><span class="no">06</span><h3>財務追蹤</h3><p>收入登記</p></button>
+            </div>
+
+            <div class="sec-head">
+              <h2>快速入口</h2>
+              <p>最近常用</p>
+            </div>
+            <div class="mini-grid">
+              <button class="mini-card" type="button" onclick="go('skills')"><span>AI Skill 總覽</span><span>→</span></button>
+              <button class="mini-card" type="button" onclick="go('schedule')"><span>週工作排程</span><span>→</span></button>
+              <button class="mini-card" type="button" onclick="go('qr')"><span>QR Code 產生器</span><span>→</span></button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- 報價單：編輯 + 預覽 ---------- -->
+      <section class="screen" data-screen="quote">
+        <div class="split" id="quote-split">
+          <div class="editor-col">
+            <div class="editor-scroll">
+              <div class="acc is-open">
+                <button class="acc-head" type="button" onclick="toggleAcc(this)">
+                  <span class="idx">01</span> 基本資訊
+                  <svg class="caret" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
+                </button>
+                <div class="acc-body">
+                  <div class="row2">
+                    <div><label>報價單編號</label><input type="text" value="QT-2026-0142"></div>
+                    <div><label>預估工期</label><input type="text" value="約 4 週"></div>
+                  </div>
+                  <div class="row2" style="margin-top:10px">
+                    <div><label>報價日期</label><input type="date" value="2026-09-03"></div>
+                    <div><label>有效期限</label><input type="date" value="2026-10-03"></div>
+                  </div>
+                  <label>文件主標題</label>
+                  <textarea rows="2">麥司克股份有限公司
+網站搬遷及委託維護服務</textarea>
+                </div>
+              </div>
+
+              <div class="acc">
+                <button class="acc-head" type="button" onclick="toggleAcc(this)">
+                  <span class="idx">02</span> 客戶資訊
+                  <svg class="caret" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
+                </button>
+                <div class="acc-body">
+                  <label>客戶名稱</label><input type="text" value="麥司克股份有限公司">
+                  <label>聯絡窗口</label><input type="text" value="林經理">
+                </div>
+              </div>
+
+              <div class="acc">
+                <button class="acc-head" type="button" onclick="toggleAcc(this)">
+                  <span class="idx">03</span> 服務項目
+                  <svg class="caret" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
+                </button>
+                <div class="acc-body">
+                  <label>項目一</label><input type="text" value="網站主機搬遷與環境建置">
+                  <label>金額（未稅）</label><input type="text" value="48,000">
+                </div>
+              </div>
+
+              <div class="acc">
+                <button class="acc-head" type="button" onclick="toggleAcc(this)">
+                  <span class="idx">04</span> 付款條件
+                  <svg class="caret" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
+                </button>
+                <div class="acc-body">
+                  <label>分期方式</label>
+                  <select><option>三期（40 / 40 / 20）</option><option>兩期（50 / 50）</option><option>一次付清</option></select>
+                </div>
+              </div>
+
+              <div class="acc">
+                <button class="acc-head" type="button" onclick="toggleAcc(this)">
+                  <span class="idx">05</span> 簽署與備註
+                  <svg class="caret" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
+                </button>
+                <div class="acc-body">
+                  <label>備註</label><textarea rows="3">報價未含網域與主機年費。</textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- 固定底部操作列 -->
+            <div class="editor-foot">
+              <button class="btn-ghost" type="button">載入草稿</button>
+              <button class="btn-ghost" type="button">下載 JSON</button>
+              <span class="grow"></span>
+              <span class="save-hint">已自動暫存</span>
+              <button class="btn-primary" type="button">列印 PDF</button>
+            </div>
+          </div>
+
+          <div class="handle" data-split="quote-split"></div>
+
+          <div class="preview-col">
+            <div class="preview-bar">
+              <div class="segmented">
+                <button type="button" class="is-active">A4 預覽</button>
+                <button type="button">HTML</button>
+                <button type="button">JSON</button>
+              </div>
+              <span class="tb-spacer"></span>
+              <button class="btn-ghost" type="button" onclick="toggleFull('quote-split', this)">⤢ 預覽全寬</button>
+            </div>
+            <div class="preview-stage">
+              <div class="a4">
+                <div class="a4-head">
+                  <div class="co">萬能數維有限公司　DGHM</div>
+                  <h2>麥司克股份有限公司</h2>
+                  <p>網站搬遷及委託維護服務　Website Migration Service</p>
+                </div>
+                <div class="a4-body">
+                  <div class="a4-meta">
+                    <div><span>報價單編號</span>QT-2026-0142</div>
+                    <div><span>報價日期</span>2026-09-03</div>
+                    <div><span>預估工期</span>約 4 週</div>
+                    <div><span>有效期限</span>2026-10-03</div>
+                  </div>
+                  <div class="a4-cat">服務項目</div>
+                  <table>
+                    <tr><th>項目</th><th>數量</th><th>金額</th></tr>
+                    <tr><td>網站主機搬遷與環境建置</td><td>1 式</td><td>48,000</td></tr>
+                    <tr><td>SSL 憑證與 DNS 設定</td><td>1 式</td><td>8,000</td></tr>
+                    <tr><td>年度委託維護（12 個月）</td><td>12 月</td><td>36,000</td></tr>
+                  </table>
+                  <div class="a4-total"><span>未稅合計</span><strong>NT$ 92,000</strong></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- Skill 總覽：清單 + 詳情 ---------- -->
+      <section class="screen" data-screen="skills">
+        <div class="list-page">
+          <div class="list-col">
+            <h2>AI Skill 總覽</h2>
+            <p>共 24 個 Skill</p>
+            <div class="list-items">
+              <button class="list-item is-active" type="button"><strong>quote-step1-md</strong><span>整理客戶需求、產出報價草稿</span></button>
+              <button class="list-item" type="button"><strong>contract-step2-html</strong><span>合約草稿轉正式 HTML</span></button>
+              <button class="list-item" type="button"><strong>invoice-step1-md</strong><span>請款通知草稿</span></button>
+              <button class="list-item" type="button"><strong>gantt-html</strong><span>專案時程甘特圖</span></button>
+              <button class="list-item" type="button"><strong>seo-audit</strong><span>SEO 網站健檢報告</span></button>
+              <button class="list-item" type="button"><strong>tools-pagination</strong><span>A4 分頁與列印規範</span></button>
+            </div>
+          </div>
+          <div class="detail-col">
+            <div class="detail-card">
+              <h2>quote-step1-md</h2>
+              <p>為 DGHM 整理客戶需求、產出標準化報價草稿 MD 檔。報價流程第一步，確認後進入 quote-step2-json 或 quote-step2-html。</p>
+              <pre>啟動時機
+  「幫我整理報價」「新客戶要報價」
+
+輸出
+  dghm-quote-draft.md</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- 其他工具：共用外框 ---------- -->
+      <section class="screen" data-screen="generic">
+        <div class="placeholder">
+          <div class="placeholder-inner">
+            <h2 id="generic-title">工具內容</h2>
+            <p>這頁在原型中沒有畫細節，但它會沿用完全相同的外框：同一組側欄、同一條 topbar、同一個案件選擇器。目前 18 個 HTML 中只有 8 個掛了 app-shell，補齊後切換工具外框不會消失。</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ============ 設計說明 ============ -->
+<div class="notes-scrim" id="notes-scrim"></div>
+<aside class="notes" id="notes">
+  <button class="notes-close" type="button" id="notes-close">×</button>
+  <h2>這份原型改了什麼</h2>
+  <p>對照現行 app-shell.css / tool-registry.js</p>
+
+  <div class="note">
+    <h3><em>1</em>4 欄變 3 欄</h3>
+    <p>原本 <code>rail 68px</code> + <code>menu 238px</code> 是兩層導覽拆成兩個實體欄位。合併成單欄 264px 折疊選單後，工作區多拿回約 300px — A4 預覽終於放得下。</p>
+  </div>
+
+  <div class="note">
+    <h3><em>2</em>類別重整為 6 組</h3>
+    <p>把 <code>breakdance-section-generator</code> 和 <code>social-ui</code> 兩個目前不在 registry、從導覽點不到的工具收進「AI 生成」；Skill 總覽從「首頁」下面獨立出來。</p>
+  </div>
+
+  <div class="note">
+    <h3><em>3</em>徽章降噪</h3>
+    <p>原本 18 列每列都有「新版／舊版」滿版徽章。改成只有「規劃中」顯示標籤，待升級的舊版用一顆小圓點。</p>
+  </div>
+
+  <div class="note">
+    <h3><em>4</em>操作鈕收進固定底部列</h3>
+    <p>報價單原本上方有草稿列、右上有 tab 工具列、下方還有按鈕。改成編輯欄底部一條固定操作列，位置在每個工具都一樣。</p>
+  </div>
+
+  <div class="note">
+    <h3><em>5</em>預覽可全寬</h3>
+    <p>看成品時把編輯欄收掉，A4 用滿整個工作區。分隔線也可以拖曳調整比例。</p>
+  </div>
+
+  <div class="note">
+    <h3><em>6</em>圓角與陰影取代邊緣強調條</h3>
+    <p>移除 <code>border-left: 6px</code> / <code>border-top: 4px</code> 的色條，改用 <code>border-radius: 16px</code> + 柔和陰影表達層次，品牌色只出現在文字與圖示。</p>
+  </div>
+
+  <div class="note">
+    <h3><em>7</em>拿掉 min-width: 980px</h3>
+    <p>現行 <code>body.has-app-shell</code> 鎖死 980px 且 <code>overflow: hidden</code>，平板以下無法使用。改成 860px 側欄自動收成圖示、720px 編輯／預覽改分頁切換。</p>
+  </div>
+
+  <div class="note">
+    <h3><em>8</em>案件選擇器移到 topbar 右側</h3>
+    <p>從左上的下拉選單改成右側 chip，跟主題與帳號放在一起 — 左邊留給「我在哪」的麵包屑，右邊放「我是誰、在哪個案子」。</p>
+  </div>
+</aside>
+
+<script>
+/* ---------- 導覽資料：依「功能類別」為主軸 ---------- */
+var GROUPS = [
+  { id:'workspace', label:'工作台', icon:'home', tools:[
+    { id:'home',      label:'總覽',        screen:'home' },
+    { id:'schedule',  label:'週工作排程',  status:'legacy' },
+    { id:'todo',      label:'Clear 待辦',  status:'legacy' },
+  ]},
+  { id:'clients', label:'案件與溝通', icon:'briefcase', tools:[
+    { id:'brief',     label:'客戶 Brief' },
+    { id:'meetings',  label:'會議記錄',    status:'legacy' },
+  ]},
+  { id:'business', label:'商務文件', icon:'receipt', tools:[
+    { id:'quote',     label:'服務報價單',    screen:'quote' },
+    { id:'contract',  label:'合約文件' },
+    { id:'invoice',   label:'應收帳款通知' },
+    { id:'income',    label:'收入登記',      status:'legacy' },
+  ]},
+  { id:'delivery', label:'交付文件', icon:'file', tools:[
+    { id:'design-system', label:'客戶設計系統' },
+    { id:'style',         label:'Style Guideline', status:'legacy' },
+    { id:'guide',         label:'User Guide 骨架', status:'legacy' },
+    { id:'uat',           label:'UAT 問答與 JSON', status:'planned' },
+  ]},
+  { id:'ai', label:'AI 生成', icon:'sparkles', tools:[
+    { id:'skills',    label:'AI Skill 總覽',      screen:'skills' },
+    { id:'social',    label:'社群文案',            status:'legacy' },
+    { id:'sections',  label:'Breakdance Section',  status:'legacy' },
+  ]},
+  { id:'aux', label:'輔助工具', icon:'qr', tools:[
+    { id:'qr',   label:'QR Code',      status:'legacy' },
+    { id:'h5',   label:'微信 H5 名片', status:'legacy' },
+  ]},
+];
+
+var ICONS = {
+  home:     '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/>',
+  briefcase:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18"/>',
+  receipt:  '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6"/>',
+  file:     '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 15l2 2 5-5"/>',
+  sparkles: '<path d="m12 3-1.2 3.2L8 7.5l2.8 1.3L12 12l1.2-3.2L16 7.5l-2.8-1.3L12 3Z"/><path d="m5 14-.6 1.6L3 16l1.4.4L5 18l.6-1.6L7 16l-1.4-.4L5 14Z"/>',
+  qr:       '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 19h2v2h-2z"/>',
+};
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+var activeTool = 'home';
+
+function renderNav(filter){
+  filter = (filter || '').trim().toLowerCase();
+  var html = '';
+  GROUPS.forEach(function(g){
+    var tools = g.tools.filter(function(t){
+      return !filter || t.label.toLowerCase().indexOf(filter) > -1 || t.id.indexOf(filter) > -1;
+    });
+    if (!tools.length) return;
+
+    var hasActive = tools.some(function(t){ return t.id === activeTool; });
+    var open = filter ? true : hasActive;
+
+    html += '<div class="sb-group' + (open ? ' is-open' : '') + '" data-group="' + g.id + '">';
+    html += '<button class="sb-group-head' + (hasActive ? ' has-active' : '') + '" type="button" data-toggle-group>' +
+            '<svg class="gi" viewBox="0 0 24 24">' + ICONS[g.icon] + '</svg>' +
+            '<span>' + esc(g.label) + '</span>' +
+            '<svg class="caret" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>' +
+            '</button>';
+    html += '<div class="sb-tools">';
+    tools.forEach(function(t){
+      var cls = 'sb-tool' + (t.id === activeTool ? ' is-active' : '') + (t.status === 'planned' ? ' is-planned' : '');
+      var mark = t.status === 'planned' ? '<span class="sb-tag">規劃中</span>'
+               : t.status === 'legacy'  ? '<span class="sb-dot" title="待升級為新版外框"></span>' : '';
+      html += '<button class="' + cls + '" type="button" data-tool="' + t.id + '"' +
+              (t.status === 'planned' ? ' disabled' : '') + '>' +
+              '<span>' + esc(t.label) + '</span>' + mark + '</button>';
+    });
+    html += '</div></div>';
+  });
+  document.getElementById('sb-scroll').innerHTML = html;
+}
+
+function findTool(id){
+  for (var i = 0; i < GROUPS.length; i++)
+    for (var j = 0; j < GROUPS[i].tools.length; j++)
+      if (GROUPS[i].tools[j].id === id) return { group: GROUPS[i], tool: GROUPS[i].tools[j] };
+  return null;
+}
+
+function go(id){
+  var hit = findTool(id);
+  if (!hit) return;
+  activeTool = id;
+
+  document.getElementById('crumb-group').textContent = hit.group.label;
+  document.getElementById('crumb-tool').textContent  = hit.tool.label;
+
+  var screen = hit.tool.screen || 'generic';
+  document.querySelectorAll('.screen').forEach(function(s){
+    s.classList.toggle('is-active', s.dataset.screen === screen);
+  });
+  if (screen === 'generic') document.getElementById('generic-title').textContent = hit.tool.label;
+
+  renderNav(document.getElementById('tool-search').value);
+}
+
+document.getElementById('sb-scroll').addEventListener('click', function(e){
+  var toolBtn = e.target.closest('[data-tool]');
+  if (toolBtn) { go(toolBtn.dataset.tool); return; }
+  var head = e.target.closest('[data-toggle-group]');
+  if (head) {
+    var shell = document.getElementById('shell');
+    if (shell.classList.contains('is-collapsed') || window.innerWidth <= 860) {
+      // 收合狀態下點群組圖示 = 直接跳到該群組第一個工具
+      var gid = head.parentNode.dataset.group;
+      var g = GROUPS.filter(function(x){ return x.id === gid; })[0];
+      var first = g.tools.filter(function(t){ return t.status !== 'planned'; })[0];
+      if (first) go(first.id);
+      return;
+    }
+    head.parentNode.classList.toggle('is-open');
+  }
+});
+
+document.getElementById('tool-search').addEventListener('input', function(){
+  renderNav(this.value);
+});
+
+document.getElementById('collapse-btn').addEventListener('click', function(){
+  document.getElementById('shell').classList.toggle('is-collapsed');
+});
+
+/* ---------- 手風琴 ---------- */
+function toggleAcc(btn){ btn.parentNode.classList.toggle('is-open'); }
+
+/* ---------- 預覽全寬 ---------- */
+function toggleFull(splitId, btn){
+  var el = document.getElementById(splitId);
+  var full = el.classList.toggle('is-preview-full');
+  btn.textContent = full ? '⤡ 回到編輯' : '⤢ 預覽全寬';
+}
+
+/* ---------- 拖曳分隔線 ---------- */
+document.querySelectorAll('.handle').forEach(function(handle){
+  handle.addEventListener('pointerdown', function(e){
+    var split = document.getElementById(handle.dataset.split);
+    var col   = split.querySelector('.editor-col');
+    var startX = e.clientX;
+    var startW = col.getBoundingClientRect().width;
+
+    handle.setPointerCapture(e.pointerId);
+    handle.classList.add('is-drag');
+    document.body.classList.add('is-resizing');
+
+    function move(ev){
+      var w = Math.min(Math.max(startW + (ev.clientX - startX), 320), split.getBoundingClientRect().width - 320);
+      col.style.flexBasis = w + 'px';
+    }
+    function up(){
+      handle.classList.remove('is-drag');
+      document.body.classList.remove('is-resizing');
+      handle.removeEventListener('pointermove', move);
+      handle.removeEventListener('pointerup', up);
+    }
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', up);
+  });
+});
+
+/* ---------- 設計說明面板 ---------- */
+var notes = document.getElementById('notes');
+var scrim = document.getElementById('notes-scrim');
+function closeNotes(){ notes.classList.remove('is-open'); scrim.classList.remove('is-open'); }
+document.getElementById('notes-open').addEventListener('click', function(){
+  notes.classList.add('is-open'); scrim.classList.add('is-open');
+});
+document.getElementById('notes-close').addEventListener('click', closeNotes);
+scrim.addEventListener('click', closeNotes);
+document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeNotes(); });
+
+/* ---------- 主題：預設淺色，使用者手動切換，不跟隨 OS ---------- */
+var THEME_KEY = 'dghm-proto-theme';
+function setTheme(mode){
+  document.documentElement.setAttribute('data-theme', mode);
+  document.getElementById('theme-btn').textContent = mode === 'dark' ? '☀️' : '🌙';
+  try { localStorage.setItem(THEME_KEY, mode); } catch (err) {}
+}
+var saved = 'light';
+try { saved = localStorage.getItem(THEME_KEY) || 'light'; } catch (err) {}
+setTheme(saved);
+document.getElementById('theme-btn').addEventListener('click', function(){
+  setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+});
+
+renderNav('');
+</script>
+</body>
+</html>
