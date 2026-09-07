@@ -613,11 +613,52 @@ document.getElementById('write-calendar-btn').addEventListener('click', async ()
   }
 
   const { weekStart, events } = lastGenerated;
+
+  // 先讀一次「這週之前用本工具寫過的事件」，跟即將寫入的內容比對，
+  // 讓確認視窗顯示具體差異，而不是籠統的「會覆蓋舊版本」。
+  statusEl.textContent = '比對這週既有的日曆內容中…';
+  let diffLine = '';
+  try {
+    const previewRes = await fetch(`/api/calendar/list?weekTag=${encodeURIComponent(weekStart)}`);
+    const previewData = await previewRes.json();
+    if (!previewData.ok) {
+      const hint =
+        previewData.code === 'unauthenticated' ? '，請先到 login.html 登入'
+        : previewData.code === 'no_calendar_grant' ? '，請登出後用 Google 重新登入一次以同意權限'
+        : '';
+      statusEl.textContent = `無法比對既有日曆內容：${previewData.error}${hint}`;
+      return;
+    }
+    const existingBySlot = {};
+    (previewData.events || []).forEach((ev) => { if (ev.slotKey) existingBySlot[ev.slotKey] = ev.summary; });
+
+    const newSlotKeys = new Set();
+    let added = 0, changed = 0, unchanged = 0;
+    events.forEach((ev) => {
+      const slotKey = `${ev.date}-${ev.slotKey}`;
+      newSlotKeys.add(slotKey);
+      if (!(slotKey in existingBySlot)) added++;
+      else if (existingBySlot[slotKey] !== ev.summary) changed++;
+      else unchanged++;
+    });
+    const removed = Object.keys(existingBySlot).filter((k) => !newSlotKeys.has(k)).length;
+
+    const parts = [];
+    if (added) parts.push(`新增 ${added} 個`);
+    if (changed) parts.push(`異動 ${changed} 個`);
+    if (unchanged) parts.push(`不變 ${unchanged} 個`);
+    if (removed) parts.push(`移除 ${removed} 個`);
+    diffLine = parts.length ? parts.join('、') : '沒有任何變化';
+  } catch (err) {
+    diffLine = '（無法取得比對結果，將直接以本次內容整批覆寫）';
+  }
+
   const ok = window.confirm(
-    `即將把 ${weekStart} 這週的 ${events.length} 個工作項目寫入你的 Google 主要日曆（不會發送通知）。\n` +
-    `如果這週之前已經寫過，會先清掉舊版本再重新建立，確定要繼續嗎？`
+    `即將把 ${weekStart} 這週的排程寫入你的 Google 主要日曆（不會發送通知）。\n` +
+    `跟目前日曆上的內容相比：${diffLine}。\n` +
+    `確定要繼續嗎？`
   );
-  if (!ok) return;
+  if (!ok) { statusEl.textContent = ''; return; }
 
   statusEl.textContent = '寫入中，請稍候…';
   try {

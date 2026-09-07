@@ -97,7 +97,10 @@ export default async (req, context) => {
       const url = new URL(req.url);
       const start = url.searchParams.get('start');
       const end = url.searchParams.get('end');
-      if (!start || !end) return json(400, { ok: false, error: '請提供 start 與 end（YYYY-MM-DD）' });
+      const weekTag = url.searchParams.get('weekTag');
+      if ((!start || !end) && !weekTag) {
+        return json(400, { ok: false, error: '請提供 start 與 end（YYYY-MM-DD），或提供 weekTag' });
+      }
 
       const refreshToken = await getRefreshToken(session.uid);
       if (!refreshToken) {
@@ -116,13 +119,17 @@ export default async (req, context) => {
         });
       }
 
-      const params = new URLSearchParams({
-        timeMin: new Date(`${start}T00:00:00+08:00`).toISOString(),
-        timeMax: new Date(`${end}T23:59:59+08:00`).toISOString(),
-        singleEvents: 'true',
-        orderBy: 'startTime',
-        maxResults: '250',
-      });
+      // weekTag：查「本工具之前用這個週次標記寫過的事件」，用來跟即將寫入的內容比對差異；
+      // start/end：查一般日期區間的事件（例如上週回顧）。
+      const params = weekTag
+        ? new URLSearchParams({ privateExtendedProperty: `dghmScheduleWeek=${weekTag}`, maxResults: '250' })
+        : new URLSearchParams({
+            timeMin: new Date(`${start}T00:00:00+08:00`).toISOString(),
+            timeMax: new Date(`${end}T23:59:59+08:00`).toISOString(),
+            singleEvents: 'true',
+            orderBy: 'startTime',
+            maxResults: '250',
+          });
       const calRes = await fetch(
         `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
         { headers: { Authorization: `Bearer ${tokenResult.accessToken}` } }
@@ -143,7 +150,8 @@ export default async (req, context) => {
             ev.start.dateTime && ev.end?.dateTime
               ? (new Date(ev.end.dateTime) - new Date(ev.start.dateTime)) / 3600000
               : null;
-          return { summary: ev.summary || '', code, desc, start: startAt, end: endAt, hours };
+          const slotKey = ev.extendedProperties?.private?.dghmScheduleSlot || null;
+          return { summary: ev.summary || '', code, desc, start: startAt, end: endAt, hours, slotKey };
         });
 
       return json(200, { ok: true, events });
