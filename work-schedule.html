@@ -18,11 +18,16 @@
     border-right: 1px solid var(--surface-border);
   }
   h1 { font-size: 18px; margin: 0 0 4px; }
-  .row3 { display: grid; grid-template-columns: 90px 1fr 70px 28px; gap: 6px; align-items: end; margin-bottom: 6px; }
+  .row3 { display: grid; grid-template-columns: 24px 90px 1fr 70px 28px; gap: 6px; align-items: end; margin-bottom: 6px; }
   .row3 label { margin: 0 0 2px; }
   .pct-total { font-size: 12px; margin-top: 4px; }
   .pct-total.ok { color: #1a7f37; }
   .pct-total.bad { color: #c0392b; }
+  .star-toggle {
+    background: none; border: none; cursor: pointer; padding: 0;
+    font-size: 18px; line-height: 1; color: var(--surface-text-faint);
+  }
+  .star-toggle.is-active { color: var(--orange); }
   .main-panel { flex: 1; overflow-y: auto; padding: 24px; }
 
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
@@ -236,18 +241,40 @@ const SLOTS = [
 // 上次「產生本週排程」的結果，供「寫入 Google Calendar」按鈕使用
 let lastGenerated = null;
 
+// 本週重點工作：同一時間只允許一列被標記，用來在標題前加 ⭐
+let focusedClientRow = null;
+
+function setFocusedClientRow(row) {
+  if (focusedClientRow && focusedClientRow !== row) {
+    focusedClientRow.classList.remove('is-focus');
+    const prevStar = focusedClientRow.querySelector('.star-toggle');
+    if (prevStar) { prevStar.textContent = '☆'; prevStar.classList.remove('is-active'); }
+  }
+  focusedClientRow = row;
+}
+
 function makeClientRow(data) {
   const row = document.createElement('div');
   row.className = 'row3';
   row.innerHTML = `
+    <div><button type="button" class="star-toggle" title="設為本週重點工作">☆</button></div>
     <div><label>代碼</label><select class="code">${codeOptionsHtml(data?.code)}</select></div>
     <div><label>工作項目</label><input type="text" class="desc" value="${data?.desc || ''}" placeholder="描述"></div>
     <div><label>%</label><input type="number" class="pct" min="0" max="100" value="${data?.pct ?? ''}"></div>
     <div><button type="button" class="danger small remove-row" style="margin-top:18px;">×</button></div>
   `;
   row.querySelector('.remove-row').addEventListener('click', () => {
+    if (focusedClientRow === row) focusedClientRow = null;
     row.remove();
     updatePctTotal('client');
+  });
+  const starBtn = row.querySelector('.star-toggle');
+  starBtn.addEventListener('click', () => {
+    const willActivate = focusedClientRow !== row;
+    setFocusedClientRow(willActivate ? row : null);
+    row.classList.toggle('is-focus', willActivate);
+    starBtn.textContent = willActivate ? '★' : '☆';
+    starBtn.classList.toggle('is-active', willActivate);
   });
   const codeSelect = row.querySelector('.code');
   codeSelect.addEventListener('change', () => {
@@ -487,6 +514,7 @@ document.getElementById('generate-btn').addEventListener('click', () => {
     code: row.querySelector('.code').value.trim(),
     desc: row.querySelector('.desc').value.trim(),
     pct: Number(row.querySelector('.pct').value) || 0,
+    isFocus: row.classList.contains('is-focus'),
   })).filter((it) => it.desc && it.pct > 0);
 
   const dghmItems = [...document.getElementById('dghm-rows').children].map((row) => ({
@@ -514,11 +542,11 @@ document.getElementById('generate-btn').addEventListener('click', () => {
     if (!(day === '週五' && adminItem)) mainSlotList.push({ day, type: 'B' });
   });
 
-  const mainLabeled = mainItems.map((it) => ({ ...it, label: `【${it.code}】${it.desc}`, kind: 'client' }));
+  const mainLabeled = mainItems.map((it) => ({ ...it, label: `${it.isFocus ? '⭐' : ''}【${it.code}】${it.desc}`, kind: 'client' }));
   const mainAssignment = mainItems.length ? assignSlots(mainLabeled, mainSlotList) : [];
 
   if (adminItem) {
-    mainAssignment.push({ day: '週五', type: 'B', label: `【${adminItem.code}】${adminItem.desc}`, code: adminItem.code, kind: 'client' });
+    mainAssignment.push({ day: '週五', type: 'B', label: `${adminItem.isFocus ? '⭐' : ''}【${adminItem.code}】${adminItem.desc}`, code: adminItem.code, kind: 'client' });
   }
 
   const fixedSlotList = DAYS.map((day) => ({ day, type: 'Fixed' }));
@@ -575,9 +603,10 @@ document.getElementById('generate-btn').addEventListener('click', () => {
   const CLIENT_CAPACITY = 27.5;
   const INTERNAL_CAPACITY = 7.5;
   const segments = clientItems.map((it) => ({
-    label: `【${it.code}】${it.desc}`,
+    label: `${it.isFocus ? '⭐' : ''}【${it.code}】${it.desc}`,
     hours: (it.pct / 100) * CLIENT_CAPACITY,
     color: colorForCode(it.code),
+    isFocus: it.isFocus,
   }));
   const internalPctSum = dghmItems.reduce((sum, it) => sum + it.pct, 0);
   const internalHours = (internalPctSum / 100) * INTERNAL_CAPACITY;
@@ -586,12 +615,14 @@ document.getElementById('generate-btn').addEventListener('click', () => {
   const clientHours = segments.slice(0, -1).reduce((sum, s) => sum + s.hours, 0);
   const totalHours = clientHours + internalHours;
   const topSegment = segments.reduce((max, s) => (s.hours > max.hours ? s : max), segments[0]);
+  const focusSegment = segments.find((s) => s.isFocus) || null;
 
   document.getElementById('summary-cards').innerHTML = `
     <div class="card"><div class="label">本週總工時</div><div class="value">${totalHours.toFixed(1)}h</div></div>
     <div class="card"><div class="label">客戶專案</div><div class="value">${clientHours.toFixed(1)}h</div></div>
     <div class="card"><div class="label">DGHM 內部</div><div class="value">${internalHours.toFixed(1)}h</div></div>
     <div class="card"><div class="label">本週最大占比</div><div class="value" style="font-size:14px;">${topSegment.label}（${topSegment.hours.toFixed(1)}h）</div></div>
+    <div class="card"><div class="label">⭐ 本週重點</div><div class="value" style="font-size:14px;">${focusSegment ? focusSegment.label : '尚未標記'}</div></div>
   `;
 
   document.getElementById('stack-bar').innerHTML = segments
