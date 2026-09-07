@@ -601,16 +601,19 @@ document.getElementById('copy-btn').addEventListener('click', async () => {
 });
 
 document.getElementById('load-lastweek-btn').addEventListener('click', async () => {
-  const weekStart = document.getElementById('week-start').value;
   const cardEl = document.getElementById('lastweek-card');
   const bodyEl = cardEl.querySelector('.lastweek-body');
   const rangeEl = document.getElementById('lastweek-range');
-  if (!weekStart) {
-    document.getElementById('status').textContent = '請先選擇週次起始日，才能算出上一週的日期範圍';
-    return;
-  }
 
-  const lastMonDate = new Date(weekStart + 'T00:00:00');
+  // 「上週」永遠是相對「今天」的真實上一週，跟左側「週次起始日」（通常填的是
+  // 下一週的排程）無關——不然只要排程都固定填下週，這裡算出來的就會變成「這週」而不是「上週」。
+  const today = new Date();
+  const todayDay = today.getDay();
+  const diffToThisMonday = todayDay === 0 ? -6 : 1 - todayDay;
+  const thisMonDate = new Date(today);
+  thisMonDate.setDate(today.getDate() + diffToThisMonday);
+
+  const lastMonDate = new Date(thisMonDate);
   lastMonDate.setDate(lastMonDate.getDate() - 7);
   const lastFriDate = new Date(lastMonDate);
   lastFriDate.setDate(lastFriDate.getDate() + 4);
