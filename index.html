@@ -50,6 +50,42 @@
   }
   :root[data-theme="dark"] .login-btn { background: var(--navy-text); color: #0d1117; }
 
+  /* ---- Today board ---- */
+  .today-board { margin: 26px 0 0; }
+  .today-board .section-head { margin-bottom: 13px; }
+  .board-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  .board-card {
+    padding: 16px 17px; border-radius: var(--radius);
+    background: var(--surface-panel-bg); box-shadow: var(--shadow-sm);
+    min-width: 0;
+  }
+  .board-card h3 {
+    display: flex; align-items: center; gap: 7px; margin: 0 0 10px;
+    font-size: 13px; color: var(--navy-text);
+  }
+  .board-card h3 span { color: var(--orange); }
+  .board-empty { margin: 0; font-size: 12px; color: var(--surface-text-muted); }
+  .board-empty a { color: var(--navy-text); }
+  .board-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .board-list li { display: flex; align-items: baseline; gap: 8px; font-size: 12px; color: var(--surface-text); line-height: 1.5; }
+  .board-time { flex-shrink: 0; color: var(--surface-text-muted); font-variant-numeric: tabular-nums; min-width: 42px; }
+  .board-tag {
+    flex-shrink: 0; padding: 1px 7px; border-radius: 999px; background: var(--surface-bg);
+    color: var(--orange); font-size: 10px; font-weight: 700;
+  }
+  .board-ok, .board-bad { margin: 0 0 4px; font-size: 12px; font-weight: 700; }
+  .board-ok { color: #1E7B34; }
+  .board-bad { color: #C0392B; }
+  .board-time-note { margin: 0 0 8px; font-size: 11px; color: var(--surface-text-faint); }
+  .board-link { font-size: 12px; color: var(--navy-text); text-decoration: none; }
+  .board-link:hover { text-decoration: underline; }
+  @media (max-width: 980px) {
+    .board-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 480px) {
+    .board-grid { grid-template-columns: 1fr; }
+  }
+
   /* ---- Primary entry ---- */
   .hero {
     display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(240px, .75fr);
@@ -149,6 +185,31 @@
 <body data-tool="home">
 <div id="tool-workspace" class="wrap">
 
+  <section class="today-board" aria-labelledby="today-board-title">
+    <div class="section-head">
+      <h2 id="today-board-title">今日看板</h2>
+      <p id="today-date-label"></p>
+    </div>
+    <div class="board-grid">
+      <div class="board-card">
+        <h3><span aria-hidden="true">◆</span> 今天的行事曆</h3>
+        <div id="today-events"><p class="board-empty">載入中…</p></div>
+      </div>
+      <div class="board-card">
+        <h3><span aria-hidden="true">◆</span> 昨天做了什麼</h3>
+        <div id="yesterday-events"><p class="board-empty">載入中…</p></div>
+      </div>
+      <div class="board-card">
+        <h3><span aria-hidden="true">◆</span> 進行中案件・下一步</h3>
+        <div id="active-projects"><p class="board-empty">載入中…</p></div>
+      </div>
+      <div class="board-card">
+        <h3><span aria-hidden="true">◆</span> 網站健康</h3>
+        <div id="site-health"><p class="board-empty">尚未檢查</p></div>
+      </div>
+    </div>
+  </section>
+
   <section class="hero" aria-label="主要入口">
     <div class="hero-main">
       <div class="hero-kicker">✦ 今天從這裡開始</div>
@@ -206,6 +267,138 @@
 <script src="dghm-ui.js?v=20260903-3"></script>
 <script>
 initTheme('my-agent-theme');
+</script>
+<script>
+(function () {
+  'use strict';
+
+  var SITE_HEALTH_CACHE_KEY = 'dghm-site-monitor-last';
+
+  function escapeHtml(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function taipeiDateStr(offsetDays) {
+    var d = new Date(Date.now() + offsetDays * 86400000);
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei' }).format(d);
+  }
+
+  function fmtHM(iso) {
+    if (!iso) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return '全天';
+    try {
+      return new Date(iso).toLocaleTimeString('zh-TW', { timeZone: 'Asia/Taipei', hour: '2-digit', minute: '2-digit', hour12: false });
+    } catch (error) { return ''; }
+  }
+
+  function formatDateTime(iso) {
+    if (!iso) return '';
+    try {
+      return new Date(iso).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false });
+    } catch (error) { return iso; }
+  }
+
+  function todayLabel() {
+    try {
+      return new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+    } catch (error) { return ''; }
+  }
+
+  async function fetchEvents(dateStr) {
+    try {
+      var res = await fetch('/api/calendar/list?start=' + dateStr + '&end=' + dateStr, { credentials: 'same-origin' });
+      if (res.status === 401) return { authRequired: true };
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok || !data.ok) return { error: true, message: data.error };
+      return { events: data.events || [] };
+    } catch (error) {
+      return { error: true };
+    }
+  }
+
+  function renderEventList(containerId, result, emptyText) {
+    var container = document.getElementById(containerId);
+    if (result.authRequired) {
+      container.innerHTML = '<p class="board-empty">尚未登入 Google，<a href="login.html">登入</a>後可顯示日曆</p>';
+      return;
+    }
+    if (result.error) {
+      container.innerHTML = '<p class="board-empty">日曆讀取失敗' + (result.message ? '：' + escapeHtml(result.message) : '') + '</p>';
+      return;
+    }
+    var events = result.events.slice().sort(function (a, b) { return (a.start || '').localeCompare(b.start || ''); });
+    if (!events.length) {
+      container.innerHTML = '<p class="board-empty">' + emptyText + '</p>';
+      return;
+    }
+    container.innerHTML = '<ul class="board-list">' + events.map(function (ev) {
+      var code = ev.code ? '<span class="board-tag">' + escapeHtml(ev.code) + '</span>' : '';
+      return '<li><span class="board-time">' + fmtHM(ev.start) + '</span>' + code +
+        '<span>' + escapeHtml(ev.desc || ev.summary || '') + '</span></li>';
+    }).join('') + '</ul>';
+  }
+
+  async function loadCalendarBoards() {
+    var todayResult = await fetchEvents(taipeiDateStr(0));
+    renderEventList('today-events', todayResult, '今天還沒有排定的行事曆項目');
+    var yesterdayResult = await fetchEvents(taipeiDateStr(-1));
+    renderEventList('yesterday-events', yesterdayResult, '昨天沒有排定的行事曆項目');
+  }
+
+  function loadActiveProjects() {
+    var container = document.getElementById('active-projects');
+    var projectsApi = window.DGHMProjects;
+    var projects = projectsApi ? projectsApi.listActive().filter(function (p) { return p.nextAction; }) : [];
+    if (!projects.length) {
+      container.innerHTML = '<p class="board-empty">目前沒有標記下一步的案件</p>';
+      return;
+    }
+    container.innerHTML = '<ul class="board-list">' + projects.map(function (p) {
+      return '<li><span class="board-tag">' + escapeHtml(p.projectCode) + '</span>' +
+        '<span>' + escapeHtml(p.nextAction) + '</span></li>';
+    }).join('') + '</ul>';
+  }
+
+  function renderSiteHealth(data) {
+    var container = document.getElementById('site-health');
+    var results = data.results || [];
+    var bad = results.filter(function (r) { return !r.ok; });
+    var summary = bad.length === 0
+      ? '<p class="board-ok">全部 ' + results.length + ' 個網站正常</p>'
+      : '<p class="board-bad">' + bad.length + ' 個網站異常：' + bad.map(function (b) { return escapeHtml(b.name); }).join('、') + '</p>';
+    var time = data.checkedAt ? '<p class="board-time-note">最後檢查：' + formatDateTime(data.checkedAt) + '</p>' : '';
+    container.innerHTML = summary + time + '<a class="board-link" href="site-monitor.html">查看詳情 →</a>';
+  }
+
+  async function loadSiteHealth() {
+    var container = document.getElementById('site-health');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem(SITE_HEALTH_CACHE_KEY) || 'null'); } catch (error) {}
+    if (cached) renderSiteHealth(cached);
+    else container.innerHTML = '<p class="board-empty">檢查中…</p>';
+
+    try {
+      var res = await fetch('/api/site-monitor/check', { cache: 'no-store' });
+      var data = await res.json();
+      if (data.ok) {
+        try { localStorage.setItem(SITE_HEALTH_CACHE_KEY, JSON.stringify(data)); } catch (error) {}
+        renderSiteHealth(data);
+      } else if (!cached) {
+        container.innerHTML = '<p class="board-empty">檢查失敗，<a href="site-monitor.html">前往網站健康監控</a></p>';
+      }
+    } catch (error) {
+      if (!cached) container.innerHTML = '<p class="board-empty">檢查失敗，<a href="site-monitor.html">前往網站健康監控</a></p>';
+    }
+  }
+
+  var dateLabel = document.getElementById('today-date-label');
+  if (dateLabel) dateLabel.textContent = todayLabel();
+
+  loadCalendarBoards();
+  loadActiveProjects();
+  loadSiteHealth();
+})();
 </script>
 </body>
 </html>
