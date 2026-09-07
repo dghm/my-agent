@@ -140,6 +140,17 @@ initTheme('my-agent-theme');
 const CLIENT_CODES = ['hs128','TailorMed','FP-Deco','SenWay','MeYi','Nangyuan','DGHM'];
 const SERIES_COLORS = ['var(--series-1)','var(--series-2)','var(--series-3)','var(--series-4)','var(--series-5)','var(--series-6)','var(--series-7)','var(--series-8)'];
 const DAYS = ['週一','週二','週三','週四','週五'];
+
+// 客戶代碼識別色：依「本週排程」與「上週回顧」共用，第一次出現的代碼固定拿下一個顏色，
+// 同一個代碼在兩邊、重新整理後都拿到同一色，方便視覺比對。
+const codeColorMap = {};
+function colorForCode(code) {
+  if (!code) return 'var(--series-internal)';
+  if (!(code in codeColorMap)) {
+    codeColorMap[code] = SERIES_COLORS[Object.keys(codeColorMap).length % SERIES_COLORS.length];
+  }
+  return codeColorMap[code];
+}
 const SLOTS = [
   { key: 'A', label: '08:30–11:30', hours: 3 },
   { key: 'B', label: '13:00–15:30', hours: 2.5 },
@@ -290,11 +301,6 @@ document.getElementById('generate-btn').addEventListener('click', () => {
     return;
   }
 
-  // 客戶代碼識別色：依本週出現順序固定指派，不重複循環混用
-  const codeOrder = [];
-  clientItems.forEach((it) => { if (!codeOrder.includes(it.code)) codeOrder.push(it.code); });
-  const colorForCode = (code) => SERIES_COLORS[codeOrder.indexOf(code) % SERIES_COLORS.length];
-
   // 固定行政事務在週五 13:00-15:30
   const adminIdx = clientItems.findIndex((it) => it.desc.includes('行政事務') || it.code.includes('行政事務'));
   let adminItem = null;
@@ -438,16 +444,29 @@ document.getElementById('load-lastweek-btn').addEventListener('click', async () 
     data.events.forEach((ev) => {
       const label = ev.code ? `【${ev.code}】${ev.desc}` : (ev.summary || '(未命名事件)');
       const key = ev.code || label;
-      byKey[key] = byKey[key] || { label, hours: 0 };
+      byKey[key] = byKey[key] || { label, hours: 0, color: colorForCode(ev.code) };
       byKey[key].hours += ev.hours || 0;
     });
-    const rows = Object.values(byKey)
-      .sort((a, b) => b.hours - a.hours)
-      .map((v) => `<li>${v.label}・${v.hours.toFixed(1)}h</li>`)
+    const segments = Object.values(byKey)
+      .filter((v) => v.hours > 0)
+      .sort((a, b) => b.hours - a.hours);
+    const total = segments.reduce((sum, v) => sum + v.hours, 0);
+
+    if (!segments.length) {
+      bodyEl.innerHTML = '<p class="hint" style="margin:0;">上週日曆裡沒有符合「【代碼】描述」格式的工作事件。</p>';
+      return;
+    }
+
+    const barHtml = segments
+      .map((v) => `<span style="width:${(v.hours / total * 100).toFixed(2)}%;background:${v.color};" title="${v.label} · ${v.hours.toFixed(1)}h"></span>`)
       .join('');
-    bodyEl.innerHTML = rows
-      ? `<ul style="margin:8px 0 0;padding-left:18px;">${rows}</ul>`
-      : '<p class="hint" style="margin:0;">上週日曆裡沒有符合「【代碼】描述」格式的工作事件。</p>';
+    const listHtml = segments
+      .map((v) => `<li style="margin-bottom:6px;"><span class="code-dot" style="background:${v.color}"></span>${v.label}・${v.hours.toFixed(1)}h（${(v.hours / total * 100).toFixed(0)}%）</li>`)
+      .join('');
+    bodyEl.innerHTML = `
+      <div class="stack-bar" style="margin-top:8px;">${barHtml}</div>
+      <ul style="margin:10px 0 0;padding:0;list-style:none;">${listHtml}</ul>
+    `;
   } catch (err) {
     bodyEl.innerHTML = '<p class="hint" style="margin:0;">讀取失敗，請稍後再試一次。</p>';
   }
