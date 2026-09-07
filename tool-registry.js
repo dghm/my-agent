@@ -78,6 +78,7 @@
       tools: [
         { id: 'qr', label: 'QR Code',      href: 'qr-generator.html',  status: 'legacy', keywords: ['qr','條碼','二維碼'] },
         { id: 'h5', label: '微信 H5 名片', href: 'wechat-h5-card.html', status: 'legacy', keywords: ['微信','名片','wechat','h5','card'] },
+        { id: 'site-monitor', label: '網站健康監控', href: 'site-monitor.html', status: 'integrated', keywords: ['網站','監控','健康檢查','404','500','uptime','維運'] },
       ],
     },
   ];
