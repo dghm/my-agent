@@ -98,6 +98,7 @@ async function findOrCreateUser(profile) {
     user.name = profile.name || user.name;
     user.avatar = profile.avatar || user.avatar;
     user.lastLoginAt = now;
+    if (profile.googleRefreshToken) user.googleRefreshToken = profile.googleRefreshToken;
   } else {
     user = {
       id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
@@ -108,6 +109,7 @@ async function findOrCreateUser(profile) {
       avatar: profile.avatar || '',
       createdAt: now,
       lastLoginAt: now,
+      ...(profile.googleRefreshToken ? { googleRefreshToken: profile.googleRefreshToken } : {}),
     };
     users.push(user);
   }
@@ -132,10 +134,10 @@ function googleLogin(req) {
     client_id: clientId,
     redirect_uri: `${origin}/api/auth/callback/google`,
     response_type: 'code',
-    scope: 'openid email profile',
+    scope: 'openid email profile https://www.googleapis.com/auth/calendar.readonly',
     state,
-    access_type: 'online',
-    prompt: 'select_account',
+    access_type: 'offline',
+    prompt: 'consent select_account',
   });
 
   return redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`, [
@@ -186,13 +188,14 @@ async function googleCallback(req) {
   if (!infoRes.ok) return redirect('/login.html?error=userinfo');
   const info = await infoRes.json();
 
-  // 3) 建立／更新會員
+  // 3) 建立／更新會員（連帶存 refresh token，供 calendar.js 之後代打 Calendar API 用）
   const user = await findOrCreateUser({
     provider: 'google',
     providerId: info.sub,
     email: info.email || '',
     name: info.name || '',
     avatar: info.picture || '',
+    googleRefreshToken: token.refresh_token || undefined,
   });
 
   // 4) 發登入 cookie，清除 state，導回首頁

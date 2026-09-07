@@ -94,7 +94,18 @@
   </div>
 
   <div class="main-panel">
-    <h2 style="margin-top:0;">本週排程預覽</h2>
+    <div class="form-head" style="margin-bottom:16px;">
+      <h2 style="margin:0;">上週回顧</h2>
+      <div class="form-head-actions">
+        <button type="button" class="secondary small" id="load-lastweek-btn">讀取上週 Google Calendar</button>
+      </div>
+    </div>
+    <div class="card" id="lastweek-card" hidden>
+      <div class="label" id="lastweek-range"></div>
+      <div class="lastweek-body"></div>
+    </div>
+
+    <h2>本週排程預覽</h2>
     <div class="cards" id="summary-cards"></div>
     <div class="card stack-bar-card" id="stack-bar-wrap">
       <div class="label">本週時間分配</div>
@@ -387,6 +398,53 @@ document.getElementById('copy-btn').addEventListener('click', async () => {
   if (!text) return;
   await navigator.clipboard.writeText(text);
   document.getElementById('status').textContent = '已複製到剪貼簿';
+});
+
+document.getElementById('load-lastweek-btn').addEventListener('click', async () => {
+  const weekStart = document.getElementById('week-start').value;
+  const cardEl = document.getElementById('lastweek-card');
+  const bodyEl = cardEl.querySelector('.lastweek-body');
+  const rangeEl = document.getElementById('lastweek-range');
+  if (!weekStart) {
+    document.getElementById('status').textContent = '請先選擇週次起始日，才能算出上一週的日期範圍';
+    return;
+  }
+
+  const lastMonDate = new Date(weekStart + 'T00:00:00');
+  lastMonDate.setDate(lastMonDate.getDate() - 7);
+  const lastFriDate = new Date(lastMonDate);
+  lastFriDate.setDate(lastFriDate.getDate() + 4);
+  const lastMon = localDateStr(lastMonDate);
+  const lastFri = localDateStr(lastFriDate);
+
+  cardEl.hidden = false;
+  rangeEl.textContent = `上週：${lastMon} ~ ${lastFri}`;
+  bodyEl.innerHTML = '<p class="hint" style="margin:0;">讀取中…</p>';
+
+  try {
+    const res = await fetch(`/api/calendar/list?start=${lastMon}&end=${lastFri}`);
+    const data = await res.json();
+    if (!data.ok) {
+      bodyEl.innerHTML = `<p class="hint" style="margin:0;">${data.error}</p>`;
+      return;
+    }
+    const byKey = {};
+    data.events.forEach((ev) => {
+      const label = ev.code ? `【${ev.code}】${ev.desc}` : (ev.summary || '(未命名事件)');
+      const key = ev.code || label;
+      byKey[key] = byKey[key] || { label, hours: 0 };
+      byKey[key].hours += ev.hours || 0;
+    });
+    const rows = Object.values(byKey)
+      .sort((a, b) => b.hours - a.hours)
+      .map((v) => `<li>${v.label}・${v.hours.toFixed(1)}h</li>`)
+      .join('');
+    bodyEl.innerHTML = rows
+      ? `<ul style="margin:8px 0 0;padding-left:18px;">${rows}</ul>`
+      : '<p class="hint" style="margin:0;">上週日曆裡沒有符合「【代碼】描述」格式的工作事件。</p>';
+  } catch (err) {
+    bodyEl.innerHTML = '<p class="hint" style="margin:0;">讀取失敗，請稍後再試一次。</p>';
+  }
 });
 
 document.getElementById('download-btn').addEventListener('click', () => {
