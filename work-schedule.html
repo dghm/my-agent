@@ -53,39 +53,44 @@
   .status { font-size: 12px; color: var(--surface-text-muted); margin-top: 6px; }
 
   /* ---- 專案標籤管理 ---- */
-  .tag-manage-link {
-    display: inline-block; font-size: 12px; color: var(--navy-text);
-    cursor: pointer; margin: -6px 0 8px; text-decoration: none;
-  }
-  .tag-manage-link:hover { text-decoration: underline; }
-
   .modal-backdrop {
     position: fixed; inset: 0; background: rgba(16,24,40,.45);
     display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px;
   }
   .modal-backdrop[hidden] { display: none; }
   .modal-panel {
-    width: 100%; max-width: 420px; max-height: 86vh; overflow-y: auto;
+    width: 100%; max-width: 520px; max-height: 86vh; overflow-y: auto;
     background: var(--surface-panel-bg); border-radius: var(--radius-sm);
     box-shadow: var(--shadow-lg); padding: 20px;
   }
   .modal-panel h3 { margin: 0 0 4px; font-size: 15px; color: var(--navy-text); }
   .modal-panel .hint { margin: 0 0 14px; }
   .tag-row {
-    display: flex; align-items: center; gap: 8px; padding: 8px 0;
+    display: flex; align-items: center; gap: 10px; padding: 8px 0;
     border-bottom: 1px solid var(--surface-border);
   }
   .tag-row:last-of-type { border-bottom: none; }
-  .tag-row .code-dot { width: 12px; height: 12px; flex-shrink: 0; }
   .tag-row .tag-code { flex: 1; font-size: 13px; }
   .tag-row .tag-client { font-size: 11px; color: var(--surface-text-muted); }
   .tag-row label.tag-active { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--surface-text-muted); margin: 0; white-space: nowrap; }
-  .swatch-picker { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 12px; }
-  .swatch {
-    width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
-    border: 2px solid transparent;
+
+  /* 圓形色票選色器：用原生 color input 讓使用者用色盤／滴管／Hex 自訂顏色 */
+  input[type="color"].color-circle {
+    -webkit-appearance: none; appearance: none;
+    width: 26px; height: 26px; flex-shrink: 0;
+    padding: 0; border: 1px solid var(--surface-border); border-radius: 50%;
+    cursor: pointer; background: none;
   }
-  .swatch.selected { border-color: var(--surface-text); }
+  input[type="color"].color-circle::-webkit-color-swatch-wrapper { padding: 0; border-radius: 50%; }
+  input[type="color"].color-circle::-webkit-color-swatch { border: none; border-radius: 50%; }
+  input[type="color"].color-circle::-moz-color-swatch { border: none; border-radius: 50%; }
+
+  .tag-add-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .tag-add-row input[type="text"] { margin: 0; }
+  .tag-add-row .add-code { flex: 1; min-width: 0; }
+  .tag-add-row .add-client { flex: 1.2; min-width: 0; }
+  .tag-add-row button { flex-shrink: 0; white-space: nowrap; }
+
   .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 </style>
 </head>
@@ -101,7 +106,7 @@
 
     <fieldset>
       <legend>客戶專案（主工作 08:30–11:30 / 13:00–15:30，共 27.5h）</legend>
-      <a class="tag-manage-link" id="manage-tags-link">管理專案標籤（顏色／進行中狀態）</a>
+      <button type="button" class="secondary small" id="manage-tags-link" style="margin-bottom:10px;">🏷️ 管理專案標籤</button>
       <div id="client-rows"></div>
       <button type="button" class="secondary small" id="add-client-row">+ 新增專案</button>
       <div class="pct-total" id="client-pct-total"></div>
@@ -161,15 +166,14 @@
     <div id="tag-list"></div>
 
     <h3 style="margin-top:18px;">新增標籤</h3>
-    <label>代碼</label>
-    <input type="text" id="new-tag-code" placeholder="例如 hs128">
-    <label>客戶／專案名稱（選填）</label>
-    <input type="text" id="new-tag-name" placeholder="例如 好事多">
-    <label>顏色</label>
-    <div class="swatch-picker" id="new-tag-swatches"></div>
+    <div class="tag-add-row">
+      <input type="color" class="color-circle" id="new-tag-color" title="點一下選顏色（可用滴管或輸入 Hex 色碼）">
+      <input type="text" class="add-code" id="new-tag-code" placeholder="代碼，例如 hs128">
+      <input type="text" class="add-client" id="new-tag-name" placeholder="客戶／專案名稱（選填）">
+      <button type="button" id="tag-modal-add">新增標籤</button>
+    </div>
     <div class="modal-actions">
       <button type="button" class="secondary" id="tag-modal-close">關閉</button>
-      <button type="button" id="tag-modal-add">新增標籤</button>
     </div>
   </div>
 </div>
@@ -183,7 +187,6 @@
 initTheme('my-agent-theme');
 
 const SERIES_COLORS = ['var(--series-1)','var(--series-2)','var(--series-3)','var(--series-4)','var(--series-5)','var(--series-6)','var(--series-7)','var(--series-8)'];
-const SERIES_COLOR_KEYS = ['series-1','series-2','series-3','series-4','series-5','series-6','series-7','series-8'];
 const DAYS = ['週一','週二','週三','週四','週五'];
 
 // 客戶代碼識別色：優先用「專案標籤管理」裡手動指定的顏色（存在 DGHMProjects）；
@@ -197,7 +200,7 @@ function findProjectByCode(code) {
 function colorForCode(code) {
   if (!code) return 'var(--series-internal)';
   const project = findProjectByCode(code);
-  if (project && project.color) return `var(--${project.color})`;
+  if (project && project.color) return resolveColorCss(project.color);
   if (!(code in codeColorMap)) {
     codeColorMap[code] = SERIES_COLORS[Object.keys(codeColorMap).length % SERIES_COLORS.length];
   }
@@ -277,6 +280,27 @@ function updatePctTotal(kind) {
 
 /* ---- 專案標籤管理（新增／刪除／指定顏色／進行中狀態） ---- */
 
+const SERIES_HEX = ['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300','#4a3aa7','#e34948'];
+
+// 顏色可能是舊資料留下的色票代號（如 'series-3'，會隨深色模式變化），
+// 也可能是使用者自己選的 Hex 色碼（固定不隨主題變化）。
+function resolveColorCss(color) {
+  if (!color) return 'var(--series-1)';
+  return color.startsWith('series-') ? `var(--${color})` : color;
+}
+function resolveColorHex(color) {
+  if (!color) color = 'series-1';
+  if (color.startsWith('series-')) {
+    const hex = getComputedStyle(document.documentElement).getPropertyValue(`--${color}`).trim();
+    return hex || '#2a78d6';
+  }
+  return color;
+}
+function nextDefaultHex() {
+  const count = window.DGHMProjects ? window.DGHMProjects.list().length : 0;
+  return SERIES_HEX[count % SERIES_HEX.length];
+}
+
 let tagModalTrigger = null;
 
 function renderTagList() {
@@ -288,13 +312,19 @@ function renderTagList() {
   }
   listEl.innerHTML = projects.map((p) => `
     <div class="tag-row" data-id="${p.id}">
-      <span class="code-dot" style="background:var(--${p.color || 'series-1'})"></span>
+      <input type="color" class="color-circle tag-color-input" value="${resolveColorHex(p.color)}" title="改變這個標籤的顏色">
       <div class="tag-code">${p.projectCode}${p.clientName && p.clientName !== p.projectCode ? `<div class="tag-client">${p.clientName}</div>` : ''}</div>
       <label class="tag-active"><input type="checkbox" class="tag-active-checkbox"${p.active !== false ? ' checked' : ''}>進行中</label>
       <button type="button" class="danger small tag-delete">刪除</button>
     </div>
   `).join('');
 
+  listEl.querySelectorAll('.tag-color-input').forEach((input) => {
+    input.addEventListener('input', (e) => {
+      const id = e.target.closest('.tag-row').dataset.id;
+      window.DGHMProjects.update(id, { color: e.target.value });
+    });
+  });
   listEl.querySelectorAll('.tag-active-checkbox').forEach((cb) => {
     cb.addEventListener('change', (e) => {
       const id = e.target.closest('.tag-row').dataset.id;
@@ -315,25 +345,12 @@ function renderTagList() {
   });
 }
 
-function renderSwatchPicker() {
-  const wrap = document.getElementById('new-tag-swatches');
-  wrap.innerHTML = SERIES_COLOR_KEYS
-    .map((key, i) => `<span class="swatch${i === 0 ? ' selected' : ''}" data-color="${key}" style="background:var(--${key})"></span>`)
-    .join('');
-  wrap.querySelectorAll('.swatch').forEach((el) => {
-    el.addEventListener('click', () => {
-      wrap.querySelectorAll('.swatch').forEach((s) => s.classList.remove('selected'));
-      el.classList.add('selected');
-    });
-  });
-}
-
 function openTagModal(triggerSelect) {
   tagModalTrigger = triggerSelect || null;
   document.getElementById('new-tag-code').value = '';
   document.getElementById('new-tag-name').value = '';
+  document.getElementById('new-tag-color').value = nextDefaultHex();
   renderTagList();
-  renderSwatchPicker();
   document.getElementById('tag-modal').hidden = false;
 }
 
@@ -345,15 +362,13 @@ function closeTagModal() {
 
 document.getElementById('manage-tags-link').addEventListener('click', () => openTagModal(null));
 document.getElementById('tag-modal-close').addEventListener('click', closeTagModal);
-document.getElementById('tag-modal').addEventListener('click', (e) => {
-  if (e.target.id === 'tag-modal') closeTagModal();
-});
+// 注意：刻意不綁「點背景關閉」，避免不小心點到彈窗外把還沒送出的新增標籤內容弄丟；
+// 只用上面的「關閉」按鈕離開。
 
 document.getElementById('tag-modal-add').addEventListener('click', () => {
   const code = document.getElementById('new-tag-code').value.trim();
   const name = document.getElementById('new-tag-name').value.trim();
-  const selectedSwatch = document.querySelector('#new-tag-swatches .swatch.selected');
-  const color = selectedSwatch ? selectedSwatch.dataset.color : 'series-1';
+  const color = document.getElementById('new-tag-color').value;
   if (!code) { window.alert('請輸入代碼'); return; }
 
   let record;
@@ -368,6 +383,7 @@ document.getElementById('tag-modal-add').addEventListener('click', () => {
   renderTagList();
   document.getElementById('new-tag-code').value = '';
   document.getElementById('new-tag-name').value = '';
+  document.getElementById('new-tag-color').value = nextDefaultHex();
 
   if (tagModalTrigger) {
     tagModalTrigger.value = record.projectCode;
