@@ -152,6 +152,7 @@
     <h2>輸出文字（貼到 Claude chat 請它建立 Calendar 事件）</h2>
     <textarea id="output" readonly placeholder="按左側「產生本週排程」後，這裡會出現可複製的排程文字。"></textarea>
     <div class="actions">
+      <button type="button" id="write-calendar-btn">寫入 Google Calendar</button>
       <button type="button" class="secondary" id="copy-btn">複製文字</button>
       <button type="button" class="secondary" id="download-btn">下載 .md</button>
     </div>
@@ -227,10 +228,13 @@ function refreshAllCodeSelects() {
   });
 }
 const SLOTS = [
-  { key: 'A', label: '08:30–11:30', hours: 3 },
-  { key: 'B', label: '13:00–15:30', hours: 2.5 },
-  { key: 'Fixed', label: '15:30–17:00', hours: 1.5 },
+  { key: 'A', label: '08:30–11:30', hours: 3, start: '08:30', end: '11:30' },
+  { key: 'B', label: '13:00–15:30', hours: 2.5, start: '13:00', end: '15:30' },
+  { key: 'Fixed', label: '15:30–17:00', hours: 1.5, start: '15:30', end: '17:00' },
 ];
+
+// 上次「產生本週排程」的結果，供「寫入 Google Calendar」按鈕使用
+let lastGenerated = null;
 
 function makeClientRow(data) {
   const row = document.createElement('div');
@@ -543,20 +547,28 @@ document.getElementById('generate-btn').addEventListener('click', () => {
     tbody.appendChild(tr);
   });
 
-  // 輸出文字
+  // 輸出文字 + 供寫入 Google Calendar 用的事件清單
   const lines = [];
+  const calendarEvents = [];
   lines.push(`週次：${formatDate(weekStart, 0)} ~ ${formatDate(weekStart, 4)}（時區 Asia/Taipei，不發送通知）`);
   lines.push('');
   DAYS.forEach((day, idx) => {
-    lines.push(`${day} ${formatDate(weekStart, idx)}`);
+    const date = formatDate(weekStart, idx);
+    lines.push(`${day} ${date}`);
     SLOTS.forEach((slot) => {
       const cell = grid[day][slot.key];
-      if (cell && cell.label != null) lines.push(`${slot.label}  ${cell.label}`);
+      if (cell && cell.label != null) {
+        lines.push(`${slot.label}  ${cell.label}`);
+        calendarEvents.push({
+          date, startTime: slot.start, endTime: slot.end, summary: cell.label, slotKey: slot.key,
+        });
+      }
     });
     lines.push('');
   });
 
   document.getElementById('output').value = lines.join('\n').trim();
+  lastGenerated = { weekStart, events: calendarEvents };
   document.getElementById('status').textContent = '已產生排程，可複製貼到 Claude chat 請它建立 Calendar 事件。';
 
   // 本週摘要卡 + 時間分配長條
@@ -591,6 +603,45 @@ document.getElementById('generate-btn').addEventListener('click', () => {
     .filter((s) => s.hours > 0)
     .map((s) => `<span class="item"><span class="dot" style="background:${s.color}"></span>${s.label}・${s.hours.toFixed(1)}h（${(s.hours / totalHours * 100).toFixed(0)}%）</span>`)
     .join('');
+});
+
+document.getElementById('write-calendar-btn').addEventListener('click', async () => {
+  const statusEl = document.getElementById('status');
+  if (!lastGenerated || !lastGenerated.events.length) {
+    statusEl.textContent = '請先按左側「產生本週排程」，再寫入 Google Calendar';
+    return;
+  }
+
+  const { weekStart, events } = lastGenerated;
+  const ok = window.confirm(
+    `即將把 ${weekStart} 這週的 ${events.length} 個工作項目寫入你的 Google 主要日曆（不會發送通知）。\n` +
+    `如果這週之前已經寫過，會先清掉舊版本再重新建立，確定要繼續嗎？`
+  );
+  if (!ok) return;
+
+  statusEl.textContent = '寫入中，請稍候…';
+  try {
+    const res = await fetch('/api/calendar/write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ weekStart, events }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      const hint =
+        data.code === 'unauthenticated' ? '，請先到 login.html 登入'
+        : data.code === 'no_calendar_grant' ? '，請登出後用 Google 重新登入一次以同意權限'
+        : '';
+      statusEl.textContent = `寫入失敗：${data.error}${hint}`;
+      return;
+    }
+    let msg = `已寫入 ${data.created} 個事件到 Google Calendar`;
+    if (data.deleted) msg += `（並清掉 ${data.deleted} 個舊版本）`;
+    if (data.errors && data.errors.length) msg += `，但有 ${data.errors.length} 筆失敗：${data.errors.join('；')}`;
+    statusEl.textContent = msg;
+  } catch (err) {
+    statusEl.textContent = '寫入失敗，請稍後再試一次。';
+  }
 });
 
 document.getElementById('copy-btn').addEventListener('click', async () => {

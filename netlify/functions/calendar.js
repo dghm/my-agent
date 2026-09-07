@@ -2,12 +2,15 @@ import { getStore } from '@netlify/blobs';
 import crypto from 'node:crypto';
 
 /* ============================================================
-   讀取使用者 Google Calendar 事件（唯讀）
+   代打使用者的 Google Calendar（讀取 + 寫入本週排程）
    路由（config.path = /api/calendar/:action）：
-     GET /api/calendar/list?start=YYYY-MM-DD&end=YYYY-MM-DD
-   需先透過 /api/auth/login/google 登入並同意「讀取日曆」權限，
+     GET  /api/calendar/list?start=YYYY-MM-DD&end=YYYY-MM-DD
+     POST /api/calendar/write   body: { weekStart, events: [{date,startTime,endTime,summary,slotKey}] }
+   需先透過 /api/auth/login/google 登入並同意 calendar.events 權限，
    refresh token 存於 Netlify Blobs（store: members，由 auth.js 寫入）。
-   本函式只代為呼叫 Google Calendar API 讀取事件，不寫入任何日曆內容。
+   write 動作會先刪除同一週、由本工具建立過的舊事件（用 extendedProperties
+   標記 dghmScheduleWeek 辨識），再整批建立新的，避免重複點擊產生重複事件；
+   所有寫入都帶 sendUpdates=none，不會發 Google Calendar 通知信給任何人。
    ============================================================ */
 
 const SESSION_COOKIE = 'dghm_session';
@@ -15,7 +18,7 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'insecure-dev-secret-please
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET,OPTIONS',
+  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
@@ -144,6 +147,82 @@ export default async (req, context) => {
         });
 
       return json(200, { ok: true, events });
+    }
+
+    if (req.method === 'POST' && action === 'write') {
+      const body = await req.json().catch(() => ({}));
+      const weekStart = String(body.weekStart || '').trim();
+      const events = Array.isArray(body.events) ? body.events : [];
+      if (!weekStart || !events.length) {
+        return json(400, { ok: false, error: '請提供 weekStart 與 events' });
+      }
+
+      const refreshToken = await getRefreshToken(session.uid);
+      if (!refreshToken) {
+        return json(409, {
+          ok: false,
+          error: '尚未授權寫入 Google 日曆，請先登出再用 Google 重新登入一次以同意權限',
+          code: 'no_calendar_grant',
+        });
+      }
+
+      const tokenResult = await getAccessToken(refreshToken);
+      if (!tokenResult.ok) {
+        return json(502, {
+          ok: false,
+          error: `無法取得 Google 存取權杖，請重新登入後再試一次（詳細：${tokenResult.detail}）`,
+        });
+      }
+      const accessToken = tokenResult.accessToken;
+
+      // 1) 先找出同一週、之前用本工具寫過的舊事件並刪除，避免重複點擊或重新產生後累積重複事件
+      const listParams = new URLSearchParams({
+        privateExtendedProperty: `dghmScheduleWeek=${weekStart}`,
+        maxResults: '250',
+      });
+      const listRes = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events?${listParams}`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      const listData = await listRes.json().catch(() => ({}));
+      const oldEvents = listRes.ok ? (listData.items || []) : [];
+      for (const ev of oldEvents) {
+        await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/primary/events/${ev.id}?sendUpdates=none`,
+          { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+      }
+
+      // 2) 建立新事件，全部標記 sendUpdates=none（不發通知）＋週次標記（供下次覆寫用）
+      let created = 0;
+      const errors = [];
+      for (const ev of events) {
+        const eventBody = {
+          summary: ev.summary || '',
+          start: { dateTime: `${ev.date}T${ev.startTime}:00+08:00`, timeZone: 'Asia/Taipei' },
+          end: { dateTime: `${ev.date}T${ev.endTime}:00+08:00`, timeZone: 'Asia/Taipei' },
+          reminders: { useDefault: false },
+          extendedProperties: {
+            private: { dghmScheduleWeek: weekStart, dghmScheduleSlot: `${ev.date}-${ev.slotKey || ''}` },
+          },
+        };
+        const res = await fetch(
+          'https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=none',
+          {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(eventBody),
+          }
+        );
+        if (res.ok) {
+          created++;
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          errors.push(errData.error?.message || `HTTP ${res.status}`);
+        }
+      }
+
+      return json(200, { ok: true, created, deleted: oldEvents.length, errors });
     }
 
     return json(404, { ok: false, error: 'Not Found' });

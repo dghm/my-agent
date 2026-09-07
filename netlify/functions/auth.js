@@ -134,7 +134,8 @@ function googleLogin(req) {
     client_id: clientId,
     redirect_uri: `${origin}/api/auth/callback/google`,
     response_type: 'code',
-    scope: 'openid email profile https://www.googleapis.com/auth/calendar.readonly',
+    // calendar.events 同時涵蓋讀取與建立/刪除事件，比 calendar.readonly 多了寫入權限
+    scope: 'openid email profile https://www.googleapis.com/auth/calendar.events',
     state,
     access_type: 'offline',
     prompt: 'consent select_account',
