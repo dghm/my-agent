@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DGHM 網站健康監控</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="dghm-ui.css?v=20260907-1">
+<link rel="stylesheet" href="app-shell.css?v=20260907-1">
+<style>
+  .app { min-height: 100vh; }
+  .main-panel { flex: 1; overflow-y: auto; padding: 24px 28px 40px; max-width: 960px; }
+
+  .head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 16px; margin-bottom: 4px;
+  }
+  h1 { font-size: 19px; margin: 0 0 4px; }
+  .hint { max-width: 560px; }
+  .note { font-size: 12px; color: var(--surface-text-faint); margin: -8px 0 20px; }
+
+  #check-btn {
+    flex-shrink: 0; padding: 10px 18px; font-size: 14px; font-weight: 700;
+    border-radius: var(--radius-xs);
+  }
+
+  .summary-line {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--surface-text-muted);
+    margin: 0 0 18px; min-height: 18px;
+  }
+  .summary-line.is-bad { color: #C0392B; font-weight: 700; }
+  .summary-line.is-ok { color: #1E7B34; font-weight: 700; }
+
+  .site-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px;
+  }
+  .site-card {
+    background: var(--surface-panel-bg); border-radius: var(--radius); box-shadow: var(--shadow-sm);
+    padding: 16px 18px;
+  }
+  .site-card-top {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 6px;
+  }
+  .site-card-top strong { font-size: 14px; color: var(--navy-text); }
+  .site-url {
+    display: block; font-size: 12px; color: var(--surface-text-muted);
+    text-decoration: none; word-break: break-all; margin-bottom: 8px;
+  }
+  .site-url:hover { color: var(--navy-text); text-decoration: underline; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
+    padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap;
+  }
+  .badge.ok       { background: #E6F4EA; color: #1E7B34; }
+  .badge.bad      { background: #FDECEC; color: #C0392B; }
+  .badge.checking { background: #E8EEFB; color: var(--navy); }
+  .badge.pending  { background: #F1F1F1; color: var(--surface-text-muted); }
+
+  .site-detail { margin: 0 0 4px; font-size: 12px; color: var(--surface-text); }
+  .site-time   { margin: 0; font-size: 11px; color: var(--surface-text-faint); }
+
+  @media (max-width: 680px) {
+    .head { flex-direction: column; }
+    #check-btn { width: 100%; }
+  }
+</style>
+</head>
+<body data-tool="site-monitor">
+<div id="tool-workspace">
+<div class="app">
+  <div class="main-panel">
+    <div class="head">
+      <div>
+        <h1>網站健康監控</h1>
+        <p class="hint">按下「立即檢查」，即時確認客戶網站是否能正常連線，抓出 404 / 500 或無法連線等異常。</p>
+      </div>
+      <button type="button" id="check-btn">立即檢查</button>
+    </div>
+    <p class="note">部分網站有防護機制，若顯示 403 等狀態碼，可能是自動檢查被擋下，非網站實際故障，建議另外用瀏覽器確認。</p>
+
+    <p class="summary-line" id="summary">尚未執行檢查</p>
+
+    <div class="site-grid" id="site-grid"></div>
+  </div>
+</div>
+</div>
+
+<script src="tool-registry.js?v=20260907-1"></script>
+<script src="project-context.js?v=20260907-1"></script>
+<script src="app-shell.js?v=20260907-1"></script>
+<script>mountAppShell({ activeTool: 'site-monitor' });</script>
+<script src="dghm-ui.js?v=20260907-1"></script>
+<script>
+initTheme('my-agent-theme');
+
+const TARGETS = [
+  { name: '合信旺旺', url: 'https://hs128.com.tw/' },
+  { name: 'TailorMed JP', url: 'https://jp.tailormed-intl.com/' },
+  { name: 'TailorMed Tracking', url: 'https://tracking.tailormed-intl.com/' },
+];
+
+let state = TARGETS.map((t) => ({ ...t, phase: 'pending' }));
+
+function escapeHtml(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function formatTime(iso) {
+  if (!iso) return '';
+  try {
+    return new Date(iso).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false });
+  } catch (error) {
+    return iso;
+  }
+}
+
+function badgeInfo(phase) {
+  if (phase === 'ok') return { cls: 'ok', label: '正常' };
+  if (phase === 'bad') return { cls: 'bad', label: '異常' };
+  if (phase === 'checking') return { cls: 'checking', label: '檢查中…' };
+  return { cls: 'pending', label: '尚未檢查' };
+}
+
+function renderCards() {
+  const grid = document.getElementById('site-grid');
+  grid.innerHTML = state.map((s) => {
+    const badge = badgeInfo(s.phase);
+    let detail = '';
+    if (s.phase === 'ok' || s.phase === 'bad') {
+      detail = s.error
+        ? s.error
+        : `HTTP ${s.status}${s.statusText ? ' ' + escapeHtml(s.statusText) : ''} · ${s.responseTimeMs} ms`;
+    }
+    const timeLine = s.checkedAt ? `上次檢查：${formatTime(s.checkedAt)}` : '';
+    return `
+      <div class="site-card">
+        <div class="site-card-top">
+          <strong>${escapeHtml(s.name)}</strong>
+          <span class="badge ${badge.cls}">${badge.label}</span>
+        </div>
+        <a class="site-url" href="${escapeHtml(s.url)}" target="_blank" rel="noopener">${escapeHtml(s.url)}</a>
+        ${detail ? `<p class="site-detail">${detail}</p>` : ''}
+        <p class="site-time">${timeLine}</p>
+      </div>`;
+  }).join('');
+}
+
+function setSummary(text, mood) {
+  const el = document.getElementById('summary');
+  el.textContent = text;
+  el.className = 'summary-line' + (mood ? ' is-' + mood : '');
+}
+
+async function runCheck() {
+  const btn = document.getElementById('check-btn');
+  btn.disabled = true;
+  btn.textContent = '檢查中…';
+  state = state.map((s) => ({ ...s, phase: 'checking' }));
+  renderCards();
+  setSummary('正在檢查 ' + state.length + ' 個網站…');
+
+  try {
+    const res = await fetch('/api/site-monitor/check', { cache: 'no-store' });
+    if (!res.ok) throw new Error('檢查服務發生錯誤（HTTP ' + res.status + '）');
+    const data = await res.json();
+    state = data.results.map((r) => ({ ...r, phase: r.ok ? 'ok' : 'bad', checkedAt: data.checkedAt }));
+    renderCards();
+    const badCount = state.filter((s) => s.phase === 'bad').length;
+    if (badCount === 0) {
+      setSummary(`全部 ${state.length} 個網站正常 · 最後檢查：${formatTime(data.checkedAt)}`, 'ok');
+    } else {
+      setSummary(`${badCount} 個網站異常，請盡快確認 · 最後檢查：${formatTime(data.checkedAt)}`, 'bad');
+    }
+  } catch (error) {
+    setSummary('檢查失敗：' + (error && error.message ? error.message : '請稍後再試'), 'bad');
+    state = state.map((s) => ({ ...s, phase: 'pending' }));
+    renderCards();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '立即檢查';
+  }
+}
+
+renderCards();
+document.getElementById('check-btn').addEventListener('click', runCheck);
+</script>
+</body>
+</html>
