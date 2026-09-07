@@ -9,6 +9,8 @@ export const TARGETS = [
 
 const TIMEOUT_MS = 8000;
 export const SSL_WARN_DAYS = 21;
+export const STATUS_STORE_NAME = 'site-monitor';
+export const STATUS_STORE_KEY = 'latest-daily-check';
 
 function checkSslExpiry(hostname) {
   return new Promise((resolve) => {

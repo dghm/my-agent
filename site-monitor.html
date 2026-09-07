@@ -62,6 +62,13 @@
   .site-detail.is-warn { color: #C0392B; font-weight: 700; }
   .site-time   { margin: 0; font-size: 11px; color: var(--surface-text-faint); }
 
+  .daily-status {
+    background: var(--surface-panel-bg); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm);
+    padding: 12px 16px; margin-bottom: 18px; font-size: 12px; color: var(--surface-text-muted);
+  }
+  .daily-status.is-ok  { color: #1E7B34; }
+  .daily-status.is-bad { color: #C0392B; font-weight: 700; }
+
   @media (max-width: 680px) {
     .head { flex-direction: column; }
     #check-btn { width: 100%; }
@@ -81,6 +88,8 @@
     </div>
     <p class="note">部分網站有防護機制，若顯示 403 等狀態碼，可能是自動檢查被擋下，非網站實際故障，建議另外用瀏覽器確認。</p>
     <p class="note">系統也會每天早上自動巡檢一次，網站異常或 SSL 憑證剩不到 21 天到期都會寄信到 help@dghm.tw，這裡的按鈕是給你想立即確認時用的。</p>
+
+    <p class="daily-status" id="daily-status">正在讀取自動巡檢紀錄…</p>
 
     <p class="summary-line" id="summary">尚未執行檢查</p>
 
@@ -200,7 +209,32 @@ async function runCheck() {
   }
 }
 
+async function loadDailyStatus() {
+  const el = document.getElementById('daily-status');
+  try {
+    const res = await fetch('/api/site-monitor/status', { cache: 'no-store' });
+    if (!res.ok) throw new Error('讀取失敗（HTTP ' + res.status + '）');
+    const data = await res.json();
+    const last = data.lastDailyCheck;
+    if (!last) {
+      el.textContent = '尚未執行過自動巡檢（每天台灣時間早上 8 點跑，明天會是第一次）';
+      el.className = 'daily-status';
+      return;
+    }
+    const parts = [];
+    if (last.failedCount > 0) parts.push(`${last.failedCount} 個網站異常`);
+    if (last.expiringSoonCount > 0) parts.push(`${last.expiringSoonCount} 張 SSL 即將到期`);
+    const statusText = parts.length ? parts.join('、') : '全部正常';
+    el.textContent = `最後自動巡檢：${formatTime(last.checkedAt)} · ${statusText}`;
+    el.className = 'daily-status' + (parts.length ? ' is-bad' : ' is-ok');
+  } catch (error) {
+    el.textContent = '無法讀取自動巡檢紀錄：' + (error && error.message ? error.message : '請稍後再試');
+    el.className = 'daily-status is-bad';
+  }
+}
+
 renderCards();
+loadDailyStatus();
 document.getElementById('check-btn').addEventListener('click', runCheck);
 </script>
 </body>
