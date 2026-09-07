@@ -9,46 +9,6 @@
 <link rel="stylesheet" href="app-shell.css?v=20260903-3">
 <style>
   .wrap { max-width: 1120px; margin: 0 auto; padding: 32px 24px 48px; }
-  .top {
-    display: flex; justify-content: space-between; align-items: center; gap: 20px;
-    padding-bottom: 16px; border-bottom: 1px solid var(--surface-border);
-  }
-  .brand { display: flex; align-items: center; gap: 11px; }
-  .brand-mark {
-    display: grid; place-items: center; width: 34px; height: 34px;
-    border-radius: 8px; background: var(--navy); color: #fff; font-weight: 800;
-  }
-  h1 { font-size: 19px; margin: 0 0 2px; color: var(--navy-text); }
-  .sub { font-size: 12px; color: var(--surface-text-muted); margin: 0; }
-  #theme-toggle {
-    flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px;
-    border: 1px solid var(--surface-border); background: var(--surface-panel-bg);
-    font-size: 16px; cursor: pointer; line-height: 1; padding: 0; color: var(--surface-text);
-  }
-  /* ---- User / auth area ---- */
-  .top-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-  #user-area { position: relative; }
-  .user-chip {
-    display: flex; align-items: center; gap: 8px; cursor: pointer;
-    background: var(--surface-panel-bg); border: 1px solid var(--surface-border);
-    border-radius: 20px; padding: 4px 10px 4px 4px; color: var(--surface-text); font-size: 13px;
-  }
-  .user-chip:hover { border-color: var(--navy-text); }
-  .user-chip img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: var(--surface-input-bg); }
-  .user-menu {
-    position: absolute; top: 100%; right: 0; margin-top: 8px;
-    background: var(--surface-panel-bg); border: 1px solid var(--surface-border);
-    border-radius: 10px; padding: 6px; min-width: 150px;
-    box-shadow: 0 8px 24px rgba(0,0,0,.15); display: none; z-index: 10;
-  }
-  .user-menu .um-email { padding: 6px 10px 8px; font-size: 12px; color: var(--surface-text-muted); border-bottom: 1px solid var(--surface-border); margin-bottom: 4px; word-break: break-all; }
-  .user-menu a { display: block; padding: 8px 10px; border-radius: 6px; text-decoration: none; color: var(--surface-text); font-size: 13px; }
-  .user-menu a:hover { background: var(--surface-bg); }
-  .login-btn {
-    display: inline-block; padding: 7px 14px; border-radius: 8px;
-    background: var(--navy); color: #fff; text-decoration: none; font-size: 13px;
-  }
-  :root[data-theme="dark"] .login-btn { background: var(--navy-text); color: #0d1117; }
 
   /* ---- Today board ---- */
   .today-board { margin: 26px 0 0; }
