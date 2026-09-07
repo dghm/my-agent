@@ -88,7 +88,7 @@ export default async (req, context) => {
 
   try {
     const session = verifySession(getCookie(req, SESSION_COOKIE));
-    if (!session) return json(401, { ok: false, error: '請先登入' });
+    if (!session) return json(401, { ok: false, error: '請先登入', code: 'unauthenticated' });
 
     if (req.method === 'GET' && action === 'list') {
       const url = new URL(req.url);
@@ -101,6 +101,7 @@ export default async (req, context) => {
         return json(409, {
           ok: false,
           error: '尚未授權讀取 Google 日曆，請先登出再用 Google 重新登入一次以同意「讀取日曆」權限',
+          code: 'no_calendar_grant',
         });
       }
 

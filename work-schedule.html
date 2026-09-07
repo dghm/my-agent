@@ -425,7 +425,13 @@ document.getElementById('load-lastweek-btn').addEventListener('click', async () 
     const res = await fetch(`/api/calendar/list?start=${lastMon}&end=${lastFri}`);
     const data = await res.json();
     if (!data.ok) {
-      bodyEl.innerHTML = `<p class="hint" style="margin:0;">${data.error}</p>`;
+      const linkHtml =
+        data.code === 'unauthenticated'
+          ? ' <a href="login.html" style="color:var(--navy-text);">前往登入</a>'
+          : data.code === 'no_calendar_grant'
+          ? ' <a href="/api/auth/logout" style="color:var(--navy-text);">登出並重新登入</a>'
+          : '';
+      bodyEl.innerHTML = `<p class="hint" style="margin:0;">${data.error}${linkHtml}</p>`;
       return;
     }
     const byKey = {};
