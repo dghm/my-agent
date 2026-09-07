@@ -2,6 +2,7 @@ const TARGETS = [
   { name: '合信旺旺', url: 'https://hs128.com.tw/' },
   { name: 'TailorMed JP', url: 'https://jp.tailormed-intl.com/' },
   { name: 'TailorMed Tracking', url: 'https://tracking.tailormed-intl.com/' },
+  { name: 'FP Enterprise', url: 'https://www.fp-enterprise.com.tw/' },
 ];
 
 const TIMEOUT_MS = 8000;
