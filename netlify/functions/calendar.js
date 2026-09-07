@@ -69,9 +69,9 @@ async function getAccessToken(refreshToken) {
       grant_type: 'refresh_token',
     }),
   });
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data.access_token || null;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) return { ok: false, detail: data.error_description || data.error || `HTTP ${res.status}` };
+  return { ok: true, accessToken: data.access_token };
 }
 
 function parseSummary(summary) {
@@ -105,9 +105,12 @@ export default async (req, context) => {
         });
       }
 
-      const accessToken = await getAccessToken(refreshToken);
-      if (!accessToken) {
-        return json(502, { ok: false, error: '無法取得 Google 存取權杖，請重新登入後再試一次' });
+      const tokenResult = await getAccessToken(refreshToken);
+      if (!tokenResult.ok) {
+        return json(502, {
+          ok: false,
+          error: `無法取得 Google 存取權杖，請重新登入後再試一次（詳細：${tokenResult.detail}）`,
+        });
       }
 
       const params = new URLSearchParams({
@@ -119,10 +122,13 @@ export default async (req, context) => {
       });
       const calRes = await fetch(
         `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+        { headers: { Authorization: `Bearer ${tokenResult.accessToken}` } }
       );
-      if (!calRes.ok) return json(502, { ok: false, error: 'Google Calendar API 呼叫失敗' });
-      const calData = await calRes.json();
+      const calData = await calRes.json().catch(() => ({}));
+      if (!calRes.ok) {
+        const detail = calData.error?.message || `HTTP ${calRes.status}`;
+        return json(502, { ok: false, error: `Google Calendar API 呼叫失敗（詳細：${detail}）` });
+      }
 
       const events = (calData.items || [])
         .filter((ev) => ev.start && (ev.start.dateTime || ev.start.date))
