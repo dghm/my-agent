@@ -29,6 +29,11 @@
   --shadow-sm: 0 1px 2px rgba(16,24,40,.04), 0 4px 12px rgba(16,24,40,.05);
   --shadow-md: 0 2px 4px rgba(16,24,40,.04), 0 12px 28px rgba(16,24,40,.09);
   --shadow-lg: 0 8px 20px rgba(16,24,40,.08), 0 24px 48px rgba(16,24,40,.12);
+
+  /* 專案／客戶識別色（分類色票，相鄰色對已通過色弱可讀性檢查，跨工具共用） */
+  --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100;
+  --series-5: #e87ba4; --series-6: #008300; --series-7: #4a3aa7; --series-8: #e34948;
+  --series-internal: #898781;
 }
 
 :root[data-theme="dark"] {
@@ -47,6 +52,10 @@
   --shadow-sm: 0 1px 2px rgba(0,0,0,.30), 0 4px 12px rgba(0,0,0,.25);
   --shadow-md: 0 2px 4px rgba(0,0,0,.30), 0 12px 28px rgba(0,0,0,.35);
   --shadow-lg: 0 8px 20px rgba(0,0,0,.35), 0 24px 48px rgba(0,0,0,.45);
+
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+  --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
+  --series-internal: #7C8697;
 }
 
 /* ---- Base ---- */
