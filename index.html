@@ -13,7 +13,7 @@
   /* ---- Today board ---- */
   .today-board { margin: 26px 0 0; }
   .today-board .section-head { margin-bottom: 13px; }
-  .board-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .board-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
   .board-card {
     padding: 16px 17px; border-radius: var(--radius);
     background: var(--surface-panel-bg); box-shadow: var(--shadow-sm);
@@ -163,6 +163,10 @@
         <h3><span aria-hidden="true">◆</span> 網站健康</h3>
         <div id="site-health"><p class="board-empty">尚未檢查</p></div>
       </div>
+      <div class="board-card">
+        <h3><span aria-hidden="true">◆</span> Make 自動化</h3>
+        <div id="make-health"><p class="board-empty">尚未檢查</p></div>
+      </div>
     </div>
   </section>
 
@@ -229,6 +233,7 @@ initTheme('my-agent-theme');
   'use strict';
 
   var SITE_HEALTH_CACHE_KEY = 'dghm-site-monitor-last';
+  var MAKE_HEALTH_CACHE_KEY = 'dghm-make-monitor-last';
 
   function escapeHtml(value) {
     return String(value == null ? '' : value)
@@ -334,11 +339,47 @@ initTheme('my-agent-theme');
     }
   }
 
+  function renderMakeHealth(data) {
+    var container = document.getElementById('make-health');
+    if (!data.ok) {
+      container.innerHTML = '<p class="board-empty">' + escapeHtml(data.error || '檢查失敗') + '</p>';
+      return;
+    }
+    var problems = data.problems || [];
+    var summary = problems.length === 0
+      ? '<p class="board-ok">' + data.activeCount + ' 個場景啟用中，皆正常</p>'
+      : '<p class="board-bad">' + problems.length + ' 個場景異常：' + problems.map(function (p) { return escapeHtml(p.name); }).join('、') + '</p>';
+    var time = data.checkedAt ? '<p class="board-time-note">最後檢查：' + formatDateTime(data.checkedAt) + '</p>' : '';
+    container.innerHTML = summary + time;
+  }
+
+  async function loadMakeHealth() {
+    var container = document.getElementById('make-health');
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem(MAKE_HEALTH_CACHE_KEY) || 'null'); } catch (error) {}
+    if (cached) renderMakeHealth(cached);
+    else container.innerHTML = '<p class="board-empty">檢查中…</p>';
+
+    try {
+      var res = await fetch('/api/make-monitor/check', { cache: 'no-store' });
+      var data = await res.json();
+      if (data.ok) {
+        try { localStorage.setItem(MAKE_HEALTH_CACHE_KEY, JSON.stringify(data)); } catch (error) {}
+        renderMakeHealth(data);
+      } else if (!cached) {
+        renderMakeHealth(data);
+      }
+    } catch (error) {
+      if (!cached) container.innerHTML = '<p class="board-empty">檢查失敗，暫時連不到 Make API</p>';
+    }
+  }
+
   var dateLabel = document.getElementById('today-date-label');
   if (dateLabel) dateLabel.textContent = todayLabel();
 
   loadCalendarBoards();
   loadSiteHealth();
+  loadMakeHealth();
 })();
 </script>
 </body>
