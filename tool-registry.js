@@ -53,7 +53,7 @@
       tools: [
         { id: 'design-system', label: '客戶設計系統',    href: 'design-system.html',              status: 'integrated', keywords: ['設計系統','design system','tokens'] },
         { id: 'style',         label: 'Style Guideline', href: 'brand-guideline-generator.html',  status: 'legacy', keywords: ['品牌','指南','style','guideline','ci'] },
-        { id: 'guide',         label: 'User Guide 骨架', href: 'user-guide-generator.html',       status: 'legacy', keywords: ['手冊','操作','user guide','sop','教學'] },
+        { id: 'guide',         label: 'User Guide 骨架', href: 'user-guide-generator.html',       status: 'integrated', keywords: ['手冊','操作','user guide','sop','教學'] },
         { id: 'uat',           label: 'UAT 問答與 JSON', href: '',                                status: 'planned', keywords: ['驗收','uat','測試'] },
       ],
     },
