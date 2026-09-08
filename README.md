@@ -25,9 +25,10 @@
   - 頁面掛載方式：`<body data-tool="工具 id">` ＋ `mountAppShell({ activeTool: '工具 id' })`，
     工具 id 定義於 `tool-registry.js`。
   - 目前已套用的頁面：`index`、`skill-toolbox`、`client-brief`、`design-system`、
-    `work-schedule`、`Quote-Generator`、`Contract-Generator`、`Invoice-Generator`。
+    `work-schedule`、`Quote-Generator`、`Contract-Generator`、`Invoice-Generator`、
+    `user-guide-generator`。
     其餘頁面（`income-tracker`、`meeting-notes`、`clear-todo`、`qr-generator`、
-    `wechat-h5-card`、`user-guide-generator`、`brand-guideline-generator`、
+    `wechat-h5-card`、`brand-guideline-generator`、
     `social-ui`、`breakdance-section-generator`）尚未掛殼，側欄以橘色小圓點標示。
 
 - `ui-proposal.html`
