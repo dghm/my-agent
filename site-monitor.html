@@ -42,7 +42,12 @@
   .site-card-top {
     display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 6px;
   }
-  .site-card-top strong { font-size: 14px; color: var(--navy-text); }
+  .site-name {
+    display: inline-flex; align-items: center; min-width: 0;
+    padding: 4px 12px; border-radius: 999px;
+    font-size: 13px; font-weight: 700; color: #fff;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
   .site-url {
     display: block; font-size: 12px; color: var(--surface-text-muted);
     text-decoration: none; word-break: break-all; margin-bottom: 8px;
@@ -111,7 +116,16 @@ const TARGETS = [
   { name: 'TailorMed JP', url: 'https://jp.tailormed-intl.com/' },
   { name: 'TailorMed Tracking', url: 'https://tracking.tailormed-intl.com/' },
   { name: 'FP Enterprise', url: 'https://www.fp-enterprise.com.tw/' },
+  { name: 'DGHM', url: 'https://www.dghm.tw/' },
 ];
+
+const BRAND_COLORS = {
+  'https://hs128.com.tw/': '#2c180f',
+  'https://jp.tailormed-intl.com/': '#143463',
+  'https://tracking.tailormed-intl.com/': '#143463',
+  'https://www.fp-enterprise.com.tw/': '#1b203e',
+  'https://www.dghm.tw/': '#0e2f6e',
+};
 
 let state = TARGETS.map((t) => ({ ...t, phase: 'pending' }));
 
@@ -159,10 +173,11 @@ function renderCards() {
         sslLine = `<p class="site-detail is-warn">SSL 憑證：查詢失敗（${escapeHtml(s.ssl.error || '')}）</p>`;
       }
     }
+    const brandColor = BRAND_COLORS[s.url] || 'var(--navy)';
     return `
       <div class="site-card">
         <div class="site-card-top">
-          <strong>${escapeHtml(s.name)}</strong>
+          <span class="site-name" style="background-color:${brandColor};">${escapeHtml(s.name)}</span>
           <span class="badge ${badge.cls}">${badge.label}</span>
         </div>
         <a class="site-url" href="${escapeHtml(s.url)}" target="_blank" rel="noopener">${escapeHtml(s.url)}</a>

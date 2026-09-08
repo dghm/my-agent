@@ -5,6 +5,7 @@ export const TARGETS = [
   { name: 'TailorMed JP', url: 'https://jp.tailormed-intl.com/' },
   { name: 'TailorMed Tracking', url: 'https://tracking.tailormed-intl.com/' },
   { name: 'FP Enterprise', url: 'https://www.fp-enterprise.com.tw/' },
+  { name: 'DGHM', url: 'https://www.dghm.tw/' },
 ];
 
 const TIMEOUT_MS = 8000;
