@@ -13,7 +13,7 @@
   /* ---- Today board ---- */
   .today-board { margin: 26px 0 0; }
   .today-board .section-head { margin-bottom: 13px; }
-  .board-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  .board-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
   .board-card {
     padding: 16px 17px; border-radius: var(--radius);
     background: var(--surface-panel-bg); box-shadow: var(--shadow-sm);
@@ -160,10 +160,6 @@
         <div id="yesterday-events"><p class="board-empty">載入中…</p></div>
       </div>
       <div class="board-card">
-        <h3><span aria-hidden="true">◆</span> 進行中案件・下一步</h3>
-        <div id="active-projects"><p class="board-empty">載入中…</p></div>
-      </div>
-      <div class="board-card">
         <h3><span aria-hidden="true">◆</span> 網站健康</h3>
         <div id="site-health"><p class="board-empty">尚未檢查</p></div>
       </div>
@@ -306,20 +302,6 @@ initTheme('my-agent-theme');
     renderEventList('yesterday-events', yesterdayResult, '昨天沒有排定的行事曆項目');
   }
 
-  function loadActiveProjects() {
-    var container = document.getElementById('active-projects');
-    var projectsApi = window.DGHMProjects;
-    var projects = projectsApi ? projectsApi.listActive().filter(function (p) { return p.nextAction; }) : [];
-    if (!projects.length) {
-      container.innerHTML = '<p class="board-empty">目前沒有標記下一步的案件</p>';
-      return;
-    }
-    container.innerHTML = '<ul class="board-list">' + projects.map(function (p) {
-      return '<li><span class="board-tag">' + escapeHtml(p.projectCode) + '</span>' +
-        '<span>' + escapeHtml(p.nextAction) + '</span></li>';
-    }).join('') + '</ul>';
-  }
-
   function renderSiteHealth(data) {
     var container = document.getElementById('site-health');
     var results = data.results || [];
@@ -356,7 +338,6 @@ initTheme('my-agent-theme');
   if (dateLabel) dateLabel.textContent = todayLabel();
 
   loadCalendarBoards();
-  loadActiveProjects();
   loadSiteHealth();
 })();
 </script>
