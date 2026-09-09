@@ -1088,6 +1088,11 @@ var _handoffApplied = false;
     });
   }
 
+  if (payload.terms && payload.terms.length) {
+    document.getElementById('terms-list').innerHTML = '';
+    payload.terms.forEach(function (t) { addTerm(t); });
+  }
+
   _handoffApplied = true;
   refreshOutput();
 
