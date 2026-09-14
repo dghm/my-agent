@@ -159,6 +159,12 @@
   .blk label { font-size: 11px; margin-top: 6px; }
   .totals-live { text-align: right; font-size: 12px; color: var(--surface-text-muted); margin-top: 2px; }
   .totals-live strong { color: var(--navy-text); }
+  .tax-toggle {
+    display: flex; align-items: center; gap: 8px;
+    margin: 8px 0 6px; font-size: 13px; color: var(--surface-text); font-weight: 600;
+  }
+  .tax-toggle input { width: auto; margin: 0; accent-color: var(--navy); }
+  .tax-fields.is-disabled { opacity: .45; pointer-events: none; }
   .tax-presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 4px; }
   .tax-preset {
     border: 1px solid var(--surface-input-border);
@@ -547,23 +553,29 @@ __PAGES__
 
       <fieldset>
         <legend>04 — 報價總覽（小計／稅額／總計）</legend>
-        <p class="hint" style="margin-bottom:8px">每組會自動加總未稅金額、依下方稅率計算稅額與含稅總計。可建立多組（例：一次性工程款一組、月繳費用一組）。</p>
-        <label>稅率</label>
-        <div class="tax-presets" role="group" aria-label="稅率快捷">
-          <button type="button" class="tax-preset is-active" data-rate="5" data-label="營業稅">台灣營業稅 5%</button>
-          <button type="button" class="tax-preset" data-rate="0">海外零稅率 0%</button>
+        <p class="hint" style="margin-bottom:8px">每組會自動加總未稅金額。開啟稅額列時依下方稅率計算稅額與含稅總計。可建立多組（例：一次性工程款一組、月繳費用一組）。</p>
+        <label>稅額列</label>
+        <div class="tax-presets" role="group" aria-label="稅額列快捷">
+          <button type="button" class="tax-preset is-active" data-tax="on" data-rate="5" data-label="營業稅">台灣營業稅 5%</button>
+          <button type="button" class="tax-preset" data-tax="off">外國報價</button>
         </div>
-        <div class="row2">
-          <div>
-            <label>稅額名稱</label>
-            <input type="text" id="f_tax_label" value="營業稅" placeholder="營業稅／VAT／GST" oninput="refreshOutput()">
-          </div>
-          <div>
-            <label>稅率（%）</label>
-            <input type="number" id="f_tax_rate" min="0" max="100" step="0.1" value="5" oninput="refreshOutput()">
+        <label class="tax-toggle">
+          <input type="checkbox" id="f_tax_on" checked>
+          文件顯示稅額列
+        </label>
+        <div class="tax-fields" id="tax-fields">
+          <div class="row2">
+            <div>
+              <label>稅額名稱</label>
+              <input type="text" id="f_tax_label" value="營業稅" placeholder="營業稅／VAT／GST" oninput="refreshOutput()">
+            </div>
+            <div>
+              <label>稅率（%）</label>
+              <input type="number" id="f_tax_rate" min="0" max="100" step="0.1" value="5" oninput="refreshOutput()">
+            </div>
           </div>
         </div>
-        <p class="hint" style="margin:8px 0 12px">台灣客戶維持 5%。外國客戶請改 0%；從報價單開立請款單時，稅率 0 會關掉請款文件上的營業稅欄。若對方地區要課 GST／VAT，再自行改名稱與稅率。</p>
+        <p class="hint" style="margin:8px 0 12px">台灣客戶維持顯示 5% 營業稅。外國報價請關閉稅額列，文件上不會出現營業稅／VAT 欄；開立請款單時也會一併關掉。若對方地區要課 GST／VAT，打開稅額列後改名稱與稅率即可。</p>
         <div id="tot-list"></div>
         <button type="button" class="btn-add" onclick="addTotalGroup()">＋ 新增總計組</button>
       </fieldset>
@@ -657,7 +669,7 @@ __PAGES__
   <dialog id="handoff-dialog" class="handoff-dialog" aria-labelledby="handoff-title">
     <form method="dialog">
       <h2 id="handoff-title">要開立哪一期的請款單？</h2>
-      <p class="handoff-desc">客戶名稱、地址、統一編號、聯絡人、電話、Email、專案名稱、專案代碼與稅率會一併帶入。</p>
+      <p class="handoff-desc">客戶名稱、地址、統一編號、聯絡人、電話、Email、專案名稱、專案代碼與稅額列設定會一併帶入。</p>
       <div id="handoff-list" class="handoff-list"></div>
       <div class="handoff-foot">
         <button type="submit" value="cancel" class="secondary">取消</button>
@@ -845,6 +857,17 @@ function nl2br(s) { return xmlEsc(s).replace(/\n/g, '<br>'); }
 function v(id) { return (document.getElementById(id)||{}).value||''; }
 function fmtNT(n) { return 'NT$ ' + Math.round(n).toLocaleString('zh-TW'); }
 
+function isTaxOnValue(value) {
+  return value !== '0' && value !== 0 && value !== false && value !== 'false';
+}
+function isTaxOn() {
+  var el = document.getElementById('f_tax_on');
+  return !el || !!el.checked;
+}
+function setTaxOn(value) {
+  var el = document.getElementById('f_tax_on');
+  if (el) el.checked = isTaxOnValue(value);
+}
 function readTaxRate() {
   var raw = String((document.getElementById('f_tax_rate') || {}).value || '').trim();
   if (raw === '') return 5;
@@ -863,9 +886,19 @@ function taxLineLabel() {
   return readTaxLabel() + '（' + formatTaxRate(readTaxRate()) + '%）';
 }
 function calcTaxAmount(subtotal) {
+  if (!isTaxOn()) return 0;
   return Math.round(Number(subtotal) * (readTaxRate() / 100));
 }
+function amountColHead() {
+  return isTaxOn() ? '金額未稅 (NT$)' : '金額 (NT$)';
+}
+function defaultTotalLabel() {
+  return isTaxOn() ? '總計（含稅）' : '總計';
+}
 function defaultValidityTail() {
+  if (!isTaxOn()) {
+    return '，逾期請重新詢價。報價金額如未特別標示，均為未含稅金額。';
+  }
   var rate = readTaxRate();
   var label = readTaxLabel();
   if (rate === 0) {
@@ -873,39 +906,74 @@ function defaultValidityTail() {
   }
   return '，逾期請重新詢價。報價金額如未特別標示，均不含 ' + formatTaxRate(rate) + '% ' + label + '。';
 }
-var VALIDITY_TAIL_RE = /^，逾期請重新詢價。報價金額如未特別標示，均(不含 [\d.]+% .+|為未含稅金額（.+ 0%）)。$/;
+var VALIDITY_TAIL_RE = /^，逾期請重新詢價。報價金額如未特別標示，均(不含 [\d.]+% .+|為未含稅金額（.+ 0%）|為未含稅金額)。$/;
 function syncValidityTailIfDefault() {
   var el = document.getElementById('f_validity_tail');
   if (!el) return;
   if (!el.value || VALIDITY_TAIL_RE.test(el.value)) el.value = defaultValidityTail();
 }
+function syncDefaultTotalLabels() {
+  document.querySelectorAll('#tot-list .g-label').forEach(function (el) {
+    if (!el.value || el.value === '總計（含稅）' || el.value === '總計') el.value = defaultTotalLabel();
+  });
+}
+function syncTaxFields() {
+  var on = isTaxOn();
+  var fields = document.getElementById('tax-fields');
+  if (fields) fields.classList.toggle('is-disabled', !on);
+  var head = amountColHead();
+  document.querySelectorAll('#tot-list .items-table thead th:nth-child(2)').forEach(function (th) {
+    th.textContent = head;
+  });
+}
 function syncTaxPresets() {
+  var on = isTaxOn();
   var rate = readTaxRate();
   var label = readTaxLabel();
   document.querySelectorAll('.tax-preset').forEach(function (btn) {
+    var taxAttr = btn.getAttribute('data-tax');
+    if (taxAttr === 'off') {
+      btn.classList.toggle('is-active', !on);
+      return;
+    }
     var presetRate = parseFloat(btn.getAttribute('data-rate'));
     var presetLabel = btn.getAttribute('data-label');
     var rateMatch = isFinite(presetRate) && presetRate === rate;
     var labelMatch = !presetLabel || presetLabel === label;
-    btn.classList.toggle('is-active', rateMatch && labelMatch);
+    btn.classList.toggle('is-active', on && rateMatch && labelMatch);
   });
+  syncTaxFields();
 }
 function applyTaxPreset(btn) {
+  var taxAttr = btn.getAttribute('data-tax');
+  setTaxOn(taxAttr !== 'off');
   var rateEl = document.getElementById('f_tax_rate');
   var labelEl = document.getElementById('f_tax_label');
-  if (rateEl) rateEl.value = btn.getAttribute('data-rate');
+  if (taxAttr !== 'off' && rateEl && btn.getAttribute('data-rate')) {
+    rateEl.value = btn.getAttribute('data-rate');
+  }
   var presetLabel = btn.getAttribute('data-label');
   if (presetLabel && labelEl) labelEl.value = presetLabel;
+  syncValidityTailIfDefault();
+  syncDefaultTotalLabels();
 }
 function initTaxControls() {
   document.querySelectorAll('.tax-preset').forEach(function (btn) {
     btn.addEventListener('click', function () {
       applyTaxPreset(btn);
-      syncValidityTailIfDefault();
       syncTaxPresets();
       refreshOutput();
     });
   });
+  var toggle = document.getElementById('f_tax_on');
+  if (toggle) {
+    toggle.addEventListener('change', function () {
+      syncValidityTailIfDefault();
+      syncDefaultTotalLabels();
+      syncTaxPresets();
+      refreshOutput();
+    });
+  }
   ['f_tax_rate', 'f_tax_label'].forEach(function (id) {
     var el = document.getElementById(id);
     if (!el) return;
@@ -1083,11 +1151,11 @@ function addTotalGroup(data) {
       '<span class="page-pick">頁 <input type="number" min="1" class="g-page" value="' + (data.page || 1) + '" oninput="refreshOutput()"></span>' +
       '<button type="button" class="btn-del" onclick="removeBlk(\'' + id + '\')">✕</button>' +
     '</div>' +
-    '<table class="items-table"><thead><tr><th>項目標籤</th><th style="width:32%">金額未稅 (NT$)</th><th style="width:26px"></th></tr></thead>' +
+    '<table class="items-table"><thead><tr><th>項目標籤</th><th style="width:32%">' + amountColHead() + '</th><th style="width:26px"></th></tr></thead>' +
     '<tbody class="g-tbody"></tbody></table>' +
     '<button type="button" class="btn-add sm" onclick="addTotalRow(\'' + id + '\')">＋ 新增列</button>' +
     '<label>總計列標籤（例：搬遷工程總計（含稅））</label>' +
-    '<input type="text" class="g-label" value="' + esc(data.totalLabel||'總計（含稅）') + '" oninput="refreshOutput()">' +
+    '<input type="text" class="g-label" value="' + esc(data.totalLabel || defaultTotalLabel()) + '" oninput="refreshOutput()">' +
     '<div class="totals-live"></div>';
   document.getElementById('tot-list').appendChild(wrap);
   (data.rows || [{}]).forEach(function (r) { addTotalRow(id, r); });
@@ -1241,14 +1309,18 @@ function buildTotalHtml(wrap) {
 
   var tax = calcTaxAmount(sum);
   var total = sum + tax;
-  var totalLabel = wrap.querySelector('.g-label').value.trim() || '總計（含稅）';
-  if (live) live.innerHTML = xmlEsc(taxLineLabel()) + ' ' + fmtNT(tax) + '　<strong>' + xmlEsc(totalLabel) + ' ' + fmtNT(total) + '</strong>';
+  var taxOn = isTaxOn();
+  var totalLabel = wrap.querySelector('.g-label').value.trim() || defaultTotalLabel();
+  if (live) {
+    live.innerHTML = (taxOn ? xmlEsc(taxLineLabel()) + ' ' + fmtNT(tax) + '　' : '') +
+      '<strong>' + xmlEsc(totalLabel) + ' ' + fmtNT(total) + '</strong>';
+  }
 
   var html = '<div class="totals-wrap" style="margin-top:4mm"><table class="totals-table">\n';
   rows.forEach(function (r) {
     html += '<tr class="tax-row"><td>' + xmlEsc(r.label) + '</td><td>' + fmtNT(r.amount) + '</td></tr>\n';
   });
-  html += '<tr class="tax-row"><td>' + xmlEsc(taxLineLabel()) + '</td><td>' + fmtNT(tax) + '</td></tr>\n';
+  if (taxOn) html += '<tr class="tax-row"><td>' + xmlEsc(taxLineLabel()) + '</td><td>' + fmtNT(tax) + '</td></tr>\n';
   html += '<tr class="total-row"><td>' + xmlEsc(totalLabel) + '</td><td>' + fmtNT(total) + '</td></tr>\n';
   html += '</table></div>\n';
   return html;
@@ -1573,6 +1645,7 @@ function collectDraft() {
   FIELD_IDS.forEach(function (id) { draft.fields[id] = v(id); });
   draft.fields.f_sig_on = document.getElementById('f_sig_on').checked;
   draft.fields.f_validity_on = document.getElementById('f_validity_on').checked;
+  draft.fields.f_tax_on = isTaxOn() ? '1' : '0';
 
   document.querySelectorAll('#sec-list .blk').forEach(function (w) {
     var rows = [];
@@ -1649,6 +1722,8 @@ function applyDraft(draft) {
   if (draft.fields) {
     if ('f_sig_on' in draft.fields) document.getElementById('f_sig_on').checked = !!draft.fields.f_sig_on;
     if ('f_validity_on' in draft.fields) document.getElementById('f_validity_on').checked = !!draft.fields.f_validity_on;
+    if ('f_tax_on' in draft.fields) setTaxOn(draft.fields.f_tax_on);
+    else if (String(draft.fields.f_tax_rate) === '0') setTaxOn(false);
   }
 
   document.getElementById('sec-list').innerHTML = '';
@@ -1938,7 +2013,7 @@ function buildHandoffPayload(draft, cards, index) {
       f_total_hint:    hint,
       f_tax_label:     readTaxLabel(),
       f_tax_rate:      formatTaxRate(readTaxRate()),
-      f_tax_on:        readTaxRate() === 0 ? '0' : '1'
+      f_tax_on:        isTaxOn() ? '1' : '0'
     },
     items: items,
     terms: buildTermsDraft(draft, card, cards, index, amount)
