@@ -563,7 +563,7 @@ __PAGES__
             <input type="number" id="f_tax_rate" min="0" max="100" step="0.1" value="5" oninput="refreshOutput()">
           </div>
         </div>
-        <p class="hint" style="margin:8px 0 12px">台灣客戶維持 5%。開立海外報價請改 0%；對方地區若課 GST／VAT，改名稱與稅率即可。稅率 0 仍會印出稅額列，方便確認未加稅。</p>
+        <p class="hint" style="margin:8px 0 12px">台灣客戶維持 5%。外國客戶請改 0%；從報價單開立請款單時，稅率 0 會關掉請款文件上的營業稅欄。若對方地區要課 GST／VAT，再自行改名稱與稅率。</p>
         <div id="tot-list"></div>
         <button type="button" class="btn-add" onclick="addTotalGroup()">＋ 新增總計組</button>
       </fieldset>
@@ -1937,7 +1937,8 @@ function buildHandoffPayload(draft, cards, index) {
       f_payment_terms: DEFAULT_PAYMENT_TERMS,
       f_total_hint:    hint,
       f_tax_label:     readTaxLabel(),
-      f_tax_rate:      formatTaxRate(readTaxRate())
+      f_tax_rate:      formatTaxRate(readTaxRate()),
+      f_tax_on:        readTaxRate() === 0 ? '0' : '1'
     },
     items: items,
     terms: buildTermsDraft(draft, card, cards, index, amount)
