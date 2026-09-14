@@ -472,7 +472,7 @@ __TERMS_LI__
         <legend>04 — 請款明細</legend>
         <label>稅率</label>
         <div class="tax-presets" role="group" aria-label="稅率快捷">
-          <button type="button" class="tax-preset is-active" data-rate="5">台灣營業稅 5%</button>
+          <button type="button" class="tax-preset is-active" data-rate="5" data-label="營業稅">台灣營業稅 5%</button>
           <button type="button" class="tax-preset" data-rate="0">海外零稅率 0%</button>
         </div>
         <div class="row2">
@@ -814,16 +814,26 @@ function invoiceTotalLabel() {
 }
 function syncTaxPresets() {
   var rate = readTaxRate();
+  var label = readTaxLabel();
   document.querySelectorAll('.tax-preset').forEach(function (btn) {
     var presetRate = parseFloat(btn.getAttribute('data-rate'));
-    btn.classList.toggle('is-active', isFinite(presetRate) && presetRate === rate);
+    var presetLabel = btn.getAttribute('data-label');
+    var rateMatch = isFinite(presetRate) && presetRate === rate;
+    var labelMatch = !presetLabel || presetLabel === label;
+    btn.classList.toggle('is-active', rateMatch && labelMatch);
   });
+}
+function applyTaxPreset(btn) {
+  var rateEl = document.getElementById('f_tax_rate');
+  var labelEl = document.getElementById('f_tax_label');
+  if (rateEl) rateEl.value = btn.getAttribute('data-rate');
+  var presetLabel = btn.getAttribute('data-label');
+  if (presetLabel && labelEl) labelEl.value = presetLabel;
 }
 function initTaxControls() {
   document.querySelectorAll('.tax-preset').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      var rateEl = document.getElementById('f_tax_rate');
-      if (rateEl) rateEl.value = btn.getAttribute('data-rate');
+      applyTaxPreset(btn);
       syncTaxPresets();
       refreshOutput();
     });
