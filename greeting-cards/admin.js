@@ -19,7 +19,6 @@
   var campaignList = document.getElementById('gc-campaigns');
   var catalogStatus = document.getElementById('gc-catalog-status');
   var previewTitle = document.getElementById('gc-preview-title');
-  var previewStage = document.getElementById('gc-preview-stage');
   var placeholder = document.getElementById('gc-preview-placeholder');
   var deviceFrame = document.getElementById('gc-device-frame');
   var iframe = document.getElementById('gc-card-preview');
@@ -110,7 +109,6 @@
     if (card.previewAvailable === false) {
       iframe.removeAttribute('src');
       deviceFrame.hidden = true;
-      previewStage.classList.add('is-empty');
       placeholder.innerHTML = '<strong>賀卡視覺尚未建立</strong><span>卡片資料已納入檔期，完成視覺後即可在此預覽。</span>';
       placeholder.hidden = false;
       openCard.hidden = true;
@@ -119,7 +117,6 @@
 
     placeholder.hidden = true;
     deviceFrame.hidden = false;
-    previewStage.classList.remove('is-empty');
     iframe.src = localUrl;
     iframe.title = card.title + '預覽';
     openCard.href = card.publicUrl || localUrl;
@@ -127,7 +124,7 @@
   }
 
   function setDevice(device) {
-    previewStage.dataset.device = device;
+    deviceFrame.dataset.device = device;
     document.querySelectorAll('[data-gc-device]').forEach(function (button) {
       var active = button.dataset.gcDevice === device;
       button.classList.toggle('is-active', active);

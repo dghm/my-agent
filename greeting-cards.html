@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="dghm-ui.css?v=20260914-1">
   <link rel="stylesheet" href="app-shell.css?v=20260914-1">
-  <link rel="stylesheet" href="greeting-cards/admin.css?v=20260914-1">
+  <link rel="stylesheet" href="greeting-cards/admin.css?v=20260914-2">
 </head>
 <body data-tool="greeting-cards">
   <div id="tool-workspace" class="greeting-cards-app">
@@ -53,15 +53,13 @@
           </div>
         </div>
 
-        <div id="gc-preview-stage" class="gc-preview-stage is-empty" data-device="desktop">
-          <div id="gc-preview-placeholder" class="gc-placeholder">
-            <strong>尚未選擇賀卡</strong>
-            <span>從左側選擇一張卡片開始預覽。</span>
-          </div>
-          <div id="gc-device-frame" class="gc-device-frame" hidden>
-            <div class="gc-browser-bar" aria-hidden="true"><i></i><i></i><i></i><span id="gc-preview-address"></span></div>
-            <iframe id="gc-card-preview" title="賀卡預覽" loading="lazy"></iframe>
-          </div>
+        <div id="gc-preview-placeholder" class="gc-preview-empty">
+          <strong>尚未選擇賀卡</strong>
+          <span>從左側選擇一張卡片開始預覽。</span>
+        </div>
+        <div id="gc-device-frame" class="gc-device-frame" data-device="desktop" hidden>
+          <div class="gc-browser-bar" aria-hidden="true"><i></i><i></i><i></i><span id="gc-preview-address"></span></div>
+          <iframe id="gc-card-preview" title="賀卡預覽" loading="lazy"></iframe>
         </div>
 
         <div class="gc-preview-footer">
@@ -81,6 +79,6 @@
   <script>mountAppShell({ activeTool: 'greeting-cards' });</script>
   <script src="dghm-ui.js?v=20260914-1"></script>
   <script>initTheme('my-agent-theme');</script>
-  <script src="greeting-cards/admin.js?v=20260914-1"></script>
+  <script src="greeting-cards/admin.js?v=20260914-2"></script>
 </body>
 </html>
