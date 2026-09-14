@@ -113,6 +113,23 @@
   .totals-preview .sub-row td { color: var(--surface-text-muted); font-size: 0.78rem; }
   .totals-preview .total-row td { background: var(--navy); color: #fff; font-weight: 700; }
   .totals-preview .total-row td:last-child { font-size: 1rem; }
+  .tax-presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 4px; }
+  .tax-preset {
+    border: 1px solid var(--surface-input-border);
+    background: var(--surface-input-bg);
+    color: var(--surface-text);
+    border-radius: 999px;
+    padding: 4px 11px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .tax-preset:hover { border-color: var(--navy-text); color: var(--navy-text); }
+  .tax-preset.is-active {
+    border-color: var(--navy);
+    background: var(--navy-soft);
+    color: var(--navy-text);
+    font-weight: 700;
+  }
 
   /* ---- Button overrides (this tool uses 12px / 6px padding for compact layout) ---- */
   button.secondary { border-color: var(--surface-border); }
@@ -310,9 +327,9 @@ __ITEMS_TBODY__
     <div class="inv-totals-wrap">
       <table class="inv-totals-table">
         <tbody>
-          <tr class="sub-row"><td>未稅小計</td><td>{Subtotal Ex Tax}</td></tr>
-          <tr class="sub-row"><td>營業稅 5%</td><td>{Tax 5%}</td></tr>
-          <tr class="total-row"><td>請款總額（含稅）</td><td>{Total Inc Tax}</td></tr>
+          <tr class="sub-row"><td>{Subtotal Label}</td><td>{Subtotal Ex Tax}</td></tr>
+          <tr class="sub-row"><td>{Tax Label}</td><td>{Tax Amount}</td></tr>
+          <tr class="total-row"><td>{Total Label}</td><td>{Total Inc Tax}</td></tr>
         </tbody>
       </table>
     </div>
@@ -453,6 +470,22 @@ __TERMS_LI__
 
       <fieldset>
         <legend>04 — 請款明細</legend>
+        <label>稅率</label>
+        <div class="tax-presets" role="group" aria-label="稅率快捷">
+          <button type="button" class="tax-preset is-active" data-rate="5">台灣營業稅 5%</button>
+          <button type="button" class="tax-preset" data-rate="0">海外零稅率 0%</button>
+        </div>
+        <div class="row2">
+          <div>
+            <label>稅額名稱</label>
+            <input type="text" id="f_tax_label" value="營業稅" placeholder="營業稅／VAT／GST">
+          </div>
+          <div>
+            <label>稅率（%）</label>
+            <input type="number" id="f_tax_rate" min="0" max="100" step="0.1" value="5">
+          </div>
+        </div>
+        <p class="hint" style="margin:8px 0 12px">台灣客戶維持 5%。開立海外 Invoice 請改 0%；對方地區若課 GST／VAT，改名稱與稅率即可。稅率 0 仍會印出稅額列，方便確認未加稅。</p>
         <table class="items-table">
           <thead>
             <tr>
@@ -470,9 +503,9 @@ __TERMS_LI__
         <div class="totals-preview">
           <table>
             <tbody>
-              <tr class="sub-row"><td>未稅小計</td><td id="tpl-subtotal">NT$ 0</td></tr>
-              <tr class="sub-row"><td>營業稅 5%</td><td id="tpl-tax">NT$ 0</td></tr>
-              <tr class="total-row"><td>請款總額（含稅）</td><td id="tpl-total">NT$ 0</td></tr>
+              <tr class="sub-row"><td id="tpl-subtotal-label">未稅小計</td><td id="tpl-subtotal">NT$ 0</td></tr>
+              <tr class="sub-row"><td id="tpl-tax-label">營業稅（5%）</td><td id="tpl-tax">NT$ 0</td></tr>
+              <tr class="total-row"><td id="tpl-total-label">請款總額（含稅）</td><td id="tpl-total">NT$ 0</td></tr>
             </tbody>
           </table>
         </div>
@@ -753,6 +786,56 @@ function v(id) {
   return (document.getElementById(id)||{}).value||'';
 }
 
+function readTaxRate() {
+  var raw = String((document.getElementById('f_tax_rate') || {}).value || '').trim();
+  if (raw === '') return 5;
+  var n = parseFloat(raw);
+  if (!isFinite(n) || n < 0) return 5;
+  return n;
+}
+function readTaxLabel() {
+  return String((document.getElementById('f_tax_label') || {}).value || '').trim() || '營業稅';
+}
+function formatTaxRate(n) {
+  if (Math.abs(n - Math.round(n)) < 1e-9) return String(Math.round(n));
+  return String(parseFloat(Number(n).toFixed(4)));
+}
+function taxLineLabel() {
+  return readTaxLabel() + '（' + formatTaxRate(readTaxRate()) + '%）';
+}
+function calcTaxAmount(subtotal) {
+  return Math.round(Number(subtotal) * (readTaxRate() / 100));
+}
+function invoiceSubtotalLabel() {
+  return readTaxRate() === 0 ? '小計' : '未稅小計';
+}
+function invoiceTotalLabel() {
+  return readTaxRate() === 0 ? '請款總額' : '請款總額（含稅）';
+}
+function syncTaxPresets() {
+  var rate = readTaxRate();
+  document.querySelectorAll('.tax-preset').forEach(function (btn) {
+    var presetRate = parseFloat(btn.getAttribute('data-rate'));
+    btn.classList.toggle('is-active', isFinite(presetRate) && presetRate === rate);
+  });
+}
+function initTaxControls() {
+  document.querySelectorAll('.tax-preset').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var rateEl = document.getElementById('f_tax_rate');
+      if (rateEl) rateEl.value = btn.getAttribute('data-rate');
+      syncTaxPresets();
+      refreshOutput();
+    });
+  });
+  ['f_tax_rate', 'f_tax_label'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', syncTaxPresets);
+  });
+  syncTaxPresets();
+}
+
 function safeFilenamePart(value, fallback) {
   var text = String(value || '').trim() || fallback;
   return text.replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, ' ').trim() || fallback;
@@ -780,9 +863,17 @@ function buildItemsTbody() {
     sub += price;
     html += '<tr><td class="num">' + (i+1) + '</td><td class="name">' + xmlEsc(name) + '</td><td class="desc">' + xmlEsc(desc).replace(/\n/g,'<br>') + '</td><td class="price">' + fmtNT(price) + '</td></tr>\n';
   }
-  var tax = Math.round(sub * 0.05);
+  var tax = calcTaxAmount(sub);
   var total = sub + tax;
-  return { tbodyHtml: html, subtotal: fmtNT(sub), tax5: fmtNT(tax), totalInc: fmtNT(total) };
+  return {
+    tbodyHtml: html,
+    subtotal: fmtNT(sub),
+    taxAmount: fmtNT(tax),
+    totalInc: fmtNT(total),
+    taxLabel: taxLineLabel(),
+    subtotalLabel: invoiceSubtotalLabel(),
+    totalLabel: invoiceTotalLabel()
+  };
 }
 
 function xmlEsc(s) {
@@ -809,8 +900,11 @@ function buildDoc() {
     tpl = tpl.replace('<!--REMIT_TERMS_PAGE2_INSERT-->', '');
   }
 
+  document.getElementById('tpl-subtotal-label').textContent = items.subtotalLabel;
   document.getElementById('tpl-subtotal').textContent = items.subtotal;
-  document.getElementById('tpl-tax').textContent = items.tax5;
+  document.getElementById('tpl-tax-label').textContent = items.taxLabel;
+  document.getElementById('tpl-tax').textContent = items.taxAmount;
+  document.getElementById('tpl-total-label').textContent = items.totalLabel;
   document.getElementById('tpl-total').textContent = items.totalInc;
 
   var map = {
@@ -827,8 +921,12 @@ function buildDoc() {
     '{Company Contact}': v('f_contact'),
     '{Company Phone}':   v('f_phone'),
     '{Company Email}':   v('f_email'),
+    '{Subtotal Label}':  items.subtotalLabel,
     '{Subtotal Ex Tax}': items.subtotal,
-    '{Tax 5%}':          items.tax5,
+    '{Tax Label}':       items.taxLabel,
+    '{Tax Amount}':      items.taxAmount,
+    '{Tax 5%}':          items.taxAmount,
+    '{Total Label}':     items.totalLabel,
     '{Total Inc Tax}':   items.totalInc,
     '{Page No.}':        v('f_page_no'),
     '{Page Total}':      v('f_page_total'),
@@ -966,6 +1064,7 @@ var FIELD_IDS = [
   'f_company_name', 'f_project_name', 'f_inv_no', 'f_proj_code',
   'f_payment_terms', 'f_issue_date', 'f_due_date', 'f_inv_number',
   'f_address', 'f_vat', 'f_contact', 'f_phone', 'f_email',
+  'f_tax_label', 'f_tax_rate',
   'f_total_hint', 'f_remit_terms_page', 'f_page_no', 'f_page_total'
 ];
 
@@ -1002,6 +1101,7 @@ function applyDraft(draft) {
     draft.terms.forEach(function (t) { addTerm(t); });
   }
 
+  syncTaxPresets();
   refreshOutput();
 }
 
@@ -1048,6 +1148,7 @@ addItem();
 addTerm();
 addTerm();
 initFormAccordions();
+initTaxControls();
 refreshOutput();
 
 /* ============================================================
@@ -1078,7 +1179,8 @@ var _handoffApplied = false;
   Object.keys(payload.fields || {}).forEach(function (id) {
     var el = document.getElementById(id);
     var value = payload.fields[id];
-    if (el && value) el.value = value;
+    if (!el || value == null || value === '') return;
+    el.value = value;
   });
 
   if (payload.items && payload.items.length) {
@@ -1094,6 +1196,7 @@ var _handoffApplied = false;
   }
 
   _handoffApplied = true;
+  syncTaxPresets();
   refreshOutput();
 
   var quoteNo = (payload.source && payload.source.quoteNo) || '';
@@ -1121,6 +1224,9 @@ var _handoffApplied = false;
   if (company) document.getElementById('f_company_name').value = company;
   if (project) document.getElementById('f_project_name').value = project;
   if (date) document.getElementById('f_issue_date').value = date;
+  if (params.get('taxRate') != null && params.get('taxRate') !== '') {
+    document.getElementById('f_tax_rate').value = params.get('taxRate');
+  }
   if (amount) {
     var firstRow = document.querySelector('#items-tbody tr');
     if (firstRow) {
@@ -1130,6 +1236,7 @@ var _handoffApplied = false;
       if (priceInput) priceInput.value = amount;
     }
   }
+  syncTaxPresets();
   refreshOutput();
 })();
 </script>

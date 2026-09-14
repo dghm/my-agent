@@ -159,6 +159,23 @@
   .blk label { font-size: 11px; margin-top: 6px; }
   .totals-live { text-align: right; font-size: 12px; color: var(--surface-text-muted); margin-top: 2px; }
   .totals-live strong { color: var(--navy-text); }
+  .tax-presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 4px; }
+  .tax-preset {
+    border: 1px solid var(--surface-input-border);
+    background: var(--surface-input-bg);
+    color: var(--surface-text);
+    border-radius: 999px;
+    padding: 4px 11px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .tax-preset:hover { border-color: var(--navy-text); color: var(--navy-text); }
+  .tax-preset.is-active {
+    border-color: var(--navy);
+    background: var(--navy-soft);
+    color: var(--navy-text);
+    font-weight: 700;
+  }
 
   /* ---- Button overrides ---- */
   button.secondary { border-color: var(--surface-border); }
@@ -530,7 +547,23 @@ __PAGES__
 
       <fieldset>
         <legend>04 — 報價總覽（小計／稅額／總計）</legend>
-        <p class="hint" style="margin-bottom:8px">每組會自動加總未稅金額、計算 5% 營業稅與含稅總計。可建立多組（例：一次性工程款一組、月繳費用一組）。</p>
+        <p class="hint" style="margin-bottom:8px">每組會自動加總未稅金額、依下方稅率計算稅額與含稅總計。可建立多組（例：一次性工程款一組、月繳費用一組）。</p>
+        <label>稅率</label>
+        <div class="tax-presets" role="group" aria-label="稅率快捷">
+          <button type="button" class="tax-preset is-active" data-rate="5">台灣營業稅 5%</button>
+          <button type="button" class="tax-preset" data-rate="0">海外零稅率 0%</button>
+        </div>
+        <div class="row2">
+          <div>
+            <label>稅額名稱</label>
+            <input type="text" id="f_tax_label" value="營業稅" placeholder="營業稅／VAT／GST" oninput="refreshOutput()">
+          </div>
+          <div>
+            <label>稅率（%）</label>
+            <input type="number" id="f_tax_rate" min="0" max="100" step="0.1" value="5" oninput="refreshOutput()">
+          </div>
+        </div>
+        <p class="hint" style="margin:8px 0 12px">台灣客戶維持 5%。開立海外報價請改 0%；對方地區若課 GST／VAT，改名稱與稅率即可。稅率 0 仍會印出稅額列，方便確認未加稅。</p>
         <div id="tot-list"></div>
         <button type="button" class="btn-add" onclick="addTotalGroup()">＋ 新增總計組</button>
       </fieldset>
@@ -624,7 +657,7 @@ __PAGES__
   <dialog id="handoff-dialog" class="handoff-dialog" aria-labelledby="handoff-title">
     <form method="dialog">
       <h2 id="handoff-title">要開立哪一期的請款單？</h2>
-      <p class="handoff-desc">客戶名稱、地址、統一編號、聯絡人、電話、Email、專案名稱與專案代碼會一併帶入。</p>
+      <p class="handoff-desc">客戶名稱、地址、統一編號、聯絡人、電話、Email、專案名稱、專案代碼與稅率會一併帶入。</p>
       <div id="handoff-list" class="handoff-list"></div>
       <div class="handoff-foot">
         <button type="submit" value="cancel" class="secondary">取消</button>
@@ -811,6 +844,68 @@ function xmlEsc(s) {
 function nl2br(s) { return xmlEsc(s).replace(/\n/g, '<br>'); }
 function v(id) { return (document.getElementById(id)||{}).value||''; }
 function fmtNT(n) { return 'NT$ ' + Math.round(n).toLocaleString('zh-TW'); }
+
+function readTaxRate() {
+  var raw = String((document.getElementById('f_tax_rate') || {}).value || '').trim();
+  if (raw === '') return 5;
+  var n = parseFloat(raw);
+  if (!isFinite(n) || n < 0) return 5;
+  return n;
+}
+function readTaxLabel() {
+  return String((document.getElementById('f_tax_label') || {}).value || '').trim() || '營業稅';
+}
+function formatTaxRate(n) {
+  if (Math.abs(n - Math.round(n)) < 1e-9) return String(Math.round(n));
+  return String(parseFloat(Number(n).toFixed(4)));
+}
+function taxLineLabel() {
+  return readTaxLabel() + '（' + formatTaxRate(readTaxRate()) + '%）';
+}
+function calcTaxAmount(subtotal) {
+  return Math.round(Number(subtotal) * (readTaxRate() / 100));
+}
+function defaultValidityTail() {
+  var rate = readTaxRate();
+  var label = readTaxLabel();
+  if (rate === 0) {
+    return '，逾期請重新詢價。報價金額如未特別標示，均為未含稅金額（' + label + ' 0%）。';
+  }
+  return '，逾期請重新詢價。報價金額如未特別標示，均不含 ' + formatTaxRate(rate) + '% ' + label + '。';
+}
+var VALIDITY_TAIL_RE = /^，逾期請重新詢價。報價金額如未特別標示，均(不含 [\d.]+% .+|為未含稅金額（.+ 0%）)。$/;
+function syncValidityTailIfDefault() {
+  var el = document.getElementById('f_validity_tail');
+  if (!el) return;
+  if (!el.value || VALIDITY_TAIL_RE.test(el.value)) el.value = defaultValidityTail();
+}
+function syncTaxPresets() {
+  var rate = readTaxRate();
+  document.querySelectorAll('.tax-preset').forEach(function (btn) {
+    var presetRate = parseFloat(btn.getAttribute('data-rate'));
+    btn.classList.toggle('is-active', isFinite(presetRate) && presetRate === rate);
+  });
+}
+function initTaxControls() {
+  document.querySelectorAll('.tax-preset').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var rateEl = document.getElementById('f_tax_rate');
+      if (rateEl) rateEl.value = btn.getAttribute('data-rate');
+      syncValidityTailIfDefault();
+      syncTaxPresets();
+      refreshOutput();
+    });
+  });
+  ['f_tax_rate', 'f_tax_label'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', function () {
+      syncValidityTailIfDefault();
+      syncTaxPresets();
+    });
+  });
+  syncTaxPresets();
+}
 /**
  * 計價表／勾選方案表／付款卡片的金額欄顯示用：純數字（可含逗號、NT$／$
  * 前綴）時補上千分位，其餘原樣顯示——金額欄有時候會填「洽詢」「免費」
@@ -1134,16 +1229,16 @@ function buildTotalHtml(wrap) {
   var live = wrap.querySelector('.totals-live');
   if (!rows.length) { if (live) live.innerHTML = ''; return ''; }
 
-  var tax = Math.round(sum * 0.05);
+  var tax = calcTaxAmount(sum);
   var total = sum + tax;
   var totalLabel = wrap.querySelector('.g-label').value.trim() || '總計（含稅）';
-  if (live) live.innerHTML = '稅 ' + fmtNT(tax) + '　<strong>' + xmlEsc(totalLabel) + ' ' + fmtNT(total) + '</strong>';
+  if (live) live.innerHTML = xmlEsc(taxLineLabel()) + ' ' + fmtNT(tax) + '　<strong>' + xmlEsc(totalLabel) + ' ' + fmtNT(total) + '</strong>';
 
   var html = '<div class="totals-wrap" style="margin-top:4mm"><table class="totals-table">\n';
   rows.forEach(function (r) {
     html += '<tr class="tax-row"><td>' + xmlEsc(r.label) + '</td><td>' + fmtNT(r.amount) + '</td></tr>\n';
   });
-  html += '<tr class="tax-row"><td>營業稅（5%）</td><td>' + fmtNT(tax) + '</td></tr>\n';
+  html += '<tr class="tax-row"><td>' + xmlEsc(taxLineLabel()) + '</td><td>' + fmtNT(tax) + '</td></tr>\n';
   html += '<tr class="total-row"><td>' + xmlEsc(totalLabel) + '</td><td>' + fmtNT(total) + '</td></tr>\n';
   html += '</table></div>\n';
   return html;
@@ -1459,7 +1554,8 @@ var FIELD_IDS = [
   'f_excl_page', 'f_excl_intro', 'f_excl_items',
   'f_coop_page', 'f_coop_items', 'f_coop_note',
   'f_sig_page', 'f_sig_desc',
-  'f_validity_page', 'f_validity_tail'
+  'f_validity_page', 'f_validity_tail',
+  'f_tax_label', 'f_tax_rate'
 ];
 
 function collectDraft() {
@@ -1558,6 +1654,7 @@ function applyDraft(draft) {
   (draft.sched || []).forEach(function (r) { addSchedRow(r); });
 
   _suspendSessionSave = false;
+  syncTaxPresets();
   refreshOutput();
 }
 
@@ -1636,7 +1733,9 @@ addPayBlock({
 });
 refreshOutput();
 initFormAccordions();
+initTaxControls();
 if (!restoreSessionDraft()) _suspendSessionSave = false;
+syncTaxPresets();
 
 /* ============================================================
    交接到請款單
@@ -1826,7 +1925,9 @@ function buildHandoffPayload(draft, cards, index) {
       f_phone:         String(f.f_client_phone || '').trim(),
       f_email:         String(f.f_client_email || '').trim(),
       f_payment_terms: DEFAULT_PAYMENT_TERMS,
-      f_total_hint:    hint
+      f_total_hint:    hint,
+      f_tax_label:     readTaxLabel(),
+      f_tax_rate:      formatTaxRate(readTaxRate())
     },
     items: items,
     terms: buildTermsDraft(draft, card, cards, index, amount)
