@@ -7,16 +7,11 @@
     published: '公開中',
     archived: '已封存'
   };
-  var FESTIVAL_LABELS = {
-    'mid-autumn': '中秋',
-    christmas: '聖誕',
-    'lunar-new-year': '春節'
-  };
   var FESTIVAL_ORDER = { 'mid-autumn': 0, christmas: 1, 'lunar-new-year': 2 };
   var state = { campaigns: new Map(), activeCampaign: null, selectedId: null };
 
   var cardList = document.getElementById('gc-card-list');
-  var campaignList = document.getElementById('gc-campaigns');
+  var campaignSelect = document.getElementById('gc-campaign-select');
   var catalogStatus = document.getElementById('gc-catalog-status');
   var previewTitle = document.getElementById('gc-preview-title');
   var placeholder = document.getElementById('gc-preview-placeholder');
@@ -48,11 +43,10 @@
     return campaigns;
   }
 
-  function renderCampaignButtons() {
+  function renderCampaignOptions() {
     var years = Array.from(state.campaigns.keys()).sort(function (a, b) { return b - a; });
-    campaignList.innerHTML = years.map(function (year) {
-      return '<button type="button" role="tab" data-campaign="' + year + '">' +
-        '<strong>' + year + '</strong><small>' + state.campaigns.get(year).length + ' 張</small></button>';
+    campaignSelect.innerHTML = years.map(function (year) {
+      return '<option value="' + year + '">' + year + ' 檔期（' + state.campaigns.get(year).length + ' 張）</option>';
     }).join('');
   }
 
@@ -63,26 +57,17 @@
 
   function renderCards() {
     var cards = state.campaigns.get(state.activeCampaign) || [];
-    document.getElementById('gc-active-campaign').textContent = state.activeCampaign || '—';
+    campaignSelect.value = String(state.activeCampaign);
     catalogStatus.textContent = state.activeCampaign + ' 檔期 · ' + cards.length + ' 張';
-    campaignList.querySelectorAll('button').forEach(function (button) {
-      var active = Number(button.dataset.campaign) === state.activeCampaign;
-      button.classList.toggle('is-active', active);
-      button.setAttribute('aria-selected', String(active));
-    });
 
     cardList.innerHTML = cards.map(function (card) {
-      var thumb = card.previewImage
-        ? '<img src="greeting-cards/' + escapeHtml(card.previewImage) + '" alt="' + escapeHtml(card.title) + '最終畫面">'
-        : '<span>' + escapeHtml(FESTIVAL_LABELS[card.festival] || '卡') + '</span>';
       var planned = card.personalization && card.personalization.status === 'planned'
         ? '<span class="gc-kind">個人化規劃中</span>' : '';
-      return '<button type="button" class="gc-card" data-card-id="' + escapeHtml(card.id) + '">' +
-        '<span class="gc-card-thumb">' + thumb + '</span>' +
-        '<span class="gc-card-body"><span class="gc-card-badges">' + statusBadge(card) + planned + '</span>' +
-        '<strong class="gc-card-title">' + escapeHtml(card.title) + '</strong>' +
-        '<span class="gc-card-message">' + escapeHtml(card.message) + '</span>' +
-        '<code class="gc-card-path">' + escapeHtml(card.canonicalPath) + '</code></span></button>';
+      return '<button type="button" class="gc-card-row" data-card-id="' + escapeHtml(card.id) + '">' +
+        '<span class="gc-card-copy"><strong class="gc-card-title">' + escapeHtml(card.title) + '</strong>' +
+        '<span class="gc-card-meta">' + statusBadge(card) + planned +
+        '<code>' + escapeHtml(card.canonicalPath) + '</code></span></span>' +
+        '<span class="gc-card-arrow" aria-hidden="true">›</span></button>';
     }).join('');
 
     var requested = state.selectedId && cards.find(function (card) { return card.id === state.selectedId; });
@@ -93,7 +78,7 @@
     if (!card) return;
     state.selectedId = card.id;
     history.replaceState(null, '', '#card=' + encodeURIComponent(card.id));
-    cardList.querySelectorAll('.gc-card').forEach(function (button) {
+    cardList.querySelectorAll('.gc-card-row').forEach(function (button) {
       var selected = button.dataset.cardId === card.id;
       button.classList.toggle('is-selected', selected);
       button.setAttribute('aria-pressed', String(selected));
@@ -132,10 +117,8 @@
     });
   }
 
-  campaignList.addEventListener('click', function (event) {
-    var button = event.target.closest('[data-campaign]');
-    if (!button) return;
-    state.activeCampaign = Number(button.dataset.campaign);
+  campaignSelect.addEventListener('change', function () {
+    state.activeCampaign = Number(campaignSelect.value);
     state.selectedId = null;
     renderCards();
   });
@@ -158,8 +141,6 @@
     })
     .then(function (data) {
       var cards = Array.isArray(data.cards) ? data.cards : [];
-      document.getElementById('gc-card-count').textContent = String(cards.length);
-      document.getElementById('gc-published-count').textContent = String(cards.filter(function (card) { return card.status === 'published'; }).length);
       if (!cards.length) {
         catalogStatus.textContent = '目前沒有賀卡';
         return;
@@ -169,7 +150,7 @@
       var linked = cards.find(function (card) { return card.id === hashId; });
       state.selectedId = linked ? linked.id : null;
       state.activeCampaign = linked ? linked.campaign : Math.max.apply(null, Array.from(state.campaigns.keys()));
-      renderCampaignButtons();
+      renderCampaignOptions();
       renderCards();
     })
     .catch(function (error) {

@@ -8,38 +8,39 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="dghm-ui.css?v=20260914-1">
   <link rel="stylesheet" href="app-shell.css?v=20260914-1">
-  <link rel="stylesheet" href="greeting-cards/admin.css?v=20260914-3">
+  <link rel="stylesheet" href="greeting-cards/admin.css?v=20260914-4">
 </head>
 <body data-tool="greeting-cards">
-  <div id="tool-workspace" class="greeting-cards-app">
-    <section class="gc-workspace">
-      <aside class="gc-catalog" aria-labelledby="gc-catalog-title">
+  <div id="tool-workspace" class="gc-page">
+      <aside class="gc-editor-column" aria-labelledby="gc-catalog-title">
         <header class="gc-page-head">
           <p class="gc-eyebrow">Marketing · Greeting Cards</p>
-          <h1>電子賀卡管理</h1>
+          <h1 id="gc-catalog-title">電子賀卡管理</h1>
           <p>選擇檔期與卡片，在右側檢查實際呈現。</p>
         </header>
 
-        <section class="gc-summary" aria-label="賀卡統計">
-          <div><span>賀卡模板</span><strong id="gc-card-count">—</strong></div>
-          <div><span>公開中</span><strong id="gc-published-count">—</strong></div>
-          <div><span>目前檔期</span><strong id="gc-active-campaign">—</strong></div>
-          <div><span>個人化</span><strong class="is-planned">規劃中</strong></div>
-        </section>
-
-        <div class="gc-panel-head">
-          <div>
-            <span class="gc-section-label">選擇</span>
-            <h2 id="gc-catalog-title">賀卡清單</h2>
+        <div class="gc-form-panel">
+          <div class="gc-field">
+            <label for="gc-campaign-select">計畫檔期</label>
+            <select id="gc-campaign-select" aria-describedby="gc-catalog-status"></select>
+            <p id="gc-catalog-status" class="gc-field-note" role="status">正在讀取…</p>
           </div>
-          <span id="gc-catalog-status" class="gc-muted" role="status">正在讀取…</span>
+
+          <div class="gc-list-head">
+            <span class="gc-section-label">選擇賀卡</span>
+            <span class="gc-planned-note">個人化功能規劃中</span>
+          </div>
+          <div id="gc-card-list" class="gc-card-list" aria-live="polite"></div>
         </div>
-        <div id="gc-campaigns" class="gc-campaigns" role="tablist" aria-label="選擇檔期"></div>
-        <div id="gc-card-list" class="gc-card-list" aria-live="polite"></div>
-        <a class="gc-public-link" href="https://cards.dghm.tw/" target="_blank" rel="noopener">開啟 cards.dghm.tw <span>↗</span></a>
+
+        <footer class="gc-editor-foot">
+          <a class="gc-public-link" href="https://cards.dghm.tw/" target="_blank" rel="noopener">開啟 cards.dghm.tw <span>↗</span></a>
+        </footer>
       </aside>
 
-      <section class="gc-preview-panel" aria-labelledby="gc-preview-title">
+      <div class="split-handle" role="separator" aria-orientation="vertical" aria-label="拖曳調整選擇欄寬度" title="拖曳調整選擇欄寬度"></div>
+
+      <section class="gc-preview-column" aria-labelledby="gc-preview-title">
         <div class="gc-panel-head gc-preview-head">
           <div>
             <span class="gc-section-label">即時預覽</span>
@@ -68,7 +69,6 @@
           <a id="gc-open-card" href="#" target="_blank" rel="noopener" hidden>另開完整頁面 ↗</a>
         </div>
       </section>
-    </section>
   </div>
 
   <script src="tool-registry.js?v=20260914-1"></script>
@@ -76,7 +76,15 @@
   <script src="app-shell.js?v=20260914-1"></script>
   <script>mountAppShell({ activeTool: 'greeting-cards' });</script>
   <script src="dghm-ui.js?v=20260914-1"></script>
-  <script>initTheme('my-agent-theme');</script>
-  <script src="greeting-cards/admin.js?v=20260914-3"></script>
+  <script>
+    initTheme('my-agent-theme');
+    initColumnResize({
+      page: '.gc-page',
+      editor: '.gc-editor-column',
+      handle: '.split-handle',
+      storageKey: 'dghm-greeting-cards-editor-width'
+    });
+  </script>
+  <script src="greeting-cards/admin.js?v=20260914-4"></script>
 </body>
 </html>
