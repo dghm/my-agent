@@ -58,6 +58,16 @@
       ],
     },
     {
+      id: 'marketing',
+      label: '行銷工具',
+      icon: 'megaphone',
+      description: '品牌活動與對外內容資產管理',
+      defaultTool: 'greeting-cards',
+      tools: [
+        { id: 'greeting-cards', label: '電子賀卡管理', href: 'greeting-cards.html', status: 'integrated', keywords: ['賀卡','電子賀卡','節慶','活動','campaign','greeting card'] },
+      ],
+    },
+    {
       id: 'ai',
       label: 'AI 生成',
       icon: 'sparkles',

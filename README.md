@@ -19,7 +19,7 @@
   - 顯示客戶案件流程 01–06 與快速入口，各卡片連往對應工具。
 
 - `app-shell.css` / `app-shell.js` / `tool-registry.js`
-  - 所有工具頁共用的外框：單一側邊選單（6 個類別群組、18 個工具）＋ 頂列。
+  - 所有工具頁共用的外框：單一側邊選單（含工作台、行銷工具等類別群組）＋ 頂列。
   - 側欄支援搜尋（含口語別名，例如「請款」找得到「應收帳款通知」）、
     群組折疊（狀態記憶於 localStorage）、收合成 64px 圖示列。
   - 頁面掛載方式：`<body data-tool="工具 id">` ＋ `mountAppShell({ activeTool: '工具 id' })`，
@@ -197,6 +197,12 @@
   - 社群貼文生成的 CLI Agent（可獨立從終端機執行）。
   - 結合 Anthropic + Tavily 搜尋，產生 Facebook 貼文（繁中）。
   - 預設輸出到 `../DMS/docs/BrandRize/socialPost/`。
+
+- `greeting-cards.html` / `greeting-cards/`
+  - 公司電子賀卡管理工具，已由 lab 實驗項目納入正式工作台。
+  - 依檔期管理賀卡清單、生命週期狀態、永久網址與桌機／手機 iframe 預覽。
+  - 公開賀卡仍獨立部署到 `cards.dghm.tw`，管理端與個人化資料不屬於公開部署內容。
+  - 個人化名單與 Airtable 同步尚未啟用，目前只保留規劃狀態與虛構 fixture。
 
 - `research-agent.js`
   - 通用研究型 CLI Agent。

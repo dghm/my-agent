@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 2,
+  "cards": [
+    {
+      "id": "2026-christmas",
+      "year": 2026,
+      "campaign": 2026,
+      "festival": "christmas",
+      "personalized": false,
+      "personalization": {
+        "enabled": false,
+        "status": "planned"
+      },
+      "status": "draft",
+      "title": "2026 聖誕賀卡",
+      "message": "感謝這一年的同行，祝您與團隊聖誕平安、新年順心。",
+      "signature": "萬能數維有限公司 敬賀",
+      "cardPath": "cards/2026/christmas/",
+      "previewAvailable": false,
+      "previewImage": null,
+      "canonicalPath": "/2026/christmas/",
+      "shortCode": "c26",
+      "publicUrl": null,
+      "publishedAt": null,
+      "archivedAt": null
+    },
+    {
+      "id": "2026-mid-autumn",
+      "year": 2026,
+      "campaign": 2026,
+      "festival": "mid-autumn",
+      "personalized": false,
+      "personalization": {
+        "enabled": false,
+        "status": "not-applicable"
+      },
+      "status": "published",
+      "title": "2026 中秋賀卡",
+      "message": "感謝這段時間的信任與合作，願您闔家平安、月圓事圓。",
+      "signature": "萬能數維有限公司 敬賀",
+      "cardPath": "cards/2026/mid-autumn/",
+      "previewAvailable": true,
+      "previewImage": "cards/2026/mid-autumn/preview-final.jpg",
+      "canonicalPath": "/2026/mid-autumn/",
+      "shortCode": "m26",
+      "publicUrl": "https://cards.dghm.tw/2026/mid-autumn/",
+      "publishedAt": "2026-07-20",
+      "archivedAt": null
+    }
+  ]
+}

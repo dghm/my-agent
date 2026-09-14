@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>電子賀卡管理 · DGHM 工作台</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="dghm-ui.css?v=20260914-1">
+  <link rel="stylesheet" href="app-shell.css?v=20260914-1">
+  <link rel="stylesheet" href="greeting-cards/admin.css?v=20260914-1">
+</head>
+<body data-tool="greeting-cards">
+  <div id="tool-workspace" class="greeting-cards-app">
+    <header class="gc-page-head">
+      <div>
+        <p class="gc-eyebrow">Marketing · Greeting Cards</p>
+        <h1>電子賀卡管理</h1>
+        <p>管理檔期、公開狀態與永久網址，並在發布前檢查桌機及手機呈現。</p>
+      </div>
+      <a class="gc-public-link" href="https://cards.dghm.tw/" target="_blank" rel="noopener">開啟公開網站 ↗</a>
+    </header>
+
+    <section class="gc-summary" aria-label="賀卡統計">
+      <div><span>賀卡模板</span><strong id="gc-card-count">—</strong></div>
+      <div><span>公開中</span><strong id="gc-published-count">—</strong></div>
+      <div><span>目前檔期</span><strong id="gc-active-campaign">—</strong></div>
+      <div><span>個人化功能</span><strong class="is-planned">規劃中</strong></div>
+    </section>
+
+    <section class="gc-workspace">
+      <aside class="gc-catalog" aria-labelledby="gc-catalog-title">
+        <div class="gc-panel-head">
+          <div>
+            <span class="gc-section-label">檔期與卡片</span>
+            <h2 id="gc-catalog-title">賀卡清單</h2>
+          </div>
+          <span id="gc-catalog-status" class="gc-muted" role="status">正在讀取…</span>
+        </div>
+        <div id="gc-campaigns" class="gc-campaigns" role="tablist" aria-label="選擇檔期"></div>
+        <div id="gc-card-list" class="gc-card-list" aria-live="polite"></div>
+      </aside>
+
+      <section class="gc-preview-panel" aria-labelledby="gc-preview-title">
+        <div class="gc-panel-head gc-preview-head">
+          <div>
+            <span class="gc-section-label">即時預覽</span>
+            <h2 id="gc-preview-title">選擇一張賀卡</h2>
+          </div>
+          <div class="gc-device-switch" aria-label="預覽裝置">
+            <button type="button" class="is-active" data-gc-device="desktop" aria-pressed="true">桌機</button>
+            <button type="button" data-gc-device="mobile" aria-pressed="false">手機</button>
+          </div>
+        </div>
+
+        <div id="gc-preview-stage" class="gc-preview-stage is-empty" data-device="desktop">
+          <div id="gc-preview-placeholder" class="gc-placeholder">
+            <strong>尚未選擇賀卡</strong>
+            <span>從左側選擇一張卡片開始預覽。</span>
+          </div>
+          <div id="gc-device-frame" class="gc-device-frame" hidden>
+            <div class="gc-browser-bar" aria-hidden="true"><i></i><i></i><i></i><span id="gc-preview-address"></span></div>
+            <iframe id="gc-card-preview" title="賀卡預覽" loading="lazy"></iframe>
+          </div>
+        </div>
+
+        <div class="gc-preview-footer">
+          <div class="gc-preview-meta">
+            <span id="gc-preview-state" class="gc-status">尚未選擇</span>
+            <code id="gc-preview-url"></code>
+          </div>
+          <a id="gc-open-card" href="#" target="_blank" rel="noopener" hidden>另開完整頁面 ↗</a>
+        </div>
+      </section>
+    </section>
+  </div>
+
+  <script src="tool-registry.js?v=20260914-1"></script>
+  <script src="project-context.js?v=20260914-1"></script>
+  <script src="app-shell.js?v=20260914-1"></script>
+  <script>mountAppShell({ activeTool: 'greeting-cards' });</script>
+  <script src="dghm-ui.js?v=20260914-1"></script>
+  <script>initTheme('my-agent-theme');</script>
+  <script src="greeting-cards/admin.js?v=20260914-1"></script>
+</body>
+</html>
