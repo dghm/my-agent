@@ -104,7 +104,7 @@
     return null;
   }
 
-  /** 群組中第一個可開啟的工具，供收合狀態下點擊群組圖示使用。 */
+  /** 群組中第一個可開啟的工具。 */
   function firstAvailableTool(group) {
     for (var i = 0; i < group.tools.length; i += 1) {
       if (group.tools[i].href) return group.tools[i];
