@@ -291,7 +291,7 @@ body.has-app-shell {
 
 .dghm-shell.is-nav-collapsed .dghm-brand-text,
 .dghm-shell.is-nav-collapsed .dghm-search,
-.dghm-shell.is-nav-collapsed .dghm-tool-nav,
+.dghm-shell.is-nav-collapsed .dghm-group:not(.is-flyout-open) .dghm-tool-nav,
 .dghm-shell.is-nav-collapsed .dghm-group-head .group-label,
 .dghm-shell.is-nav-collapsed .dghm-group-head .group-caret,
 .dghm-shell.is-nav-collapsed .dghm-nav-toggle span { display: none; }
@@ -340,6 +340,55 @@ body.has-app-shell {
 }
 
 .dghm-shell.is-nav-collapsed .dghm-group-head:hover::after { display: block; }
+
+.dghm-flyout-label { display: none; }
+
+/* 收合時側欄 overflow 會裁掉浮層，改為可見，工具清單才能從圖示旁開出來 */
+.dghm-shell.is-icon-only .dghm-sidebar,
+.dghm-shell.is-icon-only .dghm-nav { overflow: visible; }
+
+.dghm-shell.is-icon-only .dghm-group { position: relative; }
+
+.dghm-shell.is-icon-only .dghm-group-head::after { display: none !important; }
+
+.dghm-shell.is-icon-only .dghm-group.is-flyout-open .dghm-tool-nav {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: calc(100% + 8px);
+  z-index: 80;
+  min-width: 228px;
+  max-height: min(70vh, 420px);
+  padding: 8px;
+  overflow-y: auto;
+  border: 1px solid var(--chrome-border);
+  border-radius: var(--radius-sm);
+  background: var(--chrome-bg);
+  box-shadow: var(--shadow-lg);
+}
+
+/* 圖示與浮層之間留空隙時，仍可把游標移過去 */
+.dghm-shell.is-icon-only .dghm-group.is-flyout-open .dghm-tool-nav::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -16px;
+  width: 16px;
+}
+
+.dghm-shell.is-icon-only .dghm-group.is-flyout-open .dghm-flyout-label {
+  display: block;
+  padding: 4px 10px 8px;
+  color: var(--chrome-text-faint);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.dghm-shell.is-icon-only .dghm-group.is-flyout-open .dghm-tool-link {
+  padding-left: 10px;
+}
 
 /* ---- 主區 ---- */
 
@@ -495,7 +544,7 @@ body.has-app-shell {
 
   .dghm-shell:not(.is-nav-expanded) .dghm-brand-text,
   .dghm-shell:not(.is-nav-expanded) .dghm-search,
-  .dghm-shell:not(.is-nav-expanded) .dghm-tool-nav,
+  .dghm-shell:not(.is-nav-expanded) .dghm-group:not(.is-flyout-open) .dghm-tool-nav,
   .dghm-shell:not(.is-nav-expanded) .dghm-group-head .group-label,
   .dghm-shell:not(.is-nav-expanded) .dghm-group-head .group-caret,
   .dghm-shell:not(.is-nav-expanded) .dghm-nav-toggle span { display: none; }

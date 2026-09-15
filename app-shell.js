@@ -76,6 +76,7 @@
         '</button>';
 
       html += '<div class="dghm-tool-nav">';
+      html += '<div class="dghm-flyout-label">' + escapeHtml(group.label) + '</div>';
       tools.forEach(function (tool) {
         var isActive = tool.id === state.activeToolId;
         var disabled = !tool.href;
@@ -193,7 +194,7 @@
     paintNav();
 
     bindNav(shell, nav, state, paintNav);
-    bindNavToggle(shell);
+    bindNavToggle(shell, nav, state);
 
     var select = shell.querySelector('#dghm-project-select');
     select.addEventListener('change', function () {
@@ -209,7 +210,46 @@
     hydrateUserArea(shell.querySelector('#user-area'));
   }
 
+  function setFlyout(nav, state, groupId) {
+    state.flyoutGroup = groupId || null;
+    nav.querySelectorAll('.dghm-group').forEach(function (el) {
+      var on = el.dataset.group === state.flyoutGroup;
+      el.classList.toggle('is-flyout-open', on);
+      var panel = el.querySelector('.dghm-tool-nav');
+      if (!panel) return;
+      panel.style.top = '';
+      panel.style.bottom = '';
+      if (!on) return;
+      var rect = panel.getBoundingClientRect();
+      if (rect.bottom > global.innerHeight - 8) {
+        panel.style.top = 'auto';
+        panel.style.bottom = '0';
+      }
+    });
+  }
+
   function bindNav(shell, nav, state, paintNav) {
+    state.flyoutGroup = null;
+    var flyoutTimer = null;
+
+    function openFlyout(groupId) {
+      clearTimeout(flyoutTimer);
+      if (state.flyoutGroup === groupId) return;
+      setFlyout(nav, state, groupId);
+    }
+
+    function closeFlyoutSoon() {
+      clearTimeout(flyoutTimer);
+      flyoutTimer = setTimeout(function () {
+        setFlyout(nav, state, null);
+      }, 180);
+    }
+
+    function closeFlyoutNow() {
+      clearTimeout(flyoutTimer);
+      setFlyout(nav, state, null);
+    }
+
     nav.addEventListener('click', function (event) {
       var head = event.target.closest('[data-group-toggle]');
       if (!head) return;
@@ -217,11 +257,11 @@
       var groupEl = head.parentNode;
       var groupId = groupEl.dataset.group;
 
-      // 收合狀態下點群組圖示 = 直接開啟該群組第一個可用工具
+      // 收合時點圖示改開浮層清單，不再跳去該組第一個工具
       if (isIconOnly(shell)) {
-        var group = global.DGHMToolRegistry.groups.filter(function (g) { return g.id === groupId; })[0];
-        var first = group && global.DGHMToolRegistry.firstAvailableTool(group);
-        if (first) location.href = first.href;
+        event.preventDefault();
+        clearTimeout(flyoutTimer);
+        setFlyout(nav, state, groupId);
         return;
       }
 
@@ -230,6 +270,29 @@
       else state.openGroups.push(groupId);
       writeOpenGroups(state.openGroups);
       paintNav();
+    });
+
+    nav.addEventListener('mouseover', function (event) {
+      if (!isIconOnly(shell)) return;
+      var groupEl = event.target.closest('.dghm-group');
+      if (!groupEl || !nav.contains(groupEl)) return;
+      openFlyout(groupEl.dataset.group);
+    });
+
+    nav.addEventListener('mouseleave', function () {
+      if (!isIconOnly(shell)) return;
+      closeFlyoutSoon();
+    });
+
+    document.addEventListener('pointerdown', function (event) {
+      if (!state.flyoutGroup) return;
+      if (event.target.closest('.dghm-group.is-flyout-open')) return;
+      closeFlyoutNow();
+    });
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape' || !state.flyoutGroup) return;
+      closeFlyoutNow();
     });
 
     var search = shell.querySelector('#dghm-tool-search');
@@ -251,9 +314,15 @@
     return global.matchMedia('(max-width: 860px)').matches && !shell.classList.contains('is-nav-expanded');
   }
 
-  function bindNavToggle(shell) {
+  function bindNavToggle(shell, nav, state) {
     var collapsed = false;
     try { collapsed = localStorage.getItem(NAV_COLLAPSE_KEY) === '1'; } catch (error) {}
+
+    function syncIconMode() {
+      var iconOnly = isIconOnly(shell);
+      shell.classList.toggle('is-icon-only', iconOnly);
+      if (!iconOnly && state.flyoutGroup) setFlyout(nav, state, null);
+    }
 
     function apply(next) {
       shell.classList.toggle('is-nav-collapsed', next);
@@ -262,14 +331,17 @@
       btn.setAttribute('aria-expanded', next ? 'false' : 'true');
       btn.setAttribute('aria-label', next ? '展開側邊選單' : '收合側邊選單');
       btn.querySelector('span').textContent = next ? '展開選單' : '收合選單';
+      syncIconMode();
     }
 
     apply(collapsed);
+    global.addEventListener('resize', syncIconMode);
 
     shell.querySelector('[data-shell-nav-toggle]').addEventListener('click', function () {
       // 窄視窗下側欄本來就是圖示狀態，按鈕改為切換浮層展開
       if (global.matchMedia('(max-width: 860px)').matches) {
         shell.classList.toggle('is-nav-expanded');
+        syncIconMode();
         return;
       }
       var next = !shell.classList.contains('is-nav-collapsed');
