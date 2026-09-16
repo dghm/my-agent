@@ -84,19 +84,19 @@
       <header class="client-head">
         <p class="client-eyebrow">CUSTOMER WORKSPACE</p>
         <h1 id="records-heading">客戶資料管理</h1>
-        <p class="intro">依編號、公司或聯絡人搜尋，選擇客戶後在右側編輯資料。</p>
+        <p class="intro">從下方清單選擇客戶，在右側查看及編輯；也可依編號、公司或聯絡人搜尋。</p>
       </header>
         <div class="records-tools">
           <input class="records-search" id="records-search" type="search" placeholder="輸入編號、公司或聯絡人" aria-label="搜尋客戶編號、公司或聯絡人">
           <button class="secondary-btn" id="records-search-button" type="button">搜尋</button>
           <button class="client-submit" id="new-client" type="button">新增客戶</button>
         </div>
-      <p class="records-status" id="records-status" role="status">輸入客戶編號、公司或聯絡人後搜尋。</p>
+      <p class="records-status" id="records-status" role="status">正在讀取 Airtable…</p>
       <div class="records-results" id="records-table-wrap" hidden></div>
       <div class="records-pagination" id="records-pagination" hidden></div>
     </section>
     <section class="editor-column" aria-label="客戶詳細資料">
-      <div class="editor-empty" id="editor-empty"><div><h2>選擇一位客戶</h2><p>在搜尋列輸入客戶編號，例如 07。<br>選擇搜尋結果後，這裡會顯示公司與聯絡人資料。<br>也可以點「新增客戶」建立資料。</p></div></div>
+      <div class="editor-empty" id="editor-empty"><div><h2>選擇一位客戶</h2><p>點選左側的客戶卡片，這裡會顯示公司與聯絡人資料。<br>也可以搜尋客戶，或點「新增客戶」建立資料。</p></div></div>
       <div class="editor-panel" id="editor-panel" hidden>
         <header class="editor-head">
           <div class="editor-title-row"><h2 id="editor-summary">新增客戶資料</h2><button class="secondary-btn back-to-results" id="back-to-results" type="button">返回搜尋</button></div>
@@ -177,7 +177,7 @@ let editingContactId = '';
 let currentPage = 1;
 let recordsLoaded = false;
 let optionsWarning = '';
-let searchTimer;
+let recordsLoading = false;
 const PAGE_SIZE = 10;
 
 function esc(value) {
@@ -207,14 +207,6 @@ function applySelectOptions(selectOptions = {}) {
 
 function renderRecords() {
   const keyword = search.value.trim().toLowerCase();
-  if (!keyword) {
-    recordsStatus.textContent = `輸入客戶編號、公司或聯絡人後搜尋。${optionsWarning ? ` ${optionsWarning}` : ''}`;
-    recordsWrap.hidden = true;
-    recordsWrap.innerHTML = '';
-    pagination.hidden = true;
-    pagination.innerHTML = '';
-    return;
-  }
   const filtered = records.filter((company) => {
     const text = [company.clientNumber, formatClientNumber(company.clientNumber), company.clientName, company.fullName, company.brandName, company.website, contactSummary(company)]
       .join(' ').toLowerCase();
@@ -224,7 +216,7 @@ function renderRecords() {
   currentPage = Math.min(Math.max(currentPage, 1), pageCount);
   const pageStart = (currentPage - 1) * PAGE_SIZE;
   const pageRows = filtered.slice(pageStart, pageStart + PAGE_SIZE);
-  recordsStatus.textContent = `找到 ${filtered.length} 筆${filtered.length > PAGE_SIZE ? `，第 ${currentPage}／${pageCount} 頁` : ''}${optionsWarning ? ` · ${optionsWarning}` : ''}`;
+  recordsStatus.textContent = `${keyword ? '找到' : '共'} ${filtered.length} ${keyword ? '筆' : '家客戶'}${filtered.length > PAGE_SIZE ? `，第 ${currentPage}／${pageCount} 頁` : ''}${optionsWarning ? ` · ${optionsWarning}` : ''}`;
   recordsWrap.hidden = false;
   if (!filtered.length) {
     recordsWrap.innerHTML = '<p class="records-status">找不到符合的資料。</p>';
@@ -336,6 +328,8 @@ document.getElementById('back-to-results').addEventListener('click', () => {
 });
 
 async function loadRecords() {
+  if (recordsLoading) return;
+  recordsLoading = true;
   recordsStatus.textContent = '正在讀取 Airtable…';
   recordsWrap.hidden = true;
   try {
@@ -351,6 +345,8 @@ async function loadRecords() {
   } catch (error) {
     recordsStatus.textContent = error.message || '無法讀取 Airtable。';
     if (/登入/.test(recordsStatus.textContent)) recordsStatus.innerHTML = '請先 <a href="login.html">登入工作台</a>。';
+  } finally {
+    recordsLoading = false;
   }
 }
 
@@ -367,25 +363,17 @@ pagination.addEventListener('click', (event) => {
 });
 search.addEventListener('input', () => {
   currentPage = 1;
-  clearTimeout(searchTimer);
-  if (!search.value.trim() || recordsLoaded) {
-    renderRecords();
-    return;
-  }
-  searchTimer = setTimeout(loadRecords, 350);
+  if (recordsLoaded) renderRecords();
 });
 search.addEventListener('keydown', (event) => {
   if (event.key !== 'Enter') return;
   event.preventDefault();
-  clearTimeout(searchTimer);
   if (recordsLoaded) renderRecords();
-  else if (search.value.trim()) loadRecords();
+  else loadRecords();
 });
 document.getElementById('records-search-button').addEventListener('click', () => {
-  clearTimeout(searchTimer);
   if (recordsLoaded) renderRecords();
-  else if (search.value.trim()) loadRecords();
-  else renderRecords();
+  else loadRecords();
 });
 document.getElementById('new-client').addEventListener('click', async () => {
   if (!recordsLoaded) await loadRecords();
@@ -461,6 +449,7 @@ form.addEventListener('submit', async (event) => {
     button.disabled = false;
   }
 });
+loadRecords();
 </script>
 </body>
 </html>
