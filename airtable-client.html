@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>客戶資料登錄 · DGHM 工作台</title>
+  <title>客戶資料管理 · DGHM 工作台</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="dghm-ui.css">
   <link rel="stylesheet" href="app-shell.css">
@@ -36,14 +36,57 @@
     .client-status.ok { color: #1E7B34; }
     .client-status.error { color: #C0392B; }
     .client-status a { color: inherit; text-decoration: underline; }
-    @media (max-width: 640px) { .client-grid { grid-template-columns: 1fr; } .client-field.wide { grid-column: auto; } .client-page { padding: 20px 15px 40px; } }
+    .records-card { margin-bottom: 18px; }
+    .records-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+    .records-head h2 { margin: 0; }
+    .records-tools { display: flex; gap: 8px; }
+    .records-search { width: min(280px, 46vw); padding: 9px 11px; border: 1px solid var(--surface-border); border-radius: var(--radius-xs); background: var(--surface-bg); color: var(--surface-text); }
+    .secondary-btn { border: 1px solid var(--surface-border); border-radius: var(--radius-xs); padding: 9px 13px; background: var(--surface-bg); color: var(--navy-text); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .secondary-btn:hover { border-color: var(--navy); }
+    .records-status { margin: 0; color: var(--surface-text-muted); font-size: 13px; }
+    .records-table-wrap { overflow-x: auto; }
+    .records-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .records-table th, .records-table td { padding: 11px 10px; border-bottom: 1px solid var(--surface-border); text-align: left; vertical-align: top; }
+    .records-table th { color: var(--surface-text-muted); font-size: 11px; letter-spacing: .04em; }
+    .records-table td { color: var(--surface-text); }
+    .records-table strong { color: var(--navy-text); }
+    .records-table .muted { color: var(--surface-text-muted); }
+    .edit-btn { border: 0; padding: 6px 10px; border-radius: var(--radius-xs); background: var(--navy); color: #fff; font: inherit; font-size: 12px; cursor: pointer; }
+    .edit-banner { display: none; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 15px; padding: 11px 14px; border-radius: var(--radius-xs); background: color-mix(in srgb, var(--orange) 12%, transparent); color: var(--surface-text); font-size: 13px; }
+    .edit-banner.is-visible { display: flex; }
+    .contact-picker { display: none; margin-bottom: 16px; }
+    .contact-picker.is-visible { display: flex; }
+    @media (max-width: 640px) {
+      .client-grid { grid-template-columns: 1fr; }
+      .client-field.wide { grid-column: auto; }
+      .client-page { padding: 20px 15px 40px; }
+      .records-head { align-items: stretch; flex-direction: column; }
+      .records-tools { width: 100%; }
+      .records-search { flex: 1; width: auto; }
+      .records-table th:nth-child(2), .records-table td:nth-child(2) { display: none; }
+    }
   </style>
 </head>
 <body data-tool="airtable-client">
 <div id="tool-workspace">
   <div class="client-page">
-    <h1>客戶資料登錄</h1>
-    <p class="intro">填寫後直接新增到 Airtable【DGHM】Base 的「客戶(公司名)」表。</p>
+    <h1>客戶資料管理</h1>
+    <p class="intro">查看 Airtable【DGHM】客戶資料，或新增、載入並修改公司與聯絡人。</p>
+    <section class="client-card records-card" aria-labelledby="records-heading">
+      <div class="records-head">
+        <h2 id="records-heading">Airtable 客戶資料</h2>
+        <div class="records-tools">
+          <input class="records-search" id="records-search" type="search" placeholder="搜尋公司或聯絡人" aria-label="搜尋公司或聯絡人">
+          <button class="secondary-btn" id="records-refresh" type="button">重新載入</button>
+        </div>
+      </div>
+      <p class="records-status" id="records-status" role="status">正在讀取 Airtable…</p>
+      <div class="records-table-wrap" id="records-table-wrap" hidden></div>
+    </section>
+    <div class="edit-banner" id="edit-banner">
+      <span id="edit-banner-text"></span>
+      <button class="secondary-btn" id="cancel-edit" type="button">取消編輯</button>
+    </div>
     <form id="client-form">
       <section class="client-card" aria-labelledby="company-heading">
         <h2 id="company-heading">公司資料</h2>
@@ -61,6 +104,10 @@
       </section>
       <section class="client-card" aria-labelledby="contact-heading">
         <h2 id="contact-heading">聯絡人資料</h2>
+        <div class="client-field contact-picker" id="contact-picker-wrap">
+          <label for="contact-picker">要編輯的聯絡人</label>
+          <select id="contact-picker"></select>
+        </div>
         <div class="client-grid">
           <div class="client-field"><label for="contactName">聯絡人姓名 <span class="optional">選填</span></label><input id="contactName" name="contactName" maxlength="500" autocomplete="name" placeholder="例：王小明"></div>
           <div class="client-field"><label for="contactTitle">聯絡人職稱 <span class="optional">選填</span></label><input id="contactTitle" name="contactTitle" maxlength="500"></div>
@@ -73,6 +120,7 @@
       </section>
       <div class="client-actions">
         <button class="client-submit" id="submit-button" type="submit">新增到 Airtable</button>
+        <button class="secondary-btn" id="form-reset" type="button">清空表單</button>
         <p id="client-status" class="client-status" role="status" aria-live="polite"></p>
       </div>
     </form>
@@ -88,16 +136,138 @@ initTheme('my-agent-theme');
 const form = document.getElementById('client-form');
 const status = document.getElementById('client-status');
 const button = document.getElementById('submit-button');
+const recordsStatus = document.getElementById('records-status');
+const recordsWrap = document.getElementById('records-table-wrap');
+const search = document.getElementById('records-search');
+const editBanner = document.getElementById('edit-banner');
+const editBannerText = document.getElementById('edit-banner-text');
+const contactPickerWrap = document.getElementById('contact-picker-wrap');
+const contactPicker = document.getElementById('contact-picker');
+let records = [];
+let editingCompanyId = '';
+let editingContactId = '';
+
+function esc(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function contactSummary(company) {
+  return (company.contacts || []).map((contact) => contact.contactName).filter(Boolean).join('、');
+}
+
+function renderRecords() {
+  const keyword = search.value.trim().toLowerCase();
+  const filtered = records.filter((company) => {
+    const text = [company.clientName, company.fullName, company.brandName, company.website, contactSummary(company)]
+      .join(' ').toLowerCase();
+    return !keyword || text.includes(keyword);
+  });
+  recordsStatus.textContent = `共 ${records.length} 家客戶${keyword ? `，找到 ${filtered.length} 筆` : ''}`;
+  recordsWrap.hidden = false;
+  if (!filtered.length) {
+    recordsWrap.innerHTML = '<p class="records-status">找不到符合的資料。</p>';
+    return;
+  }
+  recordsWrap.innerHTML = `<table class="records-table">
+    <thead><tr><th>客戶</th><th>公司資訊</th><th>聯絡人</th><th></th></tr></thead>
+    <tbody>${filtered.map((company) => `<tr>
+      <td><strong>${esc(company.clientName || '未命名')}</strong><br><span class="muted">${esc(company.industry || '')}</span></td>
+      <td>${esc(company.fullName || company.brandName || '—')}<br><span class="muted">${esc(company.website || '')}</span></td>
+      <td>${esc(contactSummary(company) || '—')}</td>
+      <td><button class="edit-btn" type="button" data-edit-id="${esc(company.id)}">載入編輯</button></td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function setField(name, value) {
+  const field = form.elements.namedItem(name);
+  if (field) field.value = value || '';
+}
+
+function fillContact(contact) {
+  setField('contactName', contact?.contactName);
+  setField('contactTitle', contact?.contactTitle);
+  setField('phone', contact?.phone);
+  setField('email', contact?.email);
+  setField('address', contact?.address);
+  setField('notes', contact?.notes);
+  editingContactId = contact?.id || '';
+}
+
+function startEdit(companyId) {
+  const company = records.find((item) => item.id === companyId);
+  if (!company) return;
+  form.reset();
+  editingCompanyId = company.id;
+  ['clientName', 'fullName', 'brandName', 'taxId', 'clientAddress', 'website', 'industry', 'source', 'payment']
+    .forEach((key) => setField(key, company[key]));
+  const contacts = company.contacts || [];
+  contactPicker.innerHTML = contacts.map((contact) => `<option value="${esc(contact.id)}">${esc(contact.contactName || '未命名聯絡人')}</option>`).join('') +
+    '<option value="">＋ 新增聯絡人</option>';
+  contactPickerWrap.classList.add('is-visible');
+  contactPicker.value = contacts[0]?.id || '';
+  fillContact(contacts[0] || null);
+  editBannerText.textContent = `正在編輯：${company.clientName}`;
+  editBanner.classList.add('is-visible');
+  button.textContent = '儲存修改';
+  status.textContent = '';
+  form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetEditor() {
+  form.reset();
+  editingCompanyId = '';
+  editingContactId = '';
+  contactPickerWrap.classList.remove('is-visible');
+  contactPicker.innerHTML = '';
+  editBanner.classList.remove('is-visible');
+  button.textContent = '新增到 Airtable';
+  status.textContent = '';
+  status.className = 'client-status';
+}
+
+async function loadRecords() {
+  recordsStatus.textContent = '正在讀取 Airtable…';
+  recordsWrap.hidden = true;
+  try {
+    const response = await fetch('/api/airtable/client', { credentials: 'same-origin', cache: 'no-store' });
+    const result = await response.json();
+    if (!response.ok || !result.ok) throw new Error(result.error || '讀取失敗');
+    records = result.records || [];
+    renderRecords();
+  } catch (error) {
+    recordsStatus.textContent = error.message || '無法讀取 Airtable。';
+    if (/登入/.test(recordsStatus.textContent)) recordsStatus.innerHTML = '請先 <a href="login.html">登入工作台</a>。';
+  }
+}
+
+recordsWrap.addEventListener('click', (event) => {
+  const target = event.target.closest('[data-edit-id]');
+  if (target) startEdit(target.dataset.editId);
+});
+search.addEventListener('input', renderRecords);
+document.getElementById('records-refresh').addEventListener('click', loadRecords);
+document.getElementById('cancel-edit').addEventListener('click', resetEditor);
+document.getElementById('form-reset').addEventListener('click', resetEditor);
+contactPicker.addEventListener('change', () => {
+  const company = records.find((item) => item.id === editingCompanyId);
+  const contact = (company?.contacts || []).find((item) => item.id === contactPicker.value);
+  fillContact(contact || null);
+});
+
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!form.reportValidity()) return;
   const data = Object.fromEntries(new FormData(form).entries());
+  if (editingCompanyId) data.recordId = editingCompanyId;
+  if (editingContactId) data.contactId = editingContactId;
   button.disabled = true;
   status.className = 'client-status';
-  status.textContent = '正在寫入 Airtable…';
+  status.textContent = editingCompanyId ? '正在更新 Airtable…' : '正在寫入 Airtable…';
   try {
     const response = await fetch('/api/airtable/client', {
-      method: 'POST',
+      method: editingCompanyId ? 'PUT' : 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -112,11 +282,13 @@ form.addEventListener('submit', async (event) => {
       status.className = 'client-status error';
       return;
     }
-    status.textContent = result.contactId
-      ? `已新增「${result.clientName}」及其聯絡人到 Airtable。`
-      : `已新增「${result.clientName}」到 Airtable。`;
+    const action = editingCompanyId ? '更新' : '新增';
+    status.textContent = `已${action}「${result.clientName}」${result.contactId ? '及其聯絡人' : ''}。`;
     status.className = 'client-status ok';
-    form.reset();
+    resetEditor();
+    status.textContent = `已${action}「${result.clientName}」${result.contactId ? '及其聯絡人' : ''}。`;
+    status.className = 'client-status ok';
+    await loadRecords();
   } catch {
     status.textContent = '無法連到工作台 API，請確認使用 Netlify 環境開啟頁面。';
     status.className = 'client-status error';
@@ -124,6 +296,7 @@ form.addEventListener('submit', async (event) => {
     button.disabled = false;
   }
 });
+loadRecords();
 </script>
 </body>
 </html>
