@@ -27,6 +27,7 @@
       description: '從初談、需求整理到執行會議',
       defaultTool: 'brief',
       tools: [
+        { id: 'airtable-client', label: '客戶資料登錄', href: 'airtable-client.html', status: 'integrated', keywords: ['Airtable','CRM','公司','客戶名','新增客戶'] },
         { id: 'brief',    label: '客戶 Brief', href: 'client-brief.html',  status: 'integrated', keywords: ['訪談','需求','brief','初談'] },
         { id: 'meetings', label: '會議記錄',   href: 'meeting-notes.html', status: 'legacy', keywords: ['會議','紀錄','meeting','notes'] },
       ],

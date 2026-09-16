@@ -14,6 +14,12 @@
 
 ## 主要檔案用途
 
+- `airtable-client.html` / `netlify/functions/airtable-client.js`
+  - 工作台「案件與溝通 → 客戶資料登錄」表單，新增資料到 Airtable【DGHM】Base 的「客戶(公司名)」表；首頁也有快速入口。
+  - 需要先登入工作台。Airtable PAT 只放在 Netlify 環境變數 `FOR_AIRTABLE_DGHM_BASE`，需有該 Base 的 `data.records:write` 權限；不要把 PAT 放進 HTML 或提交到 Git。
+  - 本機用 `npx netlify dev` 開啟頁面並測試 Function。單純的靜態檔案伺服器無法處理 `/api/airtable/client`。
+  - 表單先處理文字、網址、電子郵件與現有選單欄位；「聯絡人姓名」為關聯欄位，可在 Airtable 中另外建立聯絡人後補上。
+
 - `index.html`
   - Dashboard 主頁（工作台總覽）。
   - 顯示客戶案件流程 01–06 與快速入口，各卡片連往對應工具。
