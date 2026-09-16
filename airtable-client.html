@@ -117,9 +117,9 @@
           <div class="client-field"><label for="taxId">統編 <span class="optional">選填</span></label><input id="taxId" name="taxId" inputmode="numeric" maxlength="20"></div>
           <div class="client-field wide"><label for="clientAddress">客戶地址 <span class="optional">選填</span></label><textarea id="clientAddress" name="clientAddress" maxlength="500"></textarea></div>
           <div class="client-field"><label for="website">網站 <span class="optional">選填</span></label><input id="website" name="website" type="url" maxlength="500" placeholder="https://example.com"></div>
-          <div class="client-field"><label for="industry">產業類別 <span class="optional">選填</span></label><select id="industry" name="industry"><option value="">未指定</option><option>儲配／運輸物流業</option><option>銀髮長照</option><option>運動用品</option><option>食品</option></select></div>
-          <div class="client-field"><label for="source">來源管道 <span class="optional">選填</span></label><select id="source" name="source"><option value="">未指定</option><option>官網</option><option>Facebook</option><option>Instagram</option><option>介紹</option><option>其他</option><option>前同事</option></select></div>
-          <div class="client-field"><label for="payment">Payment <span class="optional">選填</span></label><select id="payment" name="payment"><option value="">未指定</option><option>30 Days Net</option></select></div>
+          <div class="client-field"><label for="industry">產業類別 <span class="optional">選填</span></label><select id="industry" name="industry"><option value="">未指定</option></select></div>
+          <div class="client-field"><label for="source">來源管道 <span class="optional">選填</span></label><select id="source" name="source"><option value="">未指定</option></select></div>
+          <div class="client-field"><label for="payment">Payment <span class="optional">選填</span></label><select id="payment" name="payment"><option value="">未指定</option></select></div>
         </div>
       </section>
       <section class="client-card" id="contact-view" role="tabpanel" aria-labelledby="contact-tab" data-editor-view="contact" hidden>
@@ -176,6 +176,7 @@ let editingCompanyId = '';
 let editingContactId = '';
 let currentPage = 1;
 let recordsLoaded = false;
+let optionsWarning = '';
 let searchTimer;
 const PAGE_SIZE = 10;
 
@@ -194,10 +195,20 @@ function formatClientNumber(value) {
   return String(Math.trunc(number)).padStart(2, '0');
 }
 
+function applySelectOptions(selectOptions = {}) {
+  ['industry', 'source', 'payment'].forEach((name) => {
+    const select = form.elements.namedItem(name);
+    const current = select.value;
+    select.innerHTML = '<option value="">未指定</option>' + (selectOptions[name] || [])
+      .map((value) => `<option value="${esc(value)}">${esc(value)}</option>`).join('');
+    if ([...select.options].some((option) => option.value === current)) select.value = current;
+  });
+}
+
 function renderRecords() {
   const keyword = search.value.trim().toLowerCase();
   if (!keyword) {
-    recordsStatus.textContent = '輸入客戶編號、公司或聯絡人後搜尋。';
+    recordsStatus.textContent = `輸入客戶編號、公司或聯絡人後搜尋。${optionsWarning ? ` ${optionsWarning}` : ''}`;
     recordsWrap.hidden = true;
     recordsWrap.innerHTML = '';
     pagination.hidden = true;
@@ -213,7 +224,7 @@ function renderRecords() {
   currentPage = Math.min(Math.max(currentPage, 1), pageCount);
   const pageStart = (currentPage - 1) * PAGE_SIZE;
   const pageRows = filtered.slice(pageStart, pageStart + PAGE_SIZE);
-  recordsStatus.textContent = `找到 ${filtered.length} 筆${filtered.length > PAGE_SIZE ? `，第 ${currentPage}／${pageCount} 頁` : ''}`;
+  recordsStatus.textContent = `找到 ${filtered.length} 筆${filtered.length > PAGE_SIZE ? `，第 ${currentPage}／${pageCount} 頁` : ''}${optionsWarning ? ` · ${optionsWarning}` : ''}`;
   recordsWrap.hidden = false;
   if (!filtered.length) {
     recordsWrap.innerHTML = '<p class="records-status">找不到符合的資料。</p>';
@@ -332,6 +343,8 @@ async function loadRecords() {
     const result = await response.json();
     if (!response.ok || !result.ok) throw new Error(result.error || '讀取失敗');
     records = result.records || [];
+    optionsWarning = result.optionsWarning || '';
+    applySelectOptions(result.selectOptions);
     recordsLoaded = true;
     currentPage = 1;
     renderRecords();
@@ -374,7 +387,8 @@ document.getElementById('records-search-button').addEventListener('click', () =>
   else if (search.value.trim()) loadRecords();
   else renderRecords();
 });
-document.getElementById('new-client').addEventListener('click', () => {
+document.getElementById('new-client').addEventListener('click', async () => {
+  if (!recordsLoaded) await loadRecords();
   resetEditor();
   openEditor();
 });

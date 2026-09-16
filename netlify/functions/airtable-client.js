@@ -15,11 +15,17 @@ const CONTACT_FIELDS = {
   company: 'fldJJqNB7czIafp8y', phone: 'fldra3eQ3plGTGXhe', email: 'fldaaHDvUiKUlQtIy',
   address: 'fldphkQTHtKBNu9mF', notes: 'fldFMSkgVnswij3l5',
 };
-const SELECTS = {
+const SELECT_FALLBACKS = {
   payment: ['30 Days Net'],
   industry: ['儲配／運輸物流業', '銀髮長照', '運動用品', '食品'],
   source: ['官網', 'Facebook', 'Instagram', '介紹', '其他', '前同事'],
 };
+const SELECT_FIELD_IDS = {
+  payment: COMPANY_FIELDS.payment,
+  industry: COMPANY_FIELDS.industry,
+  source: COMPANY_FIELDS.source,
+};
+let selectOptionsCache = null;
 
 function json(status, body) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
@@ -51,6 +57,39 @@ async function airtableRequest(token, path, options = {}) {
   });
   const result = await response.json().catch(() => ({}));
   return { response, result };
+}
+
+async function getSelectOptions(token) {
+  if (selectOptionsCache?.expiresAt > Date.now()) return selectOptionsCache.value;
+  const response = await fetch(`https://api.airtable.com/v0/meta/bases/${BASE_ID}/tables`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(result.error?.type || `HTTP ${response.status}`);
+    error.code = 'schema_unavailable';
+    throw error;
+  }
+  const table = (result.tables || []).find((item) => item.id === COMPANY_TABLE_ID);
+  if (!table) throw new Error('找不到客戶資料表結構');
+  const options = {};
+  for (const [key, fieldId] of Object.entries(SELECT_FIELD_IDS)) {
+    const field = (table.fields || []).find((item) => item.id === fieldId);
+    options[key] = (field?.options?.choices || []).map((choice) => choice.name).filter(Boolean);
+  }
+  selectOptionsCache = { value: options, expiresAt: Date.now() + 5 * 60 * 1000 };
+  return options;
+}
+
+async function selectOptionsWithFallback(token) {
+  try {
+    return { options: await getSelectOptions(token), warning: '' };
+  } catch (error) {
+    return {
+      options: SELECT_FALLBACKS,
+      warning: 'Airtable Token 缺少 schema.bases:read 權限，目前暫用既有選項；新增權限後會自動同步。',
+    };
+  }
 }
 
 async function listAllRecords(token, tableId, sortField) {
@@ -96,7 +135,7 @@ function publicCompany(record, contactsById) {
   return company;
 }
 
-function buildFields(input, mapping, { includeEmpty = false, skip = [], noteKey = '' } = {}) {
+function buildFields(input, mapping, { includeEmpty = false, skip = [], noteKey = '', selectOptions = SELECT_FALLBACKS } = {}) {
   const fields = {};
   for (const [key, fieldId] of Object.entries(mapping)) {
     if (skip.includes(key) || !Object.prototype.hasOwnProperty.call(input, key)) continue;
@@ -108,14 +147,14 @@ function buildFields(input, mapping, { includeEmpty = false, skip = [], noteKey 
       continue;
     }
     if (trimmed.length > (key === noteKey ? 5000 : 500)) return { error: `${key} 內容過長` };
-    if (SELECTS[key] && !SELECTS[key].includes(trimmed)) return { error: `${key} 選項無效` };
+    if (selectOptions[key] && !selectOptions[key].includes(trimmed)) return { error: `${key} 選項無效` };
     fields[fieldId] = trimmed;
   }
   return { fields };
 }
 
-function validatePayload(input, includeEmpty) {
-  const company = buildFields(input, COMPANY_FIELDS, { includeEmpty });
+function validatePayload(input, includeEmpty, selectOptions) {
+  const company = buildFields(input, COMPANY_FIELDS, { includeEmpty, selectOptions });
   if (company.error) return { error: company.error };
   const contact = buildFields(input, CONTACT_FIELDS, { includeEmpty, skip: ['company', 'contactFirstName'], noteKey: 'notes' });
   if (contact.error) return { error: contact.error };
@@ -142,7 +181,8 @@ function validRecordId(value) {
 }
 
 async function createRecords(token, input) {
-  const parsed = validatePayload(input, false);
+  const { options: selectOptions } = await selectOptionsWithFallback(token);
+  const parsed = validatePayload(input, false, selectOptions);
   if (parsed.error) return json(400, { ok: false, error: parsed.error });
   const companyCreate = await airtableRequest(token, COMPANY_TABLE_ID, { method: 'POST', body: JSON.stringify({ fields: parsed.companyFields }) });
   if (!companyCreate.response.ok) {
@@ -167,7 +207,8 @@ async function createRecords(token, input) {
 async function updateRecords(token, input) {
   if (!validRecordId(input.recordId)) return json(400, { ok: false, error: '客戶紀錄 ID 無效' });
   if (input.contactId && !validRecordId(input.contactId)) return json(400, { ok: false, error: '聯絡人紀錄 ID 無效' });
-  const parsed = validatePayload(input, true);
+  const { options: selectOptions } = await selectOptionsWithFallback(token);
+  const parsed = validatePayload(input, true, selectOptions);
   if (parsed.error) return json(400, { ok: false, error: parsed.error });
   const companyUpdate = await airtableRequest(token, `${COMPANY_TABLE_ID}/${input.recordId}`, { method: 'PATCH', body: JSON.stringify({ fields: parsed.companyFields }) });
   if (!companyUpdate.response.ok) {
@@ -200,9 +241,9 @@ export default async (req) => {
   if (!token) return json(503, { ok: false, error: 'Airtable 尚未設定：請在 Netlify 設定 FOR_AIRTABLE_DGHM_BASE' });
   try {
     if (req.method === 'GET') {
-      const [companies, contacts] = await Promise.all([listAllRecords(token, COMPANY_TABLE_ID, COMPANY_NUMBER_FIELD), listAllRecords(token, CONTACT_TABLE_ID)]);
+      const [companies, contacts, selectResult] = await Promise.all([listAllRecords(token, COMPANY_TABLE_ID, COMPANY_NUMBER_FIELD), listAllRecords(token, CONTACT_TABLE_ID), selectOptionsWithFallback(token)]);
       const contactsById = new Map(contacts.map((record) => [record.id, record]));
-      return json(200, { ok: true, records: companies.map((record) => publicCompany(record, contactsById)) });
+      return json(200, { ok: true, records: companies.map((record) => publicCompany(record, contactsById)), selectOptions: selectResult.options, optionsWarning: selectResult.warning });
     }
     if (req.method !== 'POST' && req.method !== 'PUT') return json(405, { ok: false, error: '不支援此請求方式' });
     let input;
