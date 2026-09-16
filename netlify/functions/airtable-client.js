@@ -90,7 +90,7 @@ function publicContact(record) {
 function publicCompany(record, contactsById) {
   const fields = record.fields || {};
   const contactIds = [...new Set(COMPANY_CONTACT_LINKS.flatMap((fieldId) => fields[fieldId] || []))];
-  const company = { id: record.id };
+  const company = { id: record.id, clientNumber: textValue(fields[COMPANY_NUMBER_FIELD]) };
   for (const [key, fieldId] of Object.entries(COMPANY_FIELDS)) company[key] = textValue(fields[fieldId]);
   company.contacts = contactIds.map((id) => contactsById.get(id)).filter(Boolean).map(publicContact);
   return company;
