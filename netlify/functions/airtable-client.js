@@ -1,8 +1,9 @@
 import crypto from 'node:crypto';
 
 const BASE_ID = 'appnhALSuMU5xcGVf';
-const TABLE_ID = 'tblyASlHqnsSu7s9K';
-const FIELDS = {
+const COMPANY_TABLE_ID = 'tblyASlHqnsSu7s9K';
+const CONTACT_TABLE_ID = 'tbl5iKkQNSF3YIG9w';
+const COMPANY_FIELDS = {
   clientName: 'fldWSOeAw6qdzrijU',
   fullName: 'fldgs3sMEsU7qbjx6',
   taxId: 'fldgph0fceCJN7UfR',
@@ -10,13 +11,18 @@ const FIELDS = {
   payment: 'flddMyXt7jOCnAeDm',
   industry: 'fldra4NwWFmVZoz44',
   source: 'fldGRByW07YWIfb2u',
-  contactTitle: 'fldXHj5LDRxtL8tPb',
-  phone: 'fldZdjcgORRyZNV3Y',
-  email: 'fldJ5PYkaIuyPjac2',
   brandName: 'fldf8z9B8e5L47TVp',
   website: 'fld5oL2VbQ5qk8ISJ',
-  address: 'fld2k4EwSNSeV4aC0',
-  notes: 'fldq8ZR8eKas0PQPQ',
+};
+const CONTACT_FIELDS = {
+  contactName: 'fld15dpMtA64y76nS',
+  contactFirstName: 'fldCtV7mJ9mFVfzRJ',
+  contactTitle: 'fldHy7Yb1X5NxZoY9',
+  company: 'fldJJqNB7czIafp8y',
+  phone: 'fldra3eQ3plGTGXhe',
+  email: 'fldaaHDvUiKUlQtIy',
+  address: 'fldphkQTHtKBNu9mF',
+  notes: 'fldFMSkgVnswij3l5',
 };
 const SELECTS = {
   payment: ['30 Days Net'],
@@ -50,6 +56,15 @@ function sessionFromRequest(req) {
   } catch { return null; }
 }
 
+async function airtableRequest(token, tableId, options) {
+  const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${tableId}`, {
+    ...options,
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...(options.headers || {}) },
+  });
+  const result = await response.json().catch(() => ({}));
+  return { response, result };
+}
+
 export default async (req) => {
   if (req.method !== 'POST') return json(405, { ok: false, error: '只接受 POST 請求' });
   if (!sessionFromRequest(req)) return json(401, { ok: false, error: '請先登入工作台', code: 'unauthenticated' });
@@ -61,40 +76,81 @@ export default async (req) => {
   try { input = await req.json(); } catch { return json(400, { ok: false, error: '表單資料格式錯誤' }); }
   if (!input || typeof input !== 'object' || Array.isArray(input)) return json(400, { ok: false, error: '表單資料格式錯誤' });
 
-  const fields = {};
-  for (const [key, fieldId] of Object.entries(FIELDS)) {
+  const companyFields = {};
+  for (const [key, fieldId] of Object.entries(COMPANY_FIELDS)) {
+    const value = input[key];
+    if (value == null || value === '') continue;
+    if (typeof value !== 'string') return json(400, { ok: false, error: `${key} 格式錯誤` });
+    const trimmed = value.trim();
+    if (!trimmed) continue;
+    if (trimmed.length > 500) return json(400, { ok: false, error: `${key} 內容過長` });
+    if (SELECTS[key] && !SELECTS[key].includes(trimmed)) return json(400, { ok: false, error: `${key} 選項無效` });
+    companyFields[fieldId] = trimmed;
+  }
+  if (!companyFields[COMPANY_FIELDS.clientName]) return json(400, { ok: false, error: '請填寫客戶名' });
+
+  const contactFields = {};
+  for (const [key, fieldId] of Object.entries(CONTACT_FIELDS)) {
+    if (key === 'company' || key === 'contactFirstName') continue;
     const value = input[key];
     if (value == null || value === '') continue;
     if (typeof value !== 'string') return json(400, { ok: false, error: `${key} 格式錯誤` });
     const trimmed = value.trim();
     if (!trimmed) continue;
     if (trimmed.length > (key === 'notes' ? 5000 : 500)) return json(400, { ok: false, error: `${key} 內容過長` });
-    if (SELECTS[key] && !SELECTS[key].includes(trimmed)) return json(400, { ok: false, error: `${key} 選項無效` });
-    fields[fieldId] = trimmed;
+    contactFields[fieldId] = trimmed;
   }
-  if (!fields[FIELDS.clientName]) return json(400, { ok: false, error: '請填寫客戶名' });
-  if (fields[FIELDS.email] && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields[FIELDS.email])) {
+  const hasContactDetails = Object.keys(contactFields).some((fieldId) => fieldId !== CONTACT_FIELDS.contactName);
+  if (hasContactDetails && !contactFields[CONTACT_FIELDS.contactName]) {
+    return json(400, { ok: false, error: '填寫聯絡資訊時，請一併填寫聯絡人姓名' });
+  }
+  if (contactFields[CONTACT_FIELDS.contactName]) {
+    contactFields[CONTACT_FIELDS.contactFirstName] = contactFields[CONTACT_FIELDS.contactName];
+  }
+  if (contactFields[CONTACT_FIELDS.email] && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactFields[CONTACT_FIELDS.email])) {
     return json(400, { ok: false, error: '電子郵件格式錯誤' });
   }
-  if (fields[FIELDS.website]) {
+  if (companyFields[COMPANY_FIELDS.website]) {
     try {
-      const url = new URL(fields[FIELDS.website]);
+      const url = new URL(companyFields[COMPANY_FIELDS.website]);
       if (!['http:', 'https:'].includes(url.protocol)) throw new Error('invalid');
     } catch { return json(400, { ok: false, error: '網站請填完整的 http:// 或 https:// 網址' }); }
   }
 
   try {
-    const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${TABLE_ID}`, {
+    const companyCreate = await airtableRequest(token, COMPANY_TABLE_ID, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields }),
+      body: JSON.stringify({ fields: companyFields }),
     });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      const detail = result.error?.type || `HTTP ${response.status}`;
-      return json(502, { ok: false, error: `Airtable 寫入失敗（${detail}）` });
+    if (!companyCreate.response.ok) {
+      const detail = companyCreate.result.error?.type || `HTTP ${companyCreate.response.status}`;
+      return json(502, { ok: false, error: `Airtable 公司寫入失敗（${detail}）` });
     }
-    return json(201, { ok: true, id: result.id, clientName: fields[FIELDS.clientName] });
+
+    let contactId = null;
+    if (contactFields[CONTACT_FIELDS.contactName]) {
+      contactFields[CONTACT_FIELDS.company] = [companyCreate.result.id];
+      const contactCreate = await airtableRequest(token, CONTACT_TABLE_ID, {
+        method: 'POST',
+        body: JSON.stringify({ fields: contactFields }),
+      });
+      if (!contactCreate.response.ok) {
+        const rollback = await airtableRequest(token, `${COMPANY_TABLE_ID}/${companyCreate.result.id}`, { method: 'DELETE' }).catch(() => null);
+        const detail = contactCreate.result.error?.type || `HTTP ${contactCreate.response.status}`;
+        const rollbackMessage = rollback?.response.ok
+          ? '公司紀錄已自動取消'
+          : `公司紀錄 ${companyCreate.result.id} 已建立，請先確認後再重試`;
+        return json(502, { ok: false, error: `Airtable 聯絡人寫入失敗（${detail}）；${rollbackMessage}` });
+      }
+      contactId = contactCreate.result.id;
+    }
+
+    return json(201, {
+      ok: true,
+      id: companyCreate.result.id,
+      contactId,
+      clientName: companyFields[COMPANY_FIELDS.clientName],
+    });
   } catch {
     return json(502, { ok: false, error: '無法連線到 Airtable，請稍後重試' });
   }
