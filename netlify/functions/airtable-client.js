@@ -8,11 +8,11 @@ const COMPANY_FIELDS = {
   clientAddress: 'fldw7o8zA0YMm8Y3c', payment: 'flddMyXt7jOCnAeDm', industry: 'fldra4NwWFmVZoz44',
   source: 'fldGRByW07YWIfb2u', brandName: 'fldf8z9B8e5L47TVp', website: 'fld5oL2VbQ5qk8ISJ',
 };
-const COMPANY_CONTACT_LINKS = ['fldj1UkzcbN9MyiQi', 'fldP52fgpsuKw15xm'];
+const COMPANY_CONTACT_LINK_FIELD = 'fldP52fgpsuKw15xm';
 const COMPANY_NUMBER_FIELD = 'fld7sULDGsc3lcp3U';
 const CONTACT_FIELDS = {
   contactName: 'fld15dpMtA64y76nS', contactFirstName: 'fldCtV7mJ9mFVfzRJ', contactTitle: 'fldHy7Yb1X5NxZoY9',
-  company: 'fldJJqNB7czIafp8y', phone: 'fldra3eQ3plGTGXhe', email: 'fldaaHDvUiKUlQtIy',
+  company: 'fld9CDRpMjyNnomWx', phone: 'fldra3eQ3plGTGXhe', email: 'fldaaHDvUiKUlQtIy',
   address: 'fldphkQTHtKBNu9mF', notes: 'fldFMSkgVnswij3l5',
 };
 const SELECT_FALLBACKS = {
@@ -128,7 +128,7 @@ function publicContact(record) {
 
 function publicCompany(record, contactsById) {
   const fields = record.fields || {};
-  const contactIds = [...new Set(COMPANY_CONTACT_LINKS.flatMap((fieldId) => fields[fieldId] || []))];
+  const contactIds = fields[COMPANY_CONTACT_LINK_FIELD] || [];
   const company = { id: record.id, clientNumber: textValue(fields[COMPANY_NUMBER_FIELD]) };
   for (const [key, fieldId] of Object.entries(COMPANY_FIELDS)) company[key] = textValue(fields[fieldId]);
   company.contacts = contactIds.map((id) => contactsById.get(id)).filter(Boolean).map(publicContact);
