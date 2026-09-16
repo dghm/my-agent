@@ -21,11 +21,13 @@
     .records-tools button { flex: 1; }
     .records-status { margin: 0; padding: 0 20px 14px; color: var(--surface-text-muted); font-size: 12px; line-height: 1.6; }
     .records-results { flex: 1; min-height: 0; overflow-y: auto; padding: 0 12px 16px; }
-    .customer-result { display: flex; flex-direction: column; gap: 6px; width: 100%; box-sizing: border-box; padding: 16px; margin-bottom: 9px; border: 1px solid var(--surface-border); border-radius: var(--radius-xs); background: var(--surface-bg); color: var(--surface-text); text-align: left; font: inherit; font-size: 12px; cursor: pointer; }
-    .customer-result:hover { border-color: var(--navy); }
-    .customer-result.is-selected { border-color: var(--orange); background: color-mix(in srgb, var(--orange) 8%, var(--surface-bg)); box-shadow: inset 3px 0 var(--orange); }
-    .customer-result strong { color: var(--navy-text); font-size: 15px; }
-    .customer-result .muted { color: var(--surface-text-muted); overflow-wrap: anywhere; }
+    .records-list-head, .customer-result { display: grid; grid-template-columns: 52px minmax(0, 1fr); align-items: center; gap: 10px; padding: 12px; }
+    .records-list-head { position: sticky; top: 0; background: var(--surface-panel-bg); color: var(--surface-text-muted); font-size: 11px; font-weight: 700; border-bottom: 1px solid var(--surface-border); }
+    .customer-result { width: 100%; min-height: 46px; box-sizing: border-box; margin: 0; border: 0; border-bottom: 1px solid var(--surface-border); border-radius: 0; background: transparent; color: var(--surface-text); text-align: left; font: inherit; font-size: 13px; cursor: pointer; }
+    .customer-result:hover { background: var(--surface-bg); }
+    .customer-result.is-selected { background: color-mix(in srgb, var(--orange) 10%, var(--surface-bg)); box-shadow: inset 3px 0 var(--orange); }
+    .customer-result strong { color: var(--navy-text); font-size: 13px; overflow-wrap: anywhere; }
+    .customer-id { color: var(--surface-text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
     .records-pagination { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px; border-top: 1px solid var(--surface-border); color: var(--surface-text-muted); font-size: 11px; }
     [hidden] { display: none !important; }
     .editor-column { background: var(--surface-bg); }
@@ -224,11 +226,9 @@ function renderRecords() {
     pagination.innerHTML = '';
     return;
   }
-  recordsWrap.innerHTML = pageRows.map((company) => `<button class="customer-result ${company.id === editingCompanyId ? 'is-selected' : ''}" type="button" data-edit-id="${esc(company.id)}" aria-pressed="${company.id === editingCompanyId}">
-    <strong>${company.clientNumber ? `#${esc(formatClientNumber(company.clientNumber))}　` : ''}${esc(company.clientName || '未命名')}</strong>
-    <span>${esc(company.fullName || company.brandName || '尚未填寫公司全稱')}</span>
-    <span class="muted">${esc(company.industry || '未指定產業')}</span>
-    <span class="muted">聯絡人：${esc(contactSummary(company) || '尚無聯絡人')}</span>
+  recordsWrap.innerHTML = '<div class="records-list-head" aria-hidden="true"><span>ID</span><span>客戶名稱</span></div>' + pageRows.map((company) => `<button class="customer-result ${company.id === editingCompanyId ? 'is-selected' : ''}" type="button" data-edit-id="${esc(company.id)}" aria-pressed="${company.id === editingCompanyId}">
+    <span class="customer-id">${company.clientNumber ? `#${esc(formatClientNumber(company.clientNumber))}` : '—'}</span>
+    <strong>${esc(company.clientName || '未命名')}</strong>
   </button>`).join('');
   pagination.hidden = filtered.length <= PAGE_SIZE;
   pagination.innerHTML = `<button class="secondary-btn" type="button" data-page-action="prev" ${currentPage === 1 ? 'disabled' : ''}>上一頁</button>
