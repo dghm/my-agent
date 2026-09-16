@@ -15,6 +15,7 @@ const CONTACT_FIELDS = {
   company: 'fldJJqNB7czIafp8y', phone: 'fldra3eQ3plGTGXhe', email: 'fldaaHDvUiKUlQtIy',
   address: 'fldphkQTHtKBNu9mF', notes: 'fldFMSkgVnswij3l5',
 };
+const CONTACT_COMPANY_LINKS = [CONTACT_FIELDS.company, 'fld9CDRpMjyNnomWx'];
 const SELECT_FALLBACKS = {
   payment: ['30 Days Net'],
   industry: ['儲配／運輸物流業', '銀髮長照', '運動用品', '食品'],
@@ -180,6 +181,12 @@ function validRecordId(value) {
   return typeof value === 'string' && /^rec[A-Za-z0-9]+$/.test(value);
 }
 
+function linkContactToCompany(fields, companyId, existingFields = {}) {
+  for (const fieldId of CONTACT_COMPANY_LINKS) {
+    fields[fieldId] = [...new Set([...(existingFields[fieldId] || []), companyId])];
+  }
+}
+
 async function createRecords(token, input) {
   const { options: selectOptions } = await selectOptionsWithFallback(token);
   const parsed = validatePayload(input, false, selectOptions);
@@ -191,7 +198,7 @@ async function createRecords(token, input) {
   }
   let contactId = null;
   if (parsed.contactFields[CONTACT_FIELDS.contactName]) {
-    parsed.contactFields[CONTACT_FIELDS.company] = [companyCreate.result.id];
+    linkContactToCompany(parsed.contactFields, companyCreate.result.id);
     const contactCreate = await airtableRequest(token, CONTACT_TABLE_ID, { method: 'POST', body: JSON.stringify({ fields: parsed.contactFields }) });
     if (!contactCreate.response.ok) {
       const rollback = await airtableRequest(token, `${COMPANY_TABLE_ID}/${companyCreate.result.id}`, { method: 'DELETE' }).catch(() => null);
@@ -218,13 +225,19 @@ async function updateRecords(token, input) {
   let contactId = input.contactId || null;
   const hasContactName = Boolean(parsed.contactFields[CONTACT_FIELDS.contactName]);
   if (contactId) {
+    const contactRead = await airtableRequest(token, `${CONTACT_TABLE_ID}/${contactId}?returnFieldsByFieldId=true`);
+    if (!contactRead.response.ok) {
+      const detail = contactRead.result.error?.type || `HTTP ${contactRead.response.status}`;
+      return json(502, { ok: false, error: `公司已更新，但無法讀取聯絡人關聯（${detail}）` });
+    }
+    linkContactToCompany(parsed.contactFields, input.recordId, contactRead.result.fields || {});
     const contactUpdate = await airtableRequest(token, `${CONTACT_TABLE_ID}/${contactId}`, { method: 'PATCH', body: JSON.stringify({ fields: parsed.contactFields }) });
     if (!contactUpdate.response.ok) {
       const detail = contactUpdate.result.error?.type || `HTTP ${contactUpdate.response.status}`;
       return json(502, { ok: false, error: `公司已更新，但聯絡人更新失敗（${detail}）` });
     }
   } else if (hasContactName) {
-    parsed.contactFields[CONTACT_FIELDS.company] = [input.recordId];
+    linkContactToCompany(parsed.contactFields, input.recordId);
     const contactCreate = await airtableRequest(token, CONTACT_TABLE_ID, { method: 'POST', body: JSON.stringify({ fields: parsed.contactFields }) });
     if (!contactCreate.response.ok) {
       const detail = contactCreate.result.error?.type || `HTTP ${contactCreate.response.status}`;
