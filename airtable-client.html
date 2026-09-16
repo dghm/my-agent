@@ -409,6 +409,10 @@ form.addEventListener('submit', async (event) => {
     return;
   }
   const data = Object.fromEntries(new FormData(form).entries());
+  const wasEditing = Boolean(editingCompanyId);
+  const savedCompanyId = editingCompanyId;
+  const savedContactId = editingContactId;
+  const savedTab = document.querySelector('[data-editor-tab][aria-selected="true"]')?.dataset.editorTab || 'company';
   if (editingCompanyId) data.recordId = editingCompanyId;
   if (editingContactId) data.contactId = editingContactId;
   button.disabled = true;
@@ -431,10 +435,25 @@ form.addEventListener('submit', async (event) => {
       status.className = 'client-status error';
       return;
     }
-    const action = editingCompanyId ? '更新' : '新增';
-    resetEditor(true);
+    const action = wasEditing ? '更新' : '新增';
     await loadRecords();
-    recordsStatus.textContent = `已${action}「${result.clientName}」${result.contactId ? '及其聯絡人' : ''}，清單已更新。`;
+    const successMessage = `已${action}「${result.clientName}」${result.contactId ? '及其聯絡人' : ''}，Airtable 資料已重新載入。`;
+    if (wasEditing) {
+      startEdit(savedCompanyId);
+      const company = records.find((item) => item.id === savedCompanyId);
+      const refreshedContactId = result.contactId || savedContactId;
+      const contact = (company?.contacts || []).find((item) => item.id === refreshedContactId);
+      if (contact) {
+        contactPicker.value = contact.id;
+        fillContact(contact);
+      }
+      setEditorTab(savedTab);
+      status.textContent = successMessage;
+      status.className = 'client-status ok';
+    } else {
+      resetEditor(true);
+    }
+    recordsStatus.textContent = successMessage;
   } catch {
     status.textContent = '無法連到工作台 API，請確認使用 Netlify 環境開啟頁面。';
     status.className = 'client-status error';
