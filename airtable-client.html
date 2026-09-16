@@ -8,103 +8,107 @@
   <link rel="stylesheet" href="dghm-ui.css">
   <link rel="stylesheet" href="app-shell.css">
   <style>
-    .client-page { max-width: 920px; margin: 0 auto; padding: 28px 24px 56px; }
-    .client-page h1 { margin: 0 0 5px; color: var(--navy-text); font-size: 23px; }
-    .client-page .intro { margin: 0 0 23px; color: var(--surface-text-muted); font-size: 13px; }
-    .client-card { padding: 22px; background: var(--surface-panel-bg); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
-    .client-card + .client-card { margin-top: 15px; }
-    .client-card h2 { margin: 0 0 16px; color: var(--navy-text); font-size: 16px; }
-    .client-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-    .client-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .client-page { display: grid; grid-template-columns: 350px minmax(0, 1fr); height: 100%; min-height: 0; }
+    .has-app-shell #tool-workspace { height: 100%; min-height: 0; }
+    .records-column, .editor-column { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+    .records-column { border-right: 1px solid var(--surface-border); background: var(--surface-panel-bg); }
+    .client-head { padding: 22px 20px 18px; border-bottom: 1px solid var(--surface-border); background: var(--surface-bg); }
+    .client-eyebrow { margin: 0 0 5px; color: var(--orange); font-size: 10px; font-weight: 800; letter-spacing: .14em; }
+    .client-head h1 { margin: 0 0 7px; color: var(--navy-text); font-size: 24px; }
+    .client-head .intro { margin: 0; color: var(--surface-text-muted); font-size: 12px; line-height: 1.6; }
+    .records-tools { display: flex; flex-wrap: wrap; gap: 8px; padding: 18px 20px 12px; }
+    .records-search { width: 100%; min-width: 0; box-sizing: border-box; padding: 11px; border: 1px solid var(--surface-border); border-radius: var(--radius-xs); background: var(--surface-bg); color: var(--surface-text); font: inherit; font-size: 13px; }
+    .records-tools button { flex: 1; }
+    .records-status { margin: 0; padding: 0 20px 14px; color: var(--surface-text-muted); font-size: 12px; line-height: 1.6; }
+    .records-results { flex: 1; min-height: 0; overflow-y: auto; padding: 0 12px 16px; }
+    .customer-result { display: flex; flex-direction: column; gap: 6px; width: 100%; box-sizing: border-box; padding: 16px; margin-bottom: 9px; border: 1px solid var(--surface-border); border-radius: var(--radius-xs); background: var(--surface-bg); color: var(--surface-text); text-align: left; font: inherit; font-size: 12px; cursor: pointer; }
+    .customer-result:hover { border-color: var(--navy); }
+    .customer-result.is-selected { border-color: var(--orange); background: color-mix(in srgb, var(--orange) 8%, var(--surface-bg)); box-shadow: inset 3px 0 var(--orange); }
+    .customer-result strong { color: var(--navy-text); font-size: 15px; }
+    .customer-result .muted { color: var(--surface-text-muted); overflow-wrap: anywhere; }
+    .records-pagination { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px; border-top: 1px solid var(--surface-border); color: var(--surface-text-muted); font-size: 11px; }
+    [hidden] { display: none !important; }
+    .editor-column { background: var(--surface-bg); }
+    .editor-empty { display: flex; flex: 1; align-items: center; justify-content: center; padding: 40px; text-align: center; color: var(--surface-text-muted); }
+    .editor-empty h2 { color: var(--navy-text); font-size: 21px; margin: 0 0 10px; }
+    .editor-empty p { font-size: 13px; line-height: 1.8; margin: 0; }
+    .editor-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+    .editor-head { padding: 22px 24px 0; border-bottom: 1px solid var(--surface-border); background: var(--surface-panel-bg); }
+    .editor-title-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .editor-head h2 { margin: 0; color: var(--navy-text); font-size: 21px; }
+    .editor-subtitle { margin: 7px 0 18px; color: var(--surface-text-muted); font-size: 12px; }
+    .editor-tabs { display: flex; gap: 20px; }
+    .editor-tab { padding: 12px 2px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--surface-text-muted); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .editor-tab[aria-selected="true"] { color: var(--navy-text); border-bottom-color: var(--orange); }
+    #client-form { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+    .editor-body { flex: 1; min-height: 0; overflow-y: auto; padding: 24px; }
+    .client-card { max-width: 900px; padding: 22px; background: var(--surface-panel-bg); border-radius: var(--radius); border: 1px solid var(--surface-border); }
+    .client-card h2 { margin: 0 0 18px; color: var(--navy-text); font-size: 16px; }
+    .client-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .client-field { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
     .client-field.wide { grid-column: 1 / -1; }
     .client-field label { color: var(--surface-text); font-size: 13px; font-weight: 700; }
     .client-field .optional { color: var(--surface-text-muted); font-weight: 400; }
-    .client-field input, .client-field select, .client-field textarea {
-      width: 100%; box-sizing: border-box; padding: 10px 11px; border: 1px solid var(--surface-border);
-      border-radius: var(--radius-xs); background: var(--surface-bg); color: var(--surface-text);
-      font: inherit; font-size: 14px;
-    }
+    .client-field input, .client-field select, .client-field textarea { width: 100%; box-sizing: border-box; padding: 10px 11px; border: 1px solid var(--surface-border); border-radius: var(--radius-xs); background: var(--surface-bg); color: var(--surface-text); font: inherit; font-size: 14px; }
     .client-field textarea { min-height: 82px; resize: vertical; }
-    .client-field input:focus-visible, .client-field select:focus-visible, .client-field textarea:focus-visible {
-      outline: 2px solid var(--navy); outline-offset: 1px;
-    }
-    .client-note { margin: 8px 0 0; color: var(--surface-text-muted); font-size: 12px; }
-    .client-actions { display: flex; align-items: center; gap: 15px; margin-top: 20px; flex-wrap: wrap; }
-    .client-submit { border: 0; border-radius: var(--radius-xs); padding: 11px 20px; background: var(--orange); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
-    .client-submit:disabled { opacity: .6; cursor: wait; }
+    :is(input, select, textarea, button):focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+    .client-note { margin: 18px 0 0; color: var(--surface-text-muted); font-size: 12px; line-height: 1.7; }
+    .client-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 16px 24px; border-top: 1px solid var(--surface-border); background: var(--surface-panel-bg); }
+    .client-submit { border: 0; border-radius: var(--radius-xs); padding: 11px 16px; background: var(--orange); color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: default; }
     .client-status { margin: 0; color: var(--surface-text-muted); font-size: 13px; }
     .client-status.ok { color: #1E7B34; }
     .client-status.error { color: #C0392B; }
     .client-status a { color: inherit; text-decoration: underline; }
-    .records-card { margin-bottom: 18px; }
-    .records-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
-    .records-head h2 { margin: 0; }
-    .records-tools { display: flex; gap: 8px; }
-    .records-search { width: min(280px, 46vw); padding: 9px 11px; border: 1px solid var(--surface-border); border-radius: var(--radius-xs); background: var(--surface-bg); color: var(--surface-text); }
-    .secondary-btn { border: 1px solid var(--surface-border); border-radius: var(--radius-xs); padding: 9px 13px; background: var(--surface-bg); color: var(--navy-text); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .secondary-btn { border: 1px solid var(--surface-border); border-radius: var(--radius-xs); padding: 9px 12px; background: var(--surface-bg); color: var(--navy-text); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
     .secondary-btn:hover { border-color: var(--navy); }
-    .records-status { margin: 0; color: var(--surface-text-muted); font-size: 13px; }
-    .records-table-wrap { overflow-x: auto; }
-    .records-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .records-table th, .records-table td { padding: 11px 10px; border-bottom: 1px solid var(--surface-border); text-align: left; vertical-align: top; }
-    .records-table th { color: var(--surface-text-muted); font-size: 11px; letter-spacing: .04em; }
-    .records-table td { color: var(--surface-text); }
-    .records-table strong { color: var(--navy-text); }
-    .records-table .muted { color: var(--surface-text-muted); }
-    .edit-btn { border: 0; padding: 6px 10px; border-radius: var(--radius-xs); background: var(--navy); color: #fff; font: inherit; font-size: 12px; cursor: pointer; }
-    .records-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 14px; color: var(--surface-text-muted); font-size: 12px; }
-    .records-pagination[hidden] { display: none; }
-    .editor-panel { margin-top: 18px; }
-    .editor-panel > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 17px 20px; border-radius: var(--radius); background: var(--surface-panel-bg); box-shadow: var(--shadow-sm); color: var(--navy-text); font-weight: 700; cursor: pointer; list-style: none; }
-    .editor-panel > summary::-webkit-details-marker { display: none; }
-    .editor-panel > summary::after { content: '＋'; color: var(--orange); font-size: 19px; }
-    .editor-panel[open] > summary { border-radius: var(--radius) var(--radius) 0 0; box-shadow: none; }
-    .editor-panel[open] > summary::after { content: '−'; }
-    .editor-summary-hint { color: var(--surface-text-muted); font-size: 12px; font-weight: 400; }
-    .editor-body { padding: 18px; border-radius: 0 0 var(--radius) var(--radius); background: var(--surface-bg); }
-    .edit-banner { display: none; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 15px; padding: 11px 14px; border-radius: var(--radius-xs); background: color-mix(in srgb, var(--orange) 12%, transparent); color: var(--surface-text); font-size: 13px; }
-    .edit-banner.is-visible { display: flex; }
-    .contact-picker { display: none; margin-bottom: 16px; }
+    .contact-picker { display: none; margin-bottom: 20px; }
     .contact-picker.is-visible { display: flex; }
-    @media (max-width: 640px) {
-      .client-grid { grid-template-columns: 1fr; }
-      .client-field.wide { grid-column: auto; }
-      .client-page { padding: 20px 15px 40px; }
-      .records-head { align-items: stretch; flex-direction: column; }
-      .records-tools { width: 100%; flex-wrap: wrap; }
-      .records-search { flex: 1 0 100%; width: auto; }
-      #records-search-button, #new-client { flex: 1; }
-      .records-table th:nth-child(2), .records-table td:nth-child(2) { display: none; }
+    .back-to-results { display: none; }
+    @media (max-width: 1100px) { .client-page { grid-template-columns: 300px minmax(0, 1fr); } .client-grid { grid-template-columns: 1fr; } .client-field.wide { grid-column: auto; } }
+    @media (max-width: 760px) {
+      .client-page { grid-template-columns: minmax(0, 1fr); }
+      .client-page.has-editor .records-column, .client-page:not(.has-editor) .editor-column { display: none; }
+      .back-to-results { display: inline-block; }
+      .editor-head { padding: 20px 16px 0; }
+      .editor-body { padding: 16px; }
+      .client-card { padding: 18px; }
+      .client-actions { padding: 14px 16px; }
     }
   </style>
 </head>
 <body data-tool="airtable-client">
 <div id="tool-workspace">
   <div class="client-page">
-    <h1>客戶資料管理</h1>
-    <p class="intro">查看 Airtable【DGHM】客戶資料，或新增、載入並修改公司與聯絡人。</p>
-    <section class="client-card records-card" aria-labelledby="records-heading">
-      <div class="records-head">
-        <h2 id="records-heading">Airtable 客戶資料</h2>
+    <section class="records-column" aria-labelledby="records-heading">
+      <header class="client-head">
+        <p class="client-eyebrow">CUSTOMER WORKSPACE</p>
+        <h1 id="records-heading">客戶資料管理</h1>
+        <p class="intro">依編號、公司或聯絡人搜尋，選擇客戶後在右側編輯資料。</p>
+      </header>
         <div class="records-tools">
           <input class="records-search" id="records-search" type="search" placeholder="輸入編號、公司或聯絡人" aria-label="搜尋客戶編號、公司或聯絡人">
           <button class="secondary-btn" id="records-search-button" type="button">搜尋</button>
           <button class="client-submit" id="new-client" type="button">新增客戶</button>
         </div>
-      </div>
       <p class="records-status" id="records-status" role="status">輸入客戶編號、公司或聯絡人後搜尋。</p>
-      <div class="records-table-wrap" id="records-table-wrap" hidden></div>
+      <div class="records-results" id="records-table-wrap" hidden></div>
       <div class="records-pagination" id="records-pagination" hidden></div>
     </section>
-    <details class="editor-panel" id="editor-panel">
-      <summary><span id="editor-summary">新增客戶資料</span><span class="editor-summary-hint">需要時再展開填寫</span></summary>
+    <section class="editor-column" aria-label="客戶詳細資料">
+      <div class="editor-empty" id="editor-empty"><div><h2>選擇一位客戶</h2><p>在搜尋列輸入客戶編號，例如 07。<br>選擇搜尋結果後，這裡會顯示公司與聯絡人資料。<br>也可以點「新增客戶」建立資料。</p></div></div>
+      <div class="editor-panel" id="editor-panel" hidden>
+        <header class="editor-head">
+          <div class="editor-title-row"><h2 id="editor-summary">新增客戶資料</h2><button class="secondary-btn back-to-results" id="back-to-results" type="button">返回搜尋</button></div>
+          <p class="editor-subtitle" id="edit-banner-text">填寫公司資料，可另加一位聯絡人。</p>
+          <div class="editor-tabs" role="tablist" aria-label="客戶資料類別">
+            <button class="editor-tab" id="company-tab" role="tab" aria-selected="true" aria-controls="company-view" data-editor-tab="company" type="button">公司資料</button>
+            <button class="editor-tab" id="contact-tab" role="tab" aria-selected="false" aria-controls="contact-view" data-editor-tab="contact" tabindex="-1" type="button">聯絡人</button>
+          </div>
+        </header>
+      <form id="client-form" novalidate>
       <div class="editor-body">
-      <div class="edit-banner" id="edit-banner">
-        <span id="edit-banner-text"></span>
-        <button class="secondary-btn" id="cancel-edit" type="button">取消編輯</button>
-      </div>
-      <form id="client-form">
-      <section class="client-card" aria-labelledby="company-heading">
+      <section class="client-card" id="company-view" role="tabpanel" aria-labelledby="company-tab" data-editor-view="company">
         <h2 id="company-heading">公司資料</h2>
         <div class="client-grid">
           <div class="client-field"><label for="clientName">客戶名 <span aria-hidden="true">*</span></label><input id="clientName" name="clientName" required maxlength="500" autocomplete="organization" placeholder="例：合信旺旺"></div>
@@ -118,7 +122,7 @@
           <div class="client-field"><label for="payment">Payment <span class="optional">選填</span></label><select id="payment" name="payment"><option value="">未指定</option><option>30 Days Net</option></select></div>
         </div>
       </section>
-      <section class="client-card" aria-labelledby="contact-heading">
+      <section class="client-card" id="contact-view" role="tabpanel" aria-labelledby="contact-tab" data-editor-view="contact" hidden>
         <h2 id="contact-heading">聯絡人資料</h2>
         <div class="client-field contact-picker" id="contact-picker-wrap">
           <label for="contact-picker">要編輯的聯絡人</label>
@@ -134,14 +138,16 @@
         </div>
         <p class="client-note">填寫聯絡人姓名後，這一區會新增到 Airtable 的「聯絡人」表，並自動連結上方公司。若只建立公司，可整區留白。</p>
       </section>
+      </div>
       <div class="client-actions">
         <button class="client-submit" id="submit-button" type="submit">新增到 Airtable</button>
         <button class="secondary-btn" id="form-reset" type="button">清空表單</button>
+        <button class="secondary-btn" id="cancel-edit" type="button">關閉</button>
         <p id="client-status" class="client-status" role="status" aria-live="polite"></p>
       </div>
       </form>
       </div>
-    </details>
+    </section>
   </div>
 </div>
 <script src="tool-registry.js"></script>
@@ -160,7 +166,8 @@ const pagination = document.getElementById('records-pagination');
 const search = document.getElementById('records-search');
 const editorPanel = document.getElementById('editor-panel');
 const editorSummary = document.getElementById('editor-summary');
-const editBanner = document.getElementById('edit-banner');
+const editorEmpty = document.getElementById('editor-empty');
+const clientPage = document.querySelector('.client-page');
 const editBannerText = document.getElementById('edit-banner-text');
 const contactPickerWrap = document.getElementById('contact-picker-wrap');
 const contactPicker = document.getElementById('contact-picker');
@@ -214,15 +221,12 @@ function renderRecords() {
     pagination.innerHTML = '';
     return;
   }
-  recordsWrap.innerHTML = `<table class="records-table">
-    <thead><tr><th>客戶</th><th>公司資訊</th><th>聯絡人</th><th></th></tr></thead>
-    <tbody>${pageRows.map((company) => `<tr>
-      <td><strong>${esc(company.clientName || '未命名')}</strong><br><span class="muted">${company.clientNumber ? `#${esc(formatClientNumber(company.clientNumber))}${company.industry ? ' · ' : ''}` : ''}${esc(company.industry || '')}</span></td>
-      <td>${esc(company.fullName || company.brandName || '—')}<br><span class="muted">${esc(company.website || '')}</span></td>
-      <td>${esc(contactSummary(company) || '—')}</td>
-      <td><button class="edit-btn" type="button" data-edit-id="${esc(company.id)}">載入編輯</button></td>
-    </tr>`).join('')}</tbody>
-  </table>`;
+  recordsWrap.innerHTML = pageRows.map((company) => `<button class="customer-result ${company.id === editingCompanyId ? 'is-selected' : ''}" type="button" data-edit-id="${esc(company.id)}" aria-pressed="${company.id === editingCompanyId}">
+    <strong>${company.clientNumber ? `#${esc(formatClientNumber(company.clientNumber))}　` : ''}${esc(company.clientName || '未命名')}</strong>
+    <span>${esc(company.fullName || company.brandName || '尚未填寫公司全稱')}</span>
+    <span class="muted">${esc(company.industry || '未指定產業')}</span>
+    <span class="muted">聯絡人：${esc(contactSummary(company) || '尚無聯絡人')}</span>
+  </button>`).join('');
   pagination.hidden = filtered.length <= PAGE_SIZE;
   pagination.innerHTML = `<button class="secondary-btn" type="button" data-page-action="prev" ${currentPage === 1 ? 'disabled' : ''}>上一頁</button>
     <span>第 ${currentPage}／${pageCount} 頁</span>
@@ -257,13 +261,12 @@ function startEdit(companyId) {
   contactPickerWrap.classList.add('is-visible');
   contactPicker.value = contacts[0]?.id || '';
   fillContact(contacts[0] || null);
-  editBannerText.textContent = `正在編輯：${company.clientName}`;
-  editBanner.classList.add('is-visible');
+  editBannerText.textContent = `${company.clientNumber ? `客戶編號 #${formatClientNumber(company.clientNumber)} · ` : ''}${(company.contacts || []).length} 位聯絡人`;
   button.textContent = '儲存修改';
   status.textContent = '';
-  editorSummary.textContent = '編輯客戶資料';
-  editorPanel.open = true;
-  editorPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  editorSummary.textContent = company.clientName || '編輯客戶資料';
+  openEditor();
+  renderRecords();
 }
 
 function resetEditor(closePanel = false) {
@@ -272,13 +275,54 @@ function resetEditor(closePanel = false) {
   editingContactId = '';
   contactPickerWrap.classList.remove('is-visible');
   contactPicker.innerHTML = '';
-  editBanner.classList.remove('is-visible');
   button.textContent = '新增到 Airtable';
   status.textContent = '';
   status.className = 'client-status';
   editorSummary.textContent = '新增客戶資料';
-  if (closePanel) editorPanel.open = false;
+  editBannerText.textContent = '填寫公司資料，可另加一位聯絡人。';
+  setEditorTab('company');
+  if (closePanel) closeEditor();
+  else if (recordsLoaded) renderRecords();
 }
+
+function setEditorTab(name) {
+  document.querySelectorAll('[data-editor-tab]').forEach((tab) => {
+    const active = tab.dataset.editorTab === name;
+    tab.setAttribute('aria-selected', String(active));
+    tab.tabIndex = active ? 0 : -1;
+  });
+  document.querySelectorAll('[data-editor-view]').forEach((view) => { view.hidden = view.dataset.editorView !== name; });
+  document.querySelector('.editor-body').scrollTop = 0;
+}
+
+function openEditor() {
+  editorPanel.hidden = false;
+  editorEmpty.hidden = true;
+  clientPage.classList.add('has-editor');
+  setEditorTab('company');
+}
+
+function closeEditor() {
+  editorPanel.hidden = true;
+  editorEmpty.hidden = false;
+  clientPage.classList.remove('has-editor');
+  if (recordsLoaded) renderRecords();
+}
+
+document.querySelectorAll('[data-editor-tab]').forEach((tab) => {
+  tab.addEventListener('click', () => setEditorTab(tab.dataset.editorTab));
+  tab.addEventListener('keydown', (event) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const name = event.key === 'Home' ? 'company' : event.key === 'End' ? 'contact' : tab.dataset.editorTab === 'company' ? 'contact' : 'company';
+    setEditorTab(name);
+    document.getElementById(`${name}-tab`).focus();
+  });
+});
+document.getElementById('back-to-results').addEventListener('click', () => {
+  clientPage.classList.remove('has-editor');
+  search.focus();
+});
 
 async function loadRecords() {
   recordsStatus.textContent = '正在讀取 Airtable…';
@@ -332,8 +376,7 @@ document.getElementById('records-search-button').addEventListener('click', () =>
 });
 document.getElementById('new-client').addEventListener('click', () => {
   resetEditor();
-  editorPanel.open = true;
-  editorPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  openEditor();
 });
 document.getElementById('cancel-edit').addEventListener('click', () => resetEditor(true));
 document.getElementById('form-reset').addEventListener('click', () => resetEditor());
@@ -345,7 +388,12 @@ contactPicker.addEventListener('change', () => {
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
-  if (!form.reportValidity()) return;
+  const invalid = form.querySelector(':invalid');
+  if (invalid) {
+    setEditorTab(invalid.closest('[data-editor-view]')?.dataset.editorView || 'company');
+    invalid.reportValidity();
+    return;
+  }
   const data = Object.fromEntries(new FormData(form).entries());
   if (editingCompanyId) data.recordId = editingCompanyId;
   if (editingContactId) data.contactId = editingContactId;
