@@ -52,6 +52,15 @@
     .records-table strong { color: var(--navy-text); }
     .records-table .muted { color: var(--surface-text-muted); }
     .edit-btn { border: 0; padding: 6px 10px; border-radius: var(--radius-xs); background: var(--navy); color: #fff; font: inherit; font-size: 12px; cursor: pointer; }
+    .records-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 14px; color: var(--surface-text-muted); font-size: 12px; }
+    .editor-panel { margin-top: 18px; }
+    .editor-panel > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 17px 20px; border-radius: var(--radius); background: var(--surface-panel-bg); box-shadow: var(--shadow-sm); color: var(--navy-text); font-weight: 700; cursor: pointer; list-style: none; }
+    .editor-panel > summary::-webkit-details-marker { display: none; }
+    .editor-panel > summary::after { content: '＋'; color: var(--orange); font-size: 19px; }
+    .editor-panel[open] > summary { border-radius: var(--radius) var(--radius) 0 0; box-shadow: none; }
+    .editor-panel[open] > summary::after { content: '−'; }
+    .editor-summary-hint { color: var(--surface-text-muted); font-size: 12px; font-weight: 400; }
+    .editor-body { padding: 18px; border-radius: 0 0 var(--radius) var(--radius); background: var(--surface-bg); }
     .edit-banner { display: none; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 15px; padding: 11px 14px; border-radius: var(--radius-xs); background: color-mix(in srgb, var(--orange) 12%, transparent); color: var(--surface-text); font-size: 13px; }
     .edit-banner.is-visible { display: flex; }
     .contact-picker { display: none; margin-bottom: 16px; }
@@ -61,8 +70,9 @@
       .client-field.wide { grid-column: auto; }
       .client-page { padding: 20px 15px 40px; }
       .records-head { align-items: stretch; flex-direction: column; }
-      .records-tools { width: 100%; }
-      .records-search { flex: 1; width: auto; }
+      .records-tools { width: 100%; flex-wrap: wrap; }
+      .records-search { flex: 1 0 100%; width: auto; }
+      #records-refresh, #new-client { flex: 1; }
       .records-table th:nth-child(2), .records-table td:nth-child(2) { display: none; }
     }
   </style>
@@ -78,16 +88,21 @@
         <div class="records-tools">
           <input class="records-search" id="records-search" type="search" placeholder="搜尋公司或聯絡人" aria-label="搜尋公司或聯絡人">
           <button class="secondary-btn" id="records-refresh" type="button">重新載入</button>
+          <button class="client-submit" id="new-client" type="button">新增客戶</button>
         </div>
       </div>
       <p class="records-status" id="records-status" role="status">正在讀取 Airtable…</p>
       <div class="records-table-wrap" id="records-table-wrap" hidden></div>
+      <div class="records-pagination" id="records-pagination" hidden></div>
     </section>
-    <div class="edit-banner" id="edit-banner">
-      <span id="edit-banner-text"></span>
-      <button class="secondary-btn" id="cancel-edit" type="button">取消編輯</button>
-    </div>
-    <form id="client-form">
+    <details class="editor-panel" id="editor-panel">
+      <summary><span id="editor-summary">新增客戶資料</span><span class="editor-summary-hint">需要時再展開填寫</span></summary>
+      <div class="editor-body">
+      <div class="edit-banner" id="edit-banner">
+        <span id="edit-banner-text"></span>
+        <button class="secondary-btn" id="cancel-edit" type="button">取消編輯</button>
+      </div>
+      <form id="client-form">
       <section class="client-card" aria-labelledby="company-heading">
         <h2 id="company-heading">公司資料</h2>
         <div class="client-grid">
@@ -123,7 +138,9 @@
         <button class="secondary-btn" id="form-reset" type="button">清空表單</button>
         <p id="client-status" class="client-status" role="status" aria-live="polite"></p>
       </div>
-    </form>
+      </form>
+      </div>
+    </details>
   </div>
 </div>
 <script src="tool-registry.js"></script>
@@ -138,7 +155,10 @@ const status = document.getElementById('client-status');
 const button = document.getElementById('submit-button');
 const recordsStatus = document.getElementById('records-status');
 const recordsWrap = document.getElementById('records-table-wrap');
+const pagination = document.getElementById('records-pagination');
 const search = document.getElementById('records-search');
+const editorPanel = document.getElementById('editor-panel');
+const editorSummary = document.getElementById('editor-summary');
 const editBanner = document.getElementById('edit-banner');
 const editBannerText = document.getElementById('edit-banner-text');
 const contactPickerWrap = document.getElementById('contact-picker-wrap');
@@ -146,6 +166,8 @@ const contactPicker = document.getElementById('contact-picker');
 let records = [];
 let editingCompanyId = '';
 let editingContactId = '';
+let currentPage = 1;
+const PAGE_SIZE = 10;
 
 function esc(value) {
   return String(value == null ? '' : value)
@@ -163,21 +185,31 @@ function renderRecords() {
       .join(' ').toLowerCase();
     return !keyword || text.includes(keyword);
   });
-  recordsStatus.textContent = `共 ${records.length} 家客戶${keyword ? `，找到 ${filtered.length} 筆` : ''}`;
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  currentPage = Math.min(Math.max(currentPage, 1), pageCount);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pageRows = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+  recordsStatus.textContent = `共 ${records.length} 家客戶${keyword ? `，找到 ${filtered.length} 筆` : ''}${filtered.length > PAGE_SIZE ? `，第 ${currentPage}／${pageCount} 頁` : ''}`;
   recordsWrap.hidden = false;
   if (!filtered.length) {
     recordsWrap.innerHTML = '<p class="records-status">找不到符合的資料。</p>';
+    pagination.hidden = true;
+    pagination.innerHTML = '';
     return;
   }
   recordsWrap.innerHTML = `<table class="records-table">
     <thead><tr><th>客戶</th><th>公司資訊</th><th>聯絡人</th><th></th></tr></thead>
-    <tbody>${filtered.map((company) => `<tr>
+    <tbody>${pageRows.map((company) => `<tr>
       <td><strong>${esc(company.clientName || '未命名')}</strong><br><span class="muted">${esc(company.industry || '')}</span></td>
       <td>${esc(company.fullName || company.brandName || '—')}<br><span class="muted">${esc(company.website || '')}</span></td>
       <td>${esc(contactSummary(company) || '—')}</td>
       <td><button class="edit-btn" type="button" data-edit-id="${esc(company.id)}">載入編輯</button></td>
     </tr>`).join('')}</tbody>
   </table>`;
+  pagination.hidden = filtered.length <= PAGE_SIZE;
+  pagination.innerHTML = `<button class="secondary-btn" type="button" data-page-action="prev" ${currentPage === 1 ? 'disabled' : ''}>上一頁</button>
+    <span>第 ${currentPage}／${pageCount} 頁</span>
+    <button class="secondary-btn" type="button" data-page-action="next" ${currentPage === pageCount ? 'disabled' : ''}>下一頁</button>`;
 }
 
 function setField(name, value) {
@@ -212,10 +244,12 @@ function startEdit(companyId) {
   editBanner.classList.add('is-visible');
   button.textContent = '儲存修改';
   status.textContent = '';
-  form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  editorSummary.textContent = '編輯客戶資料';
+  editorPanel.open = true;
+  editorPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function resetEditor() {
+function resetEditor(closePanel = false) {
   form.reset();
   editingCompanyId = '';
   editingContactId = '';
@@ -225,6 +259,8 @@ function resetEditor() {
   button.textContent = '新增到 Airtable';
   status.textContent = '';
   status.className = 'client-status';
+  editorSummary.textContent = '新增客戶資料';
+  if (closePanel) editorPanel.open = false;
 }
 
 async function loadRecords() {
@@ -235,6 +271,7 @@ async function loadRecords() {
     const result = await response.json();
     if (!response.ok || !result.ok) throw new Error(result.error || '讀取失敗');
     records = result.records || [];
+    currentPage = 1;
     renderRecords();
   } catch (error) {
     recordsStatus.textContent = error.message || '無法讀取 Airtable。';
@@ -246,10 +283,25 @@ recordsWrap.addEventListener('click', (event) => {
   const target = event.target.closest('[data-edit-id]');
   if (target) startEdit(target.dataset.editId);
 });
-search.addEventListener('input', renderRecords);
+pagination.addEventListener('click', (event) => {
+  const action = event.target.closest('[data-page-action]')?.dataset.pageAction;
+  if (!action) return;
+  currentPage += action === 'next' ? 1 : -1;
+  renderRecords();
+  recordsWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+search.addEventListener('input', () => {
+  currentPage = 1;
+  renderRecords();
+});
 document.getElementById('records-refresh').addEventListener('click', loadRecords);
-document.getElementById('cancel-edit').addEventListener('click', resetEditor);
-document.getElementById('form-reset').addEventListener('click', resetEditor);
+document.getElementById('new-client').addEventListener('click', () => {
+  resetEditor();
+  editorPanel.open = true;
+  editorPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+document.getElementById('cancel-edit').addEventListener('click', () => resetEditor(true));
+document.getElementById('form-reset').addEventListener('click', () => resetEditor());
 contactPicker.addEventListener('change', () => {
   const company = records.find((item) => item.id === editingCompanyId);
   const contact = (company?.contacts || []).find((item) => item.id === contactPicker.value);
@@ -283,12 +335,9 @@ form.addEventListener('submit', async (event) => {
       return;
     }
     const action = editingCompanyId ? '更新' : '新增';
-    status.textContent = `已${action}「${result.clientName}」${result.contactId ? '及其聯絡人' : ''}。`;
-    status.className = 'client-status ok';
-    resetEditor();
-    status.textContent = `已${action}「${result.clientName}」${result.contactId ? '及其聯絡人' : ''}。`;
-    status.className = 'client-status ok';
+    resetEditor(true);
     await loadRecords();
+    recordsStatus.textContent = `已${action}「${result.clientName}」${result.contactId ? '及其聯絡人' : ''}，清單已更新。`;
   } catch {
     status.textContent = '無法連到工作台 API，請確認使用 Netlify 環境開啟頁面。';
     status.className = 'client-status error';
