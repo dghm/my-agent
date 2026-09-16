@@ -210,6 +210,9 @@ export default async (req) => {
     if (!input || typeof input !== 'object' || Array.isArray(input)) return json(400, { ok: false, error: '表單資料格式錯誤' });
     return req.method === 'POST' ? createRecords(token, input) : updateRecords(token, input);
   } catch (error) {
+    if (error instanceof Error && error.message === 'INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND') {
+      return json(403, { ok: false, error: 'Airtable Token 缺少 data.records:read 權限，請更新 FOR_AIRTABLE_DGHM_BASE 後重新載入' });
+    }
     const detail = error instanceof Error && error.message ? `（${error.message}）` : '';
     return json(502, { ok: false, error: `無法讀寫 Airtable${detail}` });
   }
