@@ -50,8 +50,12 @@
     .client-card h2 { margin: 0 0 18px; color: var(--navy-text); font-size: 16px; }
     .client-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
     .client-field { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
-    .client-field select[multiple] { min-height: 112px; padding-block: 6px; }
-    .field-help { color: var(--surface-text-muted); font-size: 11px; line-height: 1.5; }
+    .industry-field { margin: 0; padding: 0; border: 0; }
+    .industry-field legend { margin-bottom: 8px; padding: 0; font-weight: 700; }
+    .industry-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; padding: 12px; border: 1px solid var(--surface-border); border-radius: var(--radius-xs); background: var(--surface-bg); }
+    .industry-option { display: flex; align-items: center; gap: 8px; min-height: 38px; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--surface-border); border-radius: var(--radius-xs); background: var(--surface-panel-bg); cursor: pointer; }
+    .industry-option:has(input:checked) { border-color: var(--orange); background: color-mix(in srgb, var(--orange) 10%, var(--surface-panel-bg)); color: var(--navy-text); }
+    .industry-option input { width: 17px; height: 17px; margin: 0; accent-color: var(--orange); }
     .client-field.wide { grid-column: 1 / -1; }
     .client-field label { color: var(--surface-text); font-size: 13px; font-weight: 700; }
     .client-field .optional { color: var(--surface-text-muted); font-weight: 400; }
@@ -123,8 +127,8 @@
           <div class="client-field"><label for="brandName">公司／品牌名稱 <span class="optional">選填</span></label><input id="brandName" name="brandName" maxlength="500"></div>
           <div class="client-field"><label for="taxId">統編 <span class="optional">選填</span></label><input id="taxId" name="taxId" inputmode="numeric" maxlength="20"></div>
           <div class="client-field wide"><label for="clientAddress">客戶地址 <span class="optional">選填</span></label><textarea id="clientAddress" name="clientAddress" maxlength="500"></textarea></div>
+          <fieldset class="client-field wide industry-field"><legend>產業類別 <span class="optional">可複選</span></legend><div class="industry-options" id="industry-options"></div></fieldset>
           <div class="client-field"><label for="website">網站 <span class="optional">選填</span></label><input id="website" name="website" type="url" maxlength="500" placeholder="https://example.com"></div>
-          <div class="client-field"><label for="industry">產業類別 <span class="optional">可複選</span></label><select id="industry" name="industry" multiple size="4"></select><span class="field-help">Mac 按住 Command、Windows 按住 Ctrl 可選擇多項</span></div>
           <div class="client-field"><label for="source">來源管道 <span class="optional">選填</span></label><select id="source" name="source"><option value="">未指定</option></select></div>
           <div class="client-field"><label for="payment">Payment <span class="optional">選填</span></label><select id="payment" name="payment"><option value="">未指定</option></select></div>
         </div>
@@ -205,12 +209,17 @@ function formatClientNumber(value) {
 
 function applySelectOptions(selectOptions = {}) {
   ['industry', 'source', 'payment'].forEach((name) => {
+    if (name === 'industry') {
+      const current = [...form.querySelectorAll('input[name="industry"]:checked')].map((input) => input.value);
+      document.getElementById('industry-options').innerHTML = (selectOptions.industry || [])
+        .map((value, index) => `<label class="industry-option" for="industry-${index}"><input id="industry-${index}" name="industry" type="checkbox" value="${esc(value)}" ${current.includes(value) ? 'checked' : ''}><span>${esc(value)}</span></label>`).join('');
+      return;
+    }
     const select = form.elements.namedItem(name);
-    const current = select.multiple ? [...select.selectedOptions].map((option) => option.value) : select.value;
-    select.innerHTML = (select.multiple ? '' : '<option value="">未指定</option>') + (selectOptions[name] || [])
+    const current = select.value;
+    select.innerHTML = '<option value="">未指定</option>' + (selectOptions[name] || [])
       .map((value) => `<option value="${esc(value)}">${esc(value)}</option>`).join('');
-    if (select.multiple) [...select.options].forEach((option) => { option.selected = current.includes(option.value); });
-    else if ([...select.options].some((option) => option.value === current)) select.value = current;
+    if ([...select.options].some((option) => option.value === current)) select.value = current;
   });
 }
 
@@ -256,13 +265,13 @@ function renderRecords() {
 }
 
 function setField(name, value) {
-  const field = form.elements.namedItem(name);
-  if (!field) return;
-  if (field instanceof HTMLSelectElement && field.multiple) {
+  if (name === 'industry') {
     const values = Array.isArray(value) ? value : [];
-    [...field.options].forEach((option) => { option.selected = values.includes(option.value); });
+    form.querySelectorAll('input[name="industry"]').forEach((input) => { input.checked = values.includes(input.value); });
     return;
   }
+  const field = form.elements.namedItem(name);
+  if (!field) return;
   field.value = value || '';
 }
 
