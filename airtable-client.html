@@ -52,9 +52,9 @@
     .client-field { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
     .industry-field { margin: 0; padding: 0; border: 0; }
     .industry-field legend { margin-bottom: 8px; padding: 0; font-weight: 700; }
-    .industry-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; padding: 12px; border: 1px solid var(--surface-border); border-radius: var(--radius-xs); background: var(--surface-bg); }
-    .industry-option { display: flex; align-items: center; gap: 8px; min-height: 38px; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--surface-border); border-radius: var(--radius-xs); background: var(--surface-panel-bg); cursor: pointer; }
-    .industry-option:has(input:checked) { border-color: var(--orange); background: color-mix(in srgb, var(--orange) 10%, var(--surface-panel-bg)); color: var(--navy-text); }
+    .industry-options { display: flex; flex-wrap: wrap; gap: 12px 26px; }
+    .industry-option { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; cursor: pointer; }
+    .industry-option:has(input:checked) { color: var(--navy-text); font-weight: 700; }
     .industry-option input { width: 17px; height: 17px; margin: 0; accent-color: var(--orange); }
     .client-field.wide { grid-column: 1 / -1; }
     .client-field label { color: var(--surface-text); font-size: 13px; font-weight: 700; }
