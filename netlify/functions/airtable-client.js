@@ -25,6 +25,7 @@ const SELECT_FIELD_IDS = {
   industry: COMPANY_FIELDS.industry,
   source: COMPANY_FIELDS.source,
 };
+const MULTI_SELECT_KEYS = new Set(['industry']);
 let selectOptionsCache = null;
 
 function json(status, body) {
@@ -116,6 +117,11 @@ function textValue(value) {
   return String(value);
 }
 
+function choiceNames(value) {
+  if (!Array.isArray(value)) return value ? [textValue(value)] : [];
+  return value.map(textValue).filter(Boolean);
+}
+
 function publicContact(record) {
   const fields = record.fields || {};
   return {
@@ -130,7 +136,9 @@ function publicCompany(record, contactsById) {
   const fields = record.fields || {};
   const contactIds = fields[COMPANY_CONTACT_LINK_FIELD] || [];
   const company = { id: record.id, clientNumber: textValue(fields[COMPANY_NUMBER_FIELD]) };
-  for (const [key, fieldId] of Object.entries(COMPANY_FIELDS)) company[key] = textValue(fields[fieldId]);
+  for (const [key, fieldId] of Object.entries(COMPANY_FIELDS)) {
+    company[key] = MULTI_SELECT_KEYS.has(key) ? choiceNames(fields[fieldId]) : textValue(fields[fieldId]);
+  }
   company.contacts = contactIds.map((id) => contactsById.get(id)).filter(Boolean).map(publicContact);
   return company;
 }
@@ -140,6 +148,13 @@ function buildFields(input, mapping, { includeEmpty = false, skip = [], noteKey 
   for (const [key, fieldId] of Object.entries(mapping)) {
     if (skip.includes(key) || !Object.prototype.hasOwnProperty.call(input, key)) continue;
     const value = input[key];
+    if (MULTI_SELECT_KEYS.has(key)) {
+      if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) return { error: `${key} 格式錯誤` };
+      const choices = [...new Set(value.map((item) => item.trim()).filter(Boolean))];
+      if (choices.some((choice) => choice.length > 500 || (selectOptions[key] && !selectOptions[key].includes(choice)))) return { error: `${key} 選項無效` };
+      if (choices.length || includeEmpty) fields[fieldId] = choices;
+      continue;
+    }
     if (typeof value !== 'string') return { error: `${key} 格式錯誤` };
     const trimmed = value.trim();
     if (!trimmed) {

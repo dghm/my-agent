@@ -50,6 +50,8 @@
     .client-card h2 { margin: 0 0 18px; color: var(--navy-text); font-size: 16px; }
     .client-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
     .client-field { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+    .client-field select[multiple] { min-height: 112px; padding-block: 6px; }
+    .field-help { color: var(--surface-text-muted); font-size: 11px; line-height: 1.5; }
     .client-field.wide { grid-column: 1 / -1; }
     .client-field label { color: var(--surface-text); font-size: 13px; font-weight: 700; }
     .client-field .optional { color: var(--surface-text-muted); font-weight: 400; }
@@ -122,7 +124,7 @@
           <div class="client-field"><label for="taxId">統編 <span class="optional">選填</span></label><input id="taxId" name="taxId" inputmode="numeric" maxlength="20"></div>
           <div class="client-field wide"><label for="clientAddress">客戶地址 <span class="optional">選填</span></label><textarea id="clientAddress" name="clientAddress" maxlength="500"></textarea></div>
           <div class="client-field"><label for="website">網站 <span class="optional">選填</span></label><input id="website" name="website" type="url" maxlength="500" placeholder="https://example.com"></div>
-          <div class="client-field"><label for="industry">產業類別 <span class="optional">選填</span></label><select id="industry" name="industry"><option value="">未指定</option></select></div>
+          <div class="client-field"><label for="industry">產業類別 <span class="optional">可複選</span></label><select id="industry" name="industry" multiple size="4"></select><span class="field-help">Mac 按住 Command、Windows 按住 Ctrl 可選擇多項</span></div>
           <div class="client-field"><label for="source">來源管道 <span class="optional">選填</span></label><select id="source" name="source"><option value="">未指定</option></select></div>
           <div class="client-field"><label for="payment">Payment <span class="optional">選填</span></label><select id="payment" name="payment"><option value="">未指定</option></select></div>
         </div>
@@ -204,10 +206,11 @@ function formatClientNumber(value) {
 function applySelectOptions(selectOptions = {}) {
   ['industry', 'source', 'payment'].forEach((name) => {
     const select = form.elements.namedItem(name);
-    const current = select.value;
-    select.innerHTML = '<option value="">未指定</option>' + (selectOptions[name] || [])
+    const current = select.multiple ? [...select.selectedOptions].map((option) => option.value) : select.value;
+    select.innerHTML = (select.multiple ? '' : '<option value="">未指定</option>') + (selectOptions[name] || [])
       .map((value) => `<option value="${esc(value)}">${esc(value)}</option>`).join('');
-    if ([...select.options].some((option) => option.value === current)) select.value = current;
+    if (select.multiple) [...select.options].forEach((option) => { option.selected = current.includes(option.value); });
+    else if ([...select.options].some((option) => option.value === current)) select.value = current;
   });
 }
 
@@ -254,7 +257,13 @@ function renderRecords() {
 
 function setField(name, value) {
   const field = form.elements.namedItem(name);
-  if (field) field.value = value || '';
+  if (!field) return;
+  if (field instanceof HTMLSelectElement && field.multiple) {
+    const values = Array.isArray(value) ? value : [];
+    [...field.options].forEach((option) => { option.selected = values.includes(option.value); });
+    return;
+  }
+  field.value = value || '';
 }
 
 function fillContact(contact) {
@@ -418,7 +427,9 @@ form.addEventListener('submit', async (event) => {
     invalid.reportValidity();
     return;
   }
-  const data = Object.fromEntries(new FormData(form).entries());
+  const formData = new FormData(form);
+  const data = Object.fromEntries(formData.entries());
+  data.industry = formData.getAll('industry');
   const wasEditing = Boolean(editingCompanyId);
   const savedCompanyId = editingCompanyId;
   const savedContactId = editingContactId;
