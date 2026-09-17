@@ -4,7 +4,7 @@ const BASE_ID = 'appnhALSuMU5xcGVf';
 const COMPANY_TABLE_ID = 'tblyASlHqnsSu7s9K';
 const CONTACT_TABLE_ID = 'tbl5iKkQNSF3YIG9w';
 const COMPANY_FIELDS = {
-  clientName: 'fldWSOeAw6qdzrijU', fullName: 'fldgs3sMEsU7qbjx6', taxId: 'fldgph0fceCJN7UfR',
+  clientName: 'fldWSOeAw6qdzrijU', chineseShortName: 'fldhXHV6ZIYRBVAtY', fullName: 'fldgs3sMEsU7qbjx6', taxId: 'fldgph0fceCJN7UfR',
   clientAddress: 'fldw7o8zA0YMm8Y3c', payment: 'flddMyXt7jOCnAeDm', industry: 'fldra4NwWFmVZoz44',
   source: 'fldGRByW07YWIfb2u', brandName: 'fldf8z9B8e5L47TVp', website: 'fld5oL2VbQ5qk8ISJ',
 };
@@ -158,7 +158,7 @@ function validatePayload(input, includeEmpty, selectOptions) {
   if (company.error) return { error: company.error };
   const contact = buildFields(input, CONTACT_FIELDS, { includeEmpty, skip: ['company', 'contactFirstName'], noteKey: 'notes' });
   if (contact.error) return { error: contact.error };
-  if (!company.fields[COMPANY_FIELDS.clientName]) return { error: '請填寫客戶名' };
+  if (!company.fields[COMPANY_FIELDS.clientName]) return { error: '請填寫英文簡稱' };
   const contactName = contact.fields[CONTACT_FIELDS.contactName];
   const hasContactDetails = Object.entries(contact.fields).some(([fieldId, value]) => fieldId !== CONTACT_FIELDS.contactName && value != null && value !== '');
   if (hasContactDetails && !contactName) return { error: '填寫聯絡資訊時，請一併填寫聯絡人姓名' };
