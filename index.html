@@ -138,8 +138,8 @@
   }
   .tool-link:hover { color: var(--navy-text); box-shadow: var(--shadow-md); }
 
-  /* ---- Make monitor ---- */
-  .make-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  /* ---- Service monitor ---- */
+  .service-monitor-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
   .make-problem-summary { margin: 0 0 8px; font-size: 12px; color: var(--surface-text-muted); }
   .usage-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
   .usage-tile { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
@@ -170,7 +170,7 @@
   @media (max-width: 680px) {
     .wrap { padding: 24px 18px 40px; }
     .top { align-items: flex-start; }
-    .hero, .support-grid, .make-grid { grid-template-columns: 1fr; }
+    .hero, .support-grid, .service-monitor-grid { grid-template-columns: 1fr; }
     .hero-main { padding: 22px; }
     .timeline-step { flex: 1 1 45%; }
   }
@@ -193,7 +193,7 @@
     </div>
     <div class="board-grid">
       <div class="board-card">
-        <h3><span aria-hidden="true">◆</span> 今天的行事曆</h3>
+        <h3><span aria-hidden="true">◆</span> 今日行事曆</h3>
         <div id="today-events"><p class="board-empty">載入中…</p></div>
       </div>
       <div class="board-card">
@@ -201,20 +201,24 @@
         <div id="yesterday-events"><p class="board-empty">載入中…</p></div>
       </div>
       <div class="board-card">
-        <h3><span aria-hidden="true">◆</span> 網站健康</h3>
-        <div id="site-health"><p class="board-empty">尚未檢查</p></div>
+        <h3><span aria-hidden="true">◆</span> 明天要做什麼</h3>
+        <div id="tomorrow-events"><p class="board-empty">載入中…</p></div>
       </div>
     </div>
   </section>
 
-  <section class="section" aria-labelledby="make-monitor-title">
+  <section class="section" aria-labelledby="service-monitor-title">
     <div class="section-head">
-      <h2 id="make-monitor-title">Make 自動化監控</h2>
-      <p id="make-monitor-updated"></p>
+      <h2 id="service-monitor-title">服務監控</h2>
+      <p id="service-monitor-updated"></p>
     </div>
-    <div class="make-grid">
+    <div class="service-monitor-grid">
       <div class="board-card">
-        <h3><span aria-hidden="true">◆</span> 異常監控</h3>
+        <h3><span aria-hidden="true">◆</span> 網站健康</h3>
+        <div id="site-health"><p class="board-empty">尚未檢查</p></div>
+      </div>
+      <div class="board-card">
+        <h3><span aria-hidden="true">◆</span> Make 異常監控</h3>
         <div id="make-problems"><p class="board-empty">載入中…</p></div>
       </div>
       <div class="board-card">
@@ -413,6 +417,8 @@ initTheme('my-agent-theme');
     renderEventList('today-events', todayResult, '今天還沒有排定的行事曆項目');
     var yesterdayResult = await fetchEvents(taipeiDateStr(-1));
     renderEventList('yesterday-events', yesterdayResult, '昨天沒有排定的行事曆項目');
+    var tomorrowResult = await fetchEvents(taipeiDateStr(1));
+    renderEventList('tomorrow-events', tomorrowResult, '明天還沒有排定的行事曆項目');
   }
 
   function renderSiteHealth(data) {
@@ -505,7 +511,7 @@ initTheme('my-agent-theme');
   }
 
   async function loadMakeMonitor() {
-    var updatedLabel = document.getElementById('make-monitor-updated');
+    var updatedLabel = document.getElementById('service-monitor-updated');
     var cached = null;
     try { cached = JSON.parse(localStorage.getItem(MAKE_MONITOR_CACHE_KEY) || 'null'); } catch (error) {}
     if (cached) {
