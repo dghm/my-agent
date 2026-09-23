@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DGHM 文件表單產生器</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="dghm-ui.css?v=20260903-3">
+<link rel="stylesheet" href="app-shell.css?v=20260915-1">
+<style>
+  :root { --tool-panel: #fff; --tool-tab: #fff; }
+  :root[data-theme="dark"] { --tool-panel: #1f2530; --tool-tab: #2a313d; }
+  * { box-sizing: border-box; }
+  .document-page { display: flex; width: 100%; height: 100%; min-height: 0; }
+  .editor-column {
+    display: flex; flex: 0 0 var(--editor-col-width, 500px); flex-direction: column;
+    min-width: 0; min-height: 0; border-right: 1px solid var(--surface-border);
+    background: var(--surface-panel-bg);
+  }
+  .page-head { flex-shrink: 0; padding: 22px 20px 18px; border-bottom: 1px solid var(--surface-border); background: var(--surface-bg); }
+  .eyebrow { margin: 0 0 5px; color: var(--orange); font-size: 10px; font-weight: 800; letter-spacing: .14em; }
+  .page-head h1 { margin: 0 0 5px; color: var(--navy-text); font-size: 24px; }
+  .page-head .hint { margin: 0; font-size: 12px; line-height: 1.55; }
+  .form-panel { flex: 1; min-height: 0; overflow-y: auto; padding: 20px; background: var(--surface-panel-bg); }
+  .form-head { margin-bottom: 14px; }
+  .form-head .hint { margin: 0; font-size: 12px; line-height: 1.55; }
+  .form-panel label { font-size: 13px; }
+  .field-note { display: block; margin-top: 4px; color: var(--surface-text-muted); font-size: 11px; font-weight: 400; }
+  .form-panel textarea { min-height: 54px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .draft-actions { display: flex; align-items: center; gap: 8px; margin: 0 0 16px; flex-wrap: wrap; }
+  .draft-actions button { display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px; font-size: 12px; }
+  .draft-actions .draft-status { color: var(--surface-text-muted); font-size: 12px; white-space: nowrap; }
+  .draft-actions #accordion-toggle-all { width: 32px; height: 32px; margin-left: auto; padding: 6px; justify-content: center; }
+  .action-icon { display: inline-block; flex: 0 0 16px; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  #document-form > fieldset.form-section { overflow: hidden; padding: 0; }
+  .form-section-header { width: 100%; }
+  .form-section-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 11px 14px; border: 0; border-radius: 0; background: transparent; color: var(--navy-text); font-size: 12px; font-weight: 700; text-align: left; }
+  .form-section-toggle:hover { background: color-mix(in srgb, var(--navy) 6%, var(--surface-panel-bg)); }
+  .form-section-toggle .section-chevron { transition: transform .18s ease; }
+  .form-section.is-collapsed .section-chevron { transform: rotate(180deg); }
+  .form-section-content { padding: 0 14px 12px; }
+  .form-section.is-collapsed .form-section-content { display: none; }
+  .section-list { margin-top: 10px; }
+  .section-block { padding: 0 0 10px; margin: 0 0 10px; border: 0; border-bottom: 1px solid var(--surface-border); border-radius: 0; background: transparent; }
+  .section-block:first-child { padding-top: 0; }
+  .section-block:last-child { margin-bottom: 8px; }
+  .section-block-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 7px 8px; border: 1px solid var(--surface-border); border-left: 3px solid var(--orange); border-radius: 6px; background: color-mix(in srgb, var(--navy) 5%, var(--surface-panel-bg)); }
+  .section-block-toggle { display: flex; flex: 1; align-items: center; gap: 8px; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--surface-text); text-align: left; }
+  .section-block-toggle:hover { background: transparent; color: var(--navy-text); }
+  .section-block-tag { flex-shrink: 0; padding: 2px 7px; border: 1px solid var(--navy); border-radius: 4px; background: var(--navy); color: #fff; font-size: 11px; font-weight: 700; }
+  .section-block-summary { overflow: hidden; color: var(--navy-text); font-size: 13px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+  .section-block-chevron { margin-left: auto; transition: transform .18s ease; }
+  .section-block.is-collapsed .section-block-chevron { transform: rotate(180deg); }
+  .section-block.is-collapsed .section-block-head { margin-bottom: 0; }
+  .section-block.is-collapsed .section-block-content { display: none; }
+  .term-row { display: grid; grid-template-columns: 1fr 30px; gap: 6px; align-items: start; margin-bottom: 6px; }
+  .term-row textarea { min-height: 48px; margin: 0; }
+  .page-pick { display: flex; align-items: center; gap: 5px; color: var(--surface-text-muted); font-size: 11px; }
+  .page-pick input { width: 44px; padding: 3px 4px; font-size: 12px; text-align: center; }
+  .icon-delete { width: 30px; height: 30px; padding: 0; border: 0; background: transparent; color: var(--surface-text-muted); font-size: 18px; }
+  .icon-delete:hover { color: #c0392b; }
+  .items-table { width: 100%; margin: 10px 0 6px; border-collapse: collapse; font-size: .82rem; }
+  .items-table th { padding: 5px 6px; background: var(--navy); color: #fff; font-size: .68rem; text-align: left; }
+  .items-table td { padding: 4px; border-bottom: 1px solid var(--surface-border); vertical-align: middle; }
+  .items-table input, .items-table textarea { min-height: 30px; margin: 0; padding: 4px 6px; border-radius: 4px; font-family: inherit; font-size: 12px; line-height: 1.4; }
+  .items-table .cell-delete { width: 30px; text-align: center; }
+  .btn-add { width: 100%; padding: 8px 12px; border: 1px dashed var(--surface-input-border); background: transparent; color: var(--surface-text-muted); }
+  .btn-add:hover { border-color: var(--navy-text); color: var(--navy-text); }
+  .btn-add.small { width: auto; padding: 4px 10px; font-size: 12px; }
+  .split-handle { flex: 0 0 7px; }
+  .output-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; padding: 20px; overflow: hidden; }
+  .output-toolbar { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 8px; overflow-x: auto; }
+  .output-toolbar button {
+    display: inline-grid; flex: 0 0 34px; width: 34px; height: 32px; place-items: center;
+    padding: 0; border: 1px solid var(--surface-border); border-radius: 6px;
+    background: var(--tool-tab); color: var(--surface-text-muted);
+  }
+  .output-toolbar button:hover, .output-toolbar button.active { border-color: var(--navy); background: var(--navy); color: #fff; }
+  .output-toolbar svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .copy-status { align-self: center; color: var(--surface-text-muted); font-size: 11px; white-space: nowrap; }
+  .output-view { flex: 1; min-height: 0; }
+  .output-view.hidden { display: none; }
+  #preview-frame { width: 100%; height: 100%; border: 1px solid var(--surface-border); border-radius: 8px; background: #fff; }
+  #out-html { width: 100%; height: 100%; resize: none; border: 1px solid var(--surface-border); border-radius: 8px; background: #101722; color: #e8eef8; padding: 16px; font: 12px/1.65 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  @media (max-width: 900px) {
+    .document-page { display: block; height: auto; overflow: auto; }
+    .editor-column { width: 100%; border-right: 0; border-bottom: 1px solid var(--surface-border); }
+    .split-handle { display: none; }
+    .output-panel { min-height: 74vh; }
+  }
+  @media (max-width: 520px) {
+    .page-head, .form-panel, .output-panel { padding-left: 14px; padding-right: 14px; }
+    .row2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body data-tool="document">
+<div id="tool-workspace" class="document-page">
+  <section class="editor-column" aria-labelledby="tool-title">
+    <header class="page-head">
+      <p class="eyebrow">DOCUMENT WORKSPACE</p>
+      <h1 id="tool-title">文件表單</h1>
+      <p class="hint">用分類區塊與表格建立 DGHM 工作清單、需求整理與專案文件。</p>
+    </header>
+
+    <div class="form-panel">
+      <div class="form-head">
+        <p class="hint">填寫文件資訊；各內容區塊右上角的「頁」欄位可決定內容落在第幾頁。</p>
+      </div>
+
+      <div class="draft-actions">
+        <button type="button" class="secondary" id="load-draft-btn">
+          <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8l6 6v12a2 2 0 0 1-2 2z"/><path d="M14 2v6h6M12 18v-6m0 0-3 3m3-3 3 3"/></svg>
+          <span>載入草稿 JSON</span>
+        </button>
+        <button type="button" class="secondary" id="save-draft-btn">
+          <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8l6 6v12a2 2 0 0 1-2 2z"/><path d="M14 2v6h6M12 12v6m0 0 3-3m-3 3-3-3"/></svg>
+          <span>下載草稿 JSON</span>
+        </button>
+        <button type="button" class="secondary" id="clear-btn">
+          <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 11v6M14 11v6M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          <span>清除本機暫存</span>
+        </button>
+        <span class="draft-status" id="draft-status" aria-live="polite"></span>
+        <button type="button" class="secondary" id="accordion-toggle-all" aria-label="全部收合" title="全部收合">
+          <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h8M3 12h8M3 19h8M15 5l3 3 3-3M15 19l3-3 3 3"/></svg>
+        </button>
+        <input type="file" id="load-draft-input" accept="application/json,.json" hidden>
+      </div>
+
+      <form id="document-form">
+        <fieldset>
+          <legend>01 — 文件欄位</legend>
+
+          <label for="f_doc_title">文件標題
+            <span class="field-note">顯示於成品右上角的橘底白字標籤。</span>
+          </label>
+          <input type="text" id="f_doc_title" autocomplete="off" placeholder="例如：專案說明書">
+
+          <label for="f_main">文件主標題
+            <span class="field-note">可輸入多行，例如「電商網站建置／最低限度可用版本」。</span>
+          </label>
+          <textarea id="f_main" rows="2" placeholder="文件的主要標題"></textarea>
+
+          <label for="f_subtitle">副標題</label>
+          <input type="text" id="f_subtitle" autocomplete="off" placeholder="簡短補充說明（選填）">
+
+          <div class="row2">
+            <div>
+              <label for="f_doc_no">文件編號</label>
+              <input type="text" id="f_doc_no" autocomplete="off" placeholder="留白">
+            </div>
+            <div>
+              <label for="f_doc_purpose">文件用途</label>
+              <input type="text" id="f_doc_purpose" autocomplete="off" placeholder="留白">
+            </div>
+          </div>
+
+          <label for="f_footer_note">頁尾說明</label>
+          <input type="text" id="f_footer_note" autocomplete="off" placeholder="例如：本文件僅供內部提案準備參考">
+        </fieldset>
+
+        <fieldset>
+          <legend>02 — 內容區塊與表格</legend>
+          <span class="field-note">每個區塊包含標題、說明及一張兩欄表格；「頁」可指定輸出位置。</span>
+          <div id="section-list" class="section-list"></div>
+          <button type="button" class="btn-add" id="add-section-btn">＋ 新增內容區塊</button>
+        </fieldset>
+
+        <fieldset>
+          <legend>03 — 條件與補充說明</legend>
+          <span class="field-note">參考報價單與應收帳款單的條款區塊；頁碼留白時會自動放在最後一頁。</span>
+          <div class="row2">
+            <div>
+              <label for="f_terms_title">區塊標題</label>
+              <input type="text" id="f_terms_title" value="條件說明">
+            </div>
+            <div>
+              <label for="f_terms_page">指定頁碼（選填）</label>
+              <input type="number" id="f_terms_page" min="1" placeholder="自動：最後一頁">
+            </div>
+          </div>
+          <label>條件清單</label>
+          <div id="terms-list"></div>
+          <button type="button" class="btn-add small" id="add-term-btn">＋ 新增條件</button>
+          <label for="f_terms_note">補充說明（選填，深藍左框提示）</label>
+          <textarea id="f_terms_note" rows="3" placeholder="例如：如有未盡事宜，雙方另行協議。"></textarea>
+        </fieldset>
+
+      </form>
+    </div>
+  </section>
+
+  <div class="split-handle" role="separator" aria-orientation="vertical" aria-label="拖曳調整預覽寬度" title="拖曳調整預覽寬度"></div>
+
+  <section class="output-panel" aria-label="文件輸出">
+    <div class="output-toolbar">
+      <button type="button" class="tab-btn active" data-tab="preview" aria-label="即時預覽" title="即時預覽">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+      </button>
+      <button type="button" class="tab-btn" data-tab="html" aria-label="HTML 原始碼" title="HTML 原始碼">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 9-3 3 3 3M16 9l3 3-3 3M14 5l-4 14"/></svg>
+      </button>
+      <button type="button" id="copy-btn" aria-label="複製 HTML" title="複製 HTML">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+      </button>
+      <button type="button" id="download-btn" aria-label="下載 HTML" title="下載 HTML">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>
+      </button>
+      <button type="button" id="open-btn" aria-label="開啟列印版" title="開啟列印版">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M10 14l9-9M19 14v5H5V5h5"/></svg>
+      </button>
+      <span class="copy-status" id="copy-status" aria-live="polite"></span>
+    </div>
+    <div class="output-view" id="view-preview"><iframe id="preview-frame" title="A4 文件即時預覽"></iframe></div>
+    <div class="output-view hidden" id="view-html"><textarea id="out-html" readonly spellcheck="false" aria-label="HTML 原始碼"></textarea></div>
+  </section>
+</div>
+
+<script src="tool-registry.js?v=20260923-1"></script>
+<script src="project-context.js?v=20260903-3"></script>
+<script src="app-shell.js?v=20260915-1"></script>
+<script>mountAppShell({ activeTool: 'document' });</script>
+<script src="dghm-ui.js?v=20260903-3"></script>
+<script>
+(function () {
+  'use strict';
+
+  initTheme('dghm-document-editor-theme');
+  initColumnResize({
+    page: '.document-page', editor: '.editor-column', handle: '.split-handle',
+    storageKey: 'dghm-document-editor-width'
+  });
+
+  var STORAGE_KEY = 'dghm-document-generator-draft-v4';
+  var fields = ['f_doc_title', 'f_main', 'f_subtitle', 'f_doc_no', 'f_doc_purpose', 'f_footer_note', 'f_terms_title', 'f_terms_page', 'f_terms_note'];
+  var renderTimer = null;
+  var lastHtml = '';
+  var headerBannerDataUrl = 'data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCACWBLgDASIAAhEBAxEB/8QAHAABAAIDAQEBAAAAAAAAAAAAAAYHBAUIAwIB/8QAWRAAAQMDAQQGBgUFCA4JBQAAAAECAwQFEQYHEiExExhBVqXTCBQWIlHSFVVhcaMjMkKBkRczN1JTdZSzJDU2WGJzdHaCk5WhstElOHKElrG0weE0Q1dkZ//EABsBAQABBQEAAAAAAAAAAAAAAAAEAQIDBQYH/8QAOxEAAgEBBAcHAQgBBQADAAAAAAECAxEhUpEEBRITFDHRFUFRU1RhknEiMkKBobHB8OEGFjM0YkOi8f/aAAwDAQACEQMRAD8A55AB3ZzgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB371eNj3dDxKr80dXjY93Q8Sq/NLUBxfFV8bzZv9zTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82NzTwrIqvq8bHu6HiVX5o6vGx7uh4lV+aWoBxVfG82N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';
+  var sectionSeq = 0;
+
+  function value(id) { return document.getElementById(id).value || ''; }
+  function escapeHtml(text) {
+    return String(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+  function safeFilename(text) {
+    return String(text || 'DGHM-文件').trim().replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, '-');
+  }
+  function sectionRows(block) {
+    return Array.from(block.querySelectorAll('.item-row')).map(function (row) {
+      return {
+        item: row.querySelector('[data-row="item"]').value,
+        description: row.querySelector('[data-row="description"]').value
+      };
+    });
+  }
+  function sectionData() {
+    return Array.from(document.querySelectorAll('.section-block')).map(function (block) {
+      return {
+        title: block.querySelector('[data-field="title"]').value,
+        description: block.querySelector('[data-field="description"]').value,
+        page: Math.max(1, parseInt(block.querySelector('[data-field="page"]').value, 10) || 1),
+        columnA: block.querySelector('[data-field="columnA"]').value || '項目',
+        columnB: block.querySelector('[data-field="columnB"]').value || '概略說明',
+        rows: sectionRows(block)
+      };
+    });
+  }
+  function termsData() {
+    return Array.from(document.querySelectorAll('#terms-list textarea')).map(function (textarea) { return textarea.value; });
+  }
+  function addTerm(text) {
+    var row = document.createElement('div');
+    row.className = 'term-row';
+    row.innerHTML = '<textarea rows="2" placeholder="輸入一項條件或注意事項"></textarea>' +
+      '<button type="button" class="icon-delete" data-action="delete-term" aria-label="刪除這項條件">×</button>';
+    row.querySelector('textarea').value = text || '';
+    document.getElementById('terms-list').appendChild(row);
+  }
+  function addRow(block, rowData) {
+    var body = block.querySelector('tbody');
+    var row = document.createElement('tr');
+    row.className = 'item-row';
+    row.innerHTML = '<td><input type="text" data-row="item" aria-label="項目" placeholder="項目名稱"></td>' +
+      '<td><textarea rows="1" data-row="description" aria-label="概略說明" placeholder="概略說明"></textarea></td>' +
+      '<td class="cell-delete"><button type="button" class="icon-delete" data-action="delete-row" aria-label="刪除這一列">×</button></td>';
+    body.appendChild(row);
+    if (rowData) {
+      row.querySelector('[data-row="item"]').value = rowData.item || '';
+      row.querySelector('[data-row="description"]').value = rowData.description || '';
+    }
+  }
+  function addSection(data) {
+    data = data || {};
+    sectionSeq += 1;
+    var block = document.createElement('section');
+    block.className = 'section-block';
+    block.dataset.sectionId = String(sectionSeq);
+    var contentId = 'section-block-content-' + sectionSeq;
+    block.innerHTML = '<div class="section-block-head"><button type="button" class="section-block-toggle" data-action="toggle-section" aria-expanded="true" aria-controls="' + contentId + '">' +
+      '<span class="section-block-tag">區塊 ' + sectionSeq + '</span><span class="section-block-summary">未命名區塊</span>' +
+      '<svg class="action-icon section-block-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg></button>' +
+      '<label class="page-pick">頁 <input type="number" min="1" value="' + Math.max(1, parseInt(data.page, 10) || 1) + '" data-field="page" aria-label="輸出頁數"></label>' +
+      '<button type="button" class="icon-delete" data-action="delete-section" aria-label="刪除這個區塊">×</button></div><div class="section-block-content" id="' + contentId + '">' +
+      '<label>區塊標題</label><input type="text" data-field="title" placeholder="例如：一、基礎環境">' +
+      '<label>區塊說明</label><input type="text" data-field="description" placeholder="簡短說明這一組內容">' +
+      '<div class="row2"><div><label>左欄標題</label><input type="text" data-field="columnA" value="項目"></div>' +
+      '<div><label>右欄標題</label><input type="text" data-field="columnB" value="概略說明"></div></div>' +
+      '<table class="items-table"><thead><tr><th style="width:32%">項目</th><th>概略說明</th><th style="width:30px"></th></tr></thead><tbody></tbody></table>' +
+      '<button type="button" class="btn-add small" data-action="add-row">＋ 新增表格列</button></div>';
+    document.getElementById('section-list').appendChild(block);
+    block.querySelector('[data-field="title"]').value = data.title || '';
+    block.querySelector('[data-field="description"]').value = data.description || '';
+    block.querySelector('[data-field="columnA"]').value = data.columnA || '項目';
+    block.querySelector('[data-field="columnB"]').value = data.columnB || '概略說明';
+    var rows = Array.isArray(data.rows) && data.rows.length ? data.rows : [{}];
+    rows.forEach(function (row) { addRow(block, row); });
+    updateTableHead(block);
+    updateSectionSummary(block);
+    return block;
+  }
+  function updateTableHead(block) {
+    var heads = block.querySelectorAll('thead th');
+    heads[0].textContent = block.querySelector('[data-field="columnA"]').value || '項目';
+    heads[1].textContent = block.querySelector('[data-field="columnB"]').value || '概略說明';
+  }
+  function updateSectionSummary(block) {
+    var title = block.querySelector('[data-field="title"]').value.trim();
+    block.querySelector('.section-block-summary').textContent = title || '未命名區塊';
+  }
+  function buildSectionHtml(section) {
+    var usableRows = section.rows.filter(function (row) { return row.item.trim() || row.description.trim(); });
+    if (!section.title.trim() && !section.description.trim() && !usableRows.length) return '';
+    var rowsHtml = usableRows.map(function (row) {
+      return '<tr><td class="item-name">' + escapeHtml(row.item) + '</td><td class="desc">' + escapeHtml(row.description) + '</td></tr>';
+    }).join('');
+    if (!rowsHtml) rowsHtml = '<tr><td class="item-name">&nbsp;</td><td class="desc">&nbsp;</td></tr>';
+    return '<section class="content-section"><div class="category-head"><span class="category-title">' +
+      escapeHtml(section.title) + '</span>' + (section.description.trim() ? '<span class="category-description">' + escapeHtml(section.description) + '</span>' : '') +
+      '</div><table class="feature-table"><thead><tr><th>' + escapeHtml(section.columnA) + '</th><th>' + escapeHtml(section.columnB) +
+      '</th></tr></thead><tbody>' + rowsHtml + '</tbody></table></section>';
+  }
+  function buildTermsHtml(terms, note) {
+    var usableTerms = terms.map(function (term) { return term.trim(); }).filter(Boolean);
+    note = note.trim();
+    if (!usableTerms.length && !note) return '';
+    var title = value('f_terms_title').trim() || '條件說明';
+    var html = '<section class="terms-section"><div class="terms-title">' + escapeHtml(title) + '</div>';
+    if (usableTerms.length) {
+      html += '<ol class="terms-list">' + usableTerms.map(function (term) {
+        return '<li>' + escapeHtml(term).replace(/\n/g, '<br>') + '</li>';
+      }).join('') + '</ol>';
+    }
+    if (note) html += '<div class="terms-box">' + escapeHtml(note).replace(/\n/g, '<br>') + '</div>';
+    return html + '</section>';
+  }
+  function buildDocument() {
+    var docTitle = value('f_doc_title').trim();
+    var docNo = value('f_doc_no').trim();
+    var purpose = value('f_doc_purpose').trim();
+    var main = value('f_main');
+    var subtitle = value('f_subtitle').trim();
+    var footerNote = value('f_footer_note').trim();
+    var sections = sectionData();
+    var terms = termsData();
+    var termsNote = value('f_terms_note');
+    var termsHtml = buildTermsHtml(terms, termsNote);
+    var pageTotal = 1;
+    sections.forEach(function (section) { if (section.page > pageTotal) pageTotal = section.page; });
+    var requestedTermsPage = parseInt(value('f_terms_page'), 10);
+    if (termsHtml && requestedTermsPage > pageTotal) pageTotal = requestedTermsPage;
+    var termsPage = requestedTermsPage > 0 ? requestedTermsPage : pageTotal;
+    var mainHtml = escapeHtml(main).replace(/\n/g, '<br>') || '&nbsp;';
+    var footer = '<footer class="footer"><span>萬能數維有限公司 · <strong>' + escapeHtml(purpose || '專案文件') +
+      '</strong></span><span>' + escapeHtml(docNo || docTitle || 'DGHM 文件') +
+      (footerNote ? ' &nbsp;·&nbsp; ' + escapeHtml(footerNote) : '') + '</span></footer>';
+    var pagesHtml = '';
+    for (var page = 1; page <= pageTotal; page += 1) {
+      pagesHtml += '<main class="page">';
+      if (page === 1) {
+        pagesHtml += '<div class="doc-header-banner"><span class="banner-label">' + escapeHtml(docTitle || '　') + '</span></div>' +
+          '<section class="document-head"><h1>' + mainHtml + '</h1>' +
+          (subtitle ? '<div class="subtitle">' + escapeHtml(subtitle) + '</div>' : '') +
+          '<div class="header-meta"><div><span>文件編號：</span><strong>' + escapeHtml(docNo) + '</strong></div>' +
+          '<div><span>文件用途：</span><strong>' + escapeHtml(purpose) + '</strong></div></div></section>';
+      } else {
+        pagesHtml += '<div class="page-mini-header"><span>' + escapeHtml(docNo || docTitle || 'DGHM 文件') +
+          '</span><span>第 ' + page + ' 頁，共 ' + pageTotal + ' 頁</span></div>';
+      }
+      var pageContent = '';
+      sections.forEach(function (section) { if (section.page === page) pageContent += buildSectionHtml(section); });
+      if (termsHtml && page === termsPage) pageContent += termsHtml;
+      pagesHtml += pageContent || '<div class="empty-writing-space" aria-label="空白內容區"></div>';
+      pagesHtml += footer + '</main>';
+    }
+
+    return '<!DOCTYPE html>\n<html lang="zh-Hant">\n<head>\n' +
+      '<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1.0">\n' +
+      '<title>' + escapeHtml(docTitle || 'DGHM 文件') + '</title>\n' +
+      '<style>\n' +
+      '@import url(\'https://fonts.googleapis.com/css2?family=K2D:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap\');\n' +
+      '*{box-sizing:border-box;margin:0;padding:0}:root{--navy:#0D2F6E;--orange:#E5622A;--ink:#1A1E2E;--gray:#5A6580;--line:#E8ECF5;--pale:#F4F7FB}\n' +
+      'body{font-family:K2D,"Noto Sans TC","PingFang TC",sans-serif;background:#1A1E2E;color:var(--ink);font-size:14px;line-height:1.8}\n' +
+      '.page{position:relative;width:210mm;height:297mm;margin:0 auto 8px;overflow:hidden;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3)}\n' +
+      '.doc-header-banner{position:relative;width:100%;height:26mm;background:url(\'' + headerBannerDataUrl + '\') center/100% 100% no-repeat;background-color:var(--navy)}\n' +
+      '.banner-label{position:absolute;right:6%;top:72%;transform:translateY(-50%);max-width:42%;overflow:hidden;color:#fff;font-size:1.6rem;font-weight:400;letter-spacing:2px;text-overflow:ellipsis;white-space:nowrap}\n' +
+      '.document-head{position:relative;padding:7mm 14mm 7mm;color:var(--navy)}.document-head h1{max-width:112mm;font-size:1.6rem;font-weight:700;line-height:1.3}.document-head .subtitle{margin-top:2px;color:var(--gray);font-size:.85rem}.header-meta{position:absolute;top:7mm;right:14mm;color:var(--navy);font-size:.78rem;line-height:1.85}.header-meta span{color:var(--gray);font-weight:400}.header-meta strong{font-weight:600}\n' +
+      '.page-mini-header{display:flex;justify-content:space-between;align-items:center;padding:6mm 14mm 4mm;border-bottom:1px solid var(--line);margin-bottom:2mm;color:var(--gray);font-size:.72rem;font-weight:600;letter-spacing:.5px}\n' +
+      '.content-section{padding:2mm 14mm 3mm}.category-head{display:flex;align-items:baseline;gap:10px;margin-bottom:2mm}.category-title{flex-shrink:0;padding-bottom:4px;border-bottom:2px solid var(--orange);color:var(--orange);font-size:.9rem;font-weight:700;letter-spacing:2px}.category-description{color:var(--gray);font-size:.75rem;line-height:1.4}.feature-table{width:100%;border-collapse:collapse;font-size:.82rem}.feature-table thead{background:var(--navy);color:#fff}.feature-table th{padding:5px 10px;text-align:left;font-size:.75rem;font-weight:600}.feature-table th:first-child{width:28%}.feature-table tbody tr:nth-child(even){background:var(--pale)}.feature-table td{padding:5px 10px;border-bottom:1px solid var(--line);vertical-align:middle}.feature-table .item-name{color:var(--navy);font-weight:600}.feature-table .desc{color:var(--ink);font-size:.78rem}.empty-writing-space{height:180mm;margin:0 14mm;background:linear-gradient(to bottom,transparent 9.7mm,var(--line) 10mm);background-size:100% 10mm}\n' +
+      '.terms-section{padding:3mm 14mm 5mm}.terms-title{padding-bottom:4px;border-bottom:2px solid var(--orange);color:var(--orange);font-size:.9rem;font-weight:700;letter-spacing:2px}.terms-list{margin:3mm 0 0;padding-left:18px;color:var(--gray);font-size:.78rem;line-height:1.7}.terms-list li{margin-bottom:2px}.terms-box{margin-top:3mm;padding:8px 14px;border-left:3px solid var(--navy);border-radius:0 6px 6px 0;background:var(--pale);color:var(--gray);font-size:.78rem;line-height:1.6}\n' +
+      '.footer{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:center;padding:3mm 14mm;background:var(--navy);color:rgba(255,255,255,.72);font-size:10px}.footer strong{color:#fff}\n' +
+      '@media print{@page{size:A4;margin:0}body{background:#fff}.page{width:210mm;height:297mm;margin:0;box-shadow:none;page-break-after:always}.page:last-child{page-break-after:auto}}\n' +
+      '</style>\n</head>\n<body>\n' + pagesHtml + '\n</body>\n</html>';
+  }
+  function paintPreview(html) {
+    var frame = document.getElementById('preview-frame');
+    try {
+      var doc = frame.contentDocument;
+      if (doc && doc.documentElement.hasAttribute('data-preview-ready')) {
+        var parsed = new DOMParser().parseFromString(html, 'text/html');
+        doc.title = parsed.title;
+        doc.head.innerHTML = parsed.head.innerHTML;
+        doc.body.innerHTML = parsed.body.innerHTML;
+        fitPreview();
+        return;
+      }
+    } catch (error) {}
+    frame.srcdoc = html.replace('<html', '<html data-preview-ready');
+  }
+  function fitPreview() {
+    var frame = document.getElementById('preview-frame');
+    try {
+      var doc = frame.contentDocument;
+      var page = doc && doc.querySelector('.page');
+      if (!page) return;
+      doc.body.style.zoom = '1';
+      doc.body.style.width = '100%';
+      var scale = Math.min(1, Math.max(0.25, (frame.clientWidth - 4) / page.offsetWidth));
+      doc.body.style.zoom = String(scale);
+    } catch (error) {}
+  }
+  function render() {
+    renderTimer = null;
+    var html = buildDocument();
+    document.getElementById('out-html').value = html;
+    if (html !== lastHtml) paintPreview(html);
+    lastHtml = html;
+    return html;
+  }
+  function scheduleRender() {
+    clearTimeout(renderTimer);
+    renderTimer = setTimeout(render, 180);
+  }
+  function flushRender() {
+    clearTimeout(renderTimer);
+    return render();
+  }
+  function readDraft() {
+    var fieldValues = {};
+    fields.forEach(function (id) { fieldValues[id] = value(id); });
+    return { kind: 'dghm-document-draft', version: 2, fields: fieldValues, sections: sectionData(), terms: termsData() };
+  }
+  function validateDraft(draft) {
+    if (!draft || typeof draft !== 'object' || Array.isArray(draft)) throw new Error('草稿內容必須是物件');
+    if (draft.kind && draft.kind !== 'dghm-document-draft') throw new Error('這不是文件表單草稿');
+    if (!draft.fields || typeof draft.fields !== 'object' || Array.isArray(draft.fields)) throw new Error('草稿缺少 fields');
+    fields.forEach(function (id) {
+      if (id in draft.fields && typeof draft.fields[id] !== 'string') throw new Error(id + ' 必須是文字');
+    });
+    if (!Array.isArray(draft.sections)) throw new Error('草稿缺少 sections');
+    draft.sections.forEach(function (section, sectionIndex) {
+      if (!section || typeof section !== 'object' || Array.isArray(section)) throw new Error('區塊 ' + (sectionIndex + 1) + ' 格式錯誤');
+      ['title', 'description', 'columnA', 'columnB'].forEach(function (key) {
+        if (key in section && typeof section[key] !== 'string') throw new Error('區塊 ' + (sectionIndex + 1) + ' 的 ' + key + ' 必須是文字');
+      });
+      if ('page' in section && (!Number.isInteger(section.page) || section.page < 1)) throw new Error('區塊頁數必須是大於 0 的整數');
+      if (!Array.isArray(section.rows)) throw new Error('區塊 ' + (sectionIndex + 1) + ' 缺少 rows');
+      section.rows.forEach(function (row, rowIndex) {
+        if (!row || typeof row !== 'object' || Array.isArray(row)) throw new Error('區塊 ' + (sectionIndex + 1) + ' 第 ' + (rowIndex + 1) + ' 列格式錯誤');
+        if ('item' in row && typeof row.item !== 'string') throw new Error('表格項目必須是文字');
+        if ('description' in row && typeof row.description !== 'string') throw new Error('表格說明必須是文字');
+      });
+    });
+    if ('terms' in draft && !Array.isArray(draft.terms)) throw new Error('terms 必須是陣列');
+    (draft.terms || []).forEach(function (term) {
+      if (typeof term !== 'string') throw new Error('每項條件必須是文字');
+    });
+    return draft;
+  }
+  function applyDraft(draft) {
+    validateDraft(draft);
+    fields.forEach(function (id) {
+      if (id in draft.fields) document.getElementById(id).value = draft.fields[id] || '';
+    });
+    document.getElementById('section-list').innerHTML = '';
+    sectionSeq = 0;
+    if (draft.sections.length) draft.sections.forEach(function (section) { addSection(section); });
+    else addSection({ page: 1, rows: [{}] });
+    document.getElementById('terms-list').innerHTML = '';
+    if (draft.terms && draft.terms.length) draft.terms.forEach(function (term) { addTerm(term); });
+    else addTerm('');
+    refreshSectionLabels();
+  }
+  function saveDraft() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(readDraft()));
+      document.getElementById('draft-status').textContent = '已自動暫存於這台裝置';
+    } catch (error) {}
+  }
+  function restoreDraft(showStatus) {
+    try {
+      var draft = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if (!draft) {
+        if (showStatus) document.getElementById('draft-status').textContent = '目前沒有暫存內容';
+        return false;
+      }
+      applyDraft(draft);
+      if (showStatus) document.getElementById('draft-status').textContent = '已還原暫存內容';
+      render();
+      return true;
+    } catch (error) {
+      if (showStatus) document.getElementById('draft-status').textContent = '暫存格式無法讀取';
+      return false;
+    }
+  }
+  function openDocument() {
+    var blob = new Blob([flushRender()], { type: 'text/html;charset=utf-8' });
+    window.open(URL.createObjectURL(blob), '_blank', 'noopener');
+  }
+
+  function refreshSectionLabels() {
+    document.querySelectorAll('.section-block-tag').forEach(function (tag, index) {
+      tag.textContent = '區塊 ' + (index + 1);
+    });
+  }
+
+  function initFormAccordions() {
+    var fieldsets = Array.from(document.querySelectorAll('#document-form > fieldset'));
+    var toggleAll = document.getElementById('accordion-toggle-all');
+    function iconMarkup(collapse) {
+      return collapse
+        ? '<svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h8M3 12h8M3 19h8M15 5l3 3 3-3M15 19l3-3 3 3"/></svg>'
+        : '<svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h8M3 12h8M3 19h8M15 8l3-3 3 3M15 16l3 3 3-3"/></svg>';
+    }
+    function setCollapsed(fieldset, collapsed) {
+      var button = fieldset.querySelector('.form-section-toggle');
+      var content = fieldset.querySelector('.form-section-content');
+      fieldset.classList.toggle('is-collapsed', collapsed);
+      button.setAttribute('aria-expanded', String(!collapsed));
+      content.hidden = collapsed;
+    }
+    function updateToggleAll() {
+      var anyExpanded = fieldsets.some(function (fieldset) { return !fieldset.classList.contains('is-collapsed'); });
+      var label = anyExpanded ? '全部收合' : '全部展開';
+      toggleAll.setAttribute('aria-label', label);
+      toggleAll.title = label;
+      toggleAll.innerHTML = iconMarkup(anyExpanded);
+    }
+    fieldsets.forEach(function (fieldset, index) {
+      var legend = fieldset.querySelector('legend');
+      var header = document.createElement('div');
+      var content = document.createElement('div');
+      var button = document.createElement('button');
+      var contentId = 'document-form-section-' + (index + 1);
+      fieldset.classList.add('form-section');
+      header.className = 'form-section-header';
+      content.className = 'form-section-content';
+      content.id = contentId;
+      while (legend.nextSibling) content.appendChild(legend.nextSibling);
+      button.type = 'button';
+      button.className = 'form-section-toggle';
+      button.setAttribute('aria-expanded', 'true');
+      button.setAttribute('aria-controls', contentId);
+      button.innerHTML = '<span>' + escapeHtml(legend.textContent.trim()) + '</span><svg class="action-icon section-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>';
+      legend.remove();
+      header.appendChild(button);
+      fieldset.appendChild(header);
+      fieldset.appendChild(content);
+      button.addEventListener('click', function () {
+        setCollapsed(fieldset, !fieldset.classList.contains('is-collapsed'));
+        updateToggleAll();
+      });
+    });
+    toggleAll.addEventListener('click', function () {
+      var shouldCollapse = fieldsets.some(function (fieldset) { return !fieldset.classList.contains('is-collapsed'); });
+      fieldsets.forEach(function (fieldset) { setCollapsed(fieldset, shouldCollapse); });
+      updateToggleAll();
+    });
+    updateToggleAll();
+  }
+
+  document.getElementById('document-form').addEventListener('input', function (event) {
+    if (event.target.matches('[data-field="columnA"], [data-field="columnB"]')) {
+      updateTableHead(event.target.closest('.section-block'));
+    }
+    if (event.target.matches('[data-field="title"]')) updateSectionSummary(event.target.closest('.section-block'));
+    saveDraft(); scheduleRender();
+  });
+  document.getElementById('add-section-btn').addEventListener('click', function () {
+    var blocks = document.querySelectorAll('.section-block');
+    var lastPage = blocks.length ? parseInt(blocks[blocks.length - 1].querySelector('[data-field="page"]').value, 10) || 1 : 1;
+    addSection({ page: lastPage, rows: [{}] });
+    refreshSectionLabels(); saveDraft(); render();
+  });
+  document.getElementById('add-term-btn').addEventListener('click', function () {
+    addTerm(''); saveDraft(); render();
+  });
+  document.getElementById('terms-list').addEventListener('click', function (event) {
+    var button = event.target.closest('[data-action="delete-term"]');
+    if (!button) return;
+    var rows = document.querySelectorAll('#terms-list .term-row');
+    if (rows.length > 1) button.closest('.term-row').remove();
+    else button.closest('.term-row').querySelector('textarea').value = '';
+    saveDraft(); render();
+  });
+  document.getElementById('section-list').addEventListener('click', function (event) {
+    var button = event.target.closest('[data-action]');
+    if (!button) return;
+    var block = button.closest('.section-block');
+    if (button.dataset.action === 'toggle-section') {
+      var collapsed = !block.classList.contains('is-collapsed');
+      block.classList.toggle('is-collapsed', collapsed);
+      button.setAttribute('aria-expanded', String(!collapsed));
+      return;
+    }
+    if (button.dataset.action === 'add-row') addRow(block, {});
+    if (button.dataset.action === 'delete-row') {
+      var rows = block.querySelectorAll('.item-row');
+      if (rows.length > 1) button.closest('.item-row').remove();
+      else {
+        button.closest('.item-row').querySelector('[data-row="item"]').value = '';
+        button.closest('.item-row').querySelector('[data-row="description"]').value = '';
+      }
+    }
+    if (button.dataset.action === 'delete-section') {
+      block.remove();
+      if (!document.querySelector('.section-block')) addSection({ page: 1, rows: [{}] });
+      refreshSectionLabels();
+    }
+    saveDraft(); render();
+  });
+  document.getElementById('clear-btn').addEventListener('click', function () {
+    fields.forEach(function (id) { document.getElementById(id).value = ''; });
+    document.getElementById('section-list').innerHTML = '';
+    sectionSeq = 0;
+    addSection({ page: 1, rows: [{}] });
+    document.getElementById('f_terms_title').value = '條件說明';
+    document.getElementById('terms-list').innerHTML = '';
+    addTerm('');
+    try { localStorage.removeItem(STORAGE_KEY); } catch (error) {}
+    document.getElementById('draft-status').textContent = '欄位已清空';
+    render(); document.getElementById('f_doc_title').focus();
+  });
+  document.getElementById('load-draft-btn').addEventListener('click', function () {
+    document.getElementById('load-draft-input').click();
+  });
+  document.getElementById('load-draft-input').addEventListener('change', function (event) {
+    var file = event.target.files && event.target.files[0];
+    if (!file) return;
+    var status = document.getElementById('draft-status');
+    if (file.size > 2 * 1024 * 1024) {
+      status.textContent = 'JSON 檔案過大'; event.target.value = ''; return;
+    }
+    file.text().then(function (text) {
+      applyDraft(JSON.parse(text));
+      saveDraft(); render();
+      status.textContent = '已載入草稿 JSON';
+    }).catch(function () { status.textContent = 'JSON 格式無法讀取'; });
+    event.target.value = '';
+  });
+  document.getElementById('save-draft-btn').addEventListener('click', function () {
+    var blob = new Blob([JSON.stringify(readDraft(), null, 2)], { type: 'application/json;charset=utf-8' });
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = safeFilename(value('f_doc_no') || value('f_doc_title') || 'DGHM-文件草稿') + '.json';
+    link.click();
+    setTimeout(function () { URL.revokeObjectURL(link.href); }, 1000);
+    document.getElementById('draft-status').textContent = '已下載草稿 JSON';
+  });
+  document.querySelectorAll('.tab-btn').forEach(function (button) {
+    button.addEventListener('click', function () {
+      document.querySelectorAll('.tab-btn').forEach(function (item) { item.classList.remove('active'); });
+      document.querySelectorAll('.output-view').forEach(function (item) { item.classList.add('hidden'); });
+      button.classList.add('active');
+      document.getElementById('view-' + button.dataset.tab).classList.remove('hidden');
+    });
+  });
+  document.getElementById('copy-btn').addEventListener('click', function () {
+    var status = document.getElementById('copy-status');
+    navigator.clipboard.writeText(flushRender()).then(function () {
+      status.textContent = '已複製'; setTimeout(function () { status.textContent = ''; }, 1600);
+    }).catch(function () { status.textContent = '無法複製，請切到原始碼手動複製'; });
+  });
+  document.getElementById('download-btn').addEventListener('click', function () {
+    var blob = new Blob([flushRender()], { type: 'text/html;charset=utf-8' });
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = safeFilename(value('f_doc_no') || value('f_doc_title')) + '.html';
+    link.click(); setTimeout(function () { URL.revokeObjectURL(link.href); }, 1000);
+  });
+  document.getElementById('open-btn').addEventListener('click', openDocument);
+  document.getElementById('preview-frame').addEventListener('load', fitPreview);
+  if (window.ResizeObserver) new ResizeObserver(fitPreview).observe(document.getElementById('preview-frame'));
+
+  if (document.modelContext && document.modelContext.registerTool) {
+    document.modelContext.registerTool({
+      name: 'stage_dghm_document', title: '填寫 DGHM 文件',
+      description: '把標題、編號、用途、分類表格與結尾條件填入目前的 DGHM 文件表單產生器。',
+      inputSchema: {
+        type: 'object', additionalProperties: false,
+        properties: {
+          documentTitle: { type: 'string' }, documentNumber: { type: 'string' },
+          purpose: { type: 'string' }, mainTitle: { type: 'string' },
+          subtitle: { type: 'string' }, footerNote: { type: 'string' },
+          termsTitle: { type: 'string' }, termsPage: { type: 'integer', minimum: 1 },
+          termsNote: { type: 'string' }, terms: { type: 'array', items: { type: 'string' } },
+          sections: {
+            type: 'array', items: {
+              type: 'object', additionalProperties: false,
+              properties: {
+                title: { type: 'string' }, description: { type: 'string' }, page: { type: 'integer', minimum: 1 },
+                columnA: { type: 'string' }, columnB: { type: 'string' },
+                rows: { type: 'array', items: { type: 'object', additionalProperties: false, properties: {
+                  item: { type: 'string' }, description: { type: 'string' }
+                } } }
+              }
+            }
+          }
+        }
+      },
+      annotations: { readOnlyHint: false, untrustedContentHint: false },
+      execute: function (input) {
+        input = input || {};
+        if (typeof input !== 'object' || Array.isArray(input)) throw new Error('輸入格式必須是物件');
+        var mapping = {
+          documentTitle: 'f_doc_title', documentNumber: 'f_doc_no', purpose: 'f_doc_purpose',
+          mainTitle: 'f_main', subtitle: 'f_subtitle', footerNote: 'f_footer_note',
+          termsTitle: 'f_terms_title', termsNote: 'f_terms_note'
+        };
+        Object.keys(mapping).forEach(function (key) {
+          if (key in input) {
+            if (typeof input[key] !== 'string') throw new Error(key + ' 必須是字串');
+            document.getElementById(mapping[key]).value = input[key];
+          }
+        });
+        if ('termsPage' in input) {
+          if (!Number.isInteger(input.termsPage) || input.termsPage < 1) throw new Error('termsPage 必須是大於 0 的整數');
+          document.getElementById('f_terms_page').value = String(input.termsPage);
+        }
+        if ('terms' in input) {
+          if (!Array.isArray(input.terms) || input.terms.some(function (term) { return typeof term !== 'string'; })) throw new Error('terms 必須是文字陣列');
+          document.getElementById('terms-list').innerHTML = '';
+          if (input.terms.length) input.terms.forEach(function (term) { addTerm(term); });
+          else addTerm('');
+        }
+        if ('sections' in input) {
+          if (!Array.isArray(input.sections)) throw new Error('sections 必須是陣列');
+          document.getElementById('section-list').innerHTML = '';
+          sectionSeq = 0;
+          input.sections.forEach(function (section) {
+            if (!section || typeof section !== 'object' || Array.isArray(section)) throw new Error('每個 section 必須是物件');
+            ['title', 'description', 'columnA', 'columnB'].forEach(function (key) {
+              if (key in section && typeof section[key] !== 'string') throw new Error('section.' + key + ' 必須是字串');
+            });
+            if ('page' in section && (!Number.isInteger(section.page) || section.page < 1)) throw new Error('section.page 必須是大於 0 的整數');
+            if ('rows' in section && !Array.isArray(section.rows)) throw new Error('section.rows 必須是陣列');
+            (section.rows || []).forEach(function (row) {
+              if (!row || typeof row !== 'object' || Array.isArray(row)) throw new Error('每個 row 必須是物件');
+              if ('item' in row && typeof row.item !== 'string') throw new Error('row.item 必須是字串');
+              if ('description' in row && typeof row.description !== 'string') throw new Error('row.description 必須是字串');
+            });
+            addSection(section);
+          });
+          if (!input.sections.length) addSection({ page: 1, rows: [{}] });
+        }
+        saveDraft(); render();
+        return {
+          status: 'staged',
+          fieldsUpdated: Object.keys(mapping).filter(function (key) { return key in input; }),
+          sectionsUpdated: 'sections' in input ? input.sections.length : 0,
+          termsUpdated: 'terms' in input ? input.terms.length : 0
+        };
+      }
+    });
+  }
+
+  initFormAccordions();
+  if (!restoreDraft(false)) {
+    addSection({ page: 1, rows: [{}] });
+    addTerm('');
+  }
+  render();
+})();
+</script>
+</body>
+</html>

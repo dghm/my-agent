@@ -29,6 +29,7 @@
       tools: [
         { id: 'airtable-client', label: '客戶資料管理', href: 'airtable-client.html', status: 'integrated', keywords: ['Airtable','CRM','公司','客戶名','新增客戶','編輯客戶'] },
         { id: 'brief',    label: '客戶 Brief', href: 'client-brief.html',  status: 'integrated', keywords: ['訪談','需求','brief','初談'] },
+        { id: 'document', label: '文件表單', href: 'Document-Generator.html', status: 'integrated', keywords: ['文件','工作清單','需求表','document','表格'] },
         { id: 'meetings', label: '會議記錄',   href: 'meeting-notes.html', status: 'legacy', keywords: ['會議','紀錄','meeting','notes'] },
       ],
     },
