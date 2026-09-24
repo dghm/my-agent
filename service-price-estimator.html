@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DGHM 服務品項試算</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="dghm-ui.css?v=20260903-3">
+<link rel="stylesheet" href="app-shell.css?v=20260915-1">
+<style>
+  body.has-app-shell { overflow: hidden; }
+
+  .estimator-page {
+    min-height: 100%;
+    padding: 28px 30px 56px;
+  }
+  .estimator-wrap { width: min(1180px, 100%); margin: 0 auto; }
+  .estimator-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 20px;
+  }
+  .estimator-eyebrow {
+    margin: 0 0 5px;
+    color: var(--orange);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .13em;
+  }
+  .estimator-head h1 { margin: 0 0 6px; font-size: 26px; }
+  .estimator-head .hint { max-width: 680px; margin: 0; font-size: 13px; }
+  .prototype-mark {
+    flex-shrink: 0;
+    padding: 6px 10px;
+    border: 1px solid color-mix(in srgb, var(--orange) 38%, var(--surface-border));
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--orange) 9%, var(--surface-panel-bg));
+    color: var(--orange);
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .workspace-section {
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius);
+    background: var(--surface-panel-bg);
+    box-shadow: var(--shadow-sm);
+  }
+  .workspace-section + .workspace-section { margin-top: 18px; }
+  .section-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--surface-border);
+  }
+  .section-bar h2 { margin: 0 0 3px; color: var(--navy-text); font-size: 16px; }
+  .section-bar p { margin: 0; color: var(--surface-text-muted); font-size: 12px; }
+  .catalog-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .preset-button {
+    padding: 7px 11px;
+    border-color: color-mix(in srgb, var(--navy) 28%, var(--surface-input-border));
+    background: var(--navy-soft);
+    color: var(--navy-text);
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .preset-button:hover { border-color: var(--navy-text); }
+  .selection-count {
+    flex-shrink: 0;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: var(--navy-soft);
+    color: var(--navy-text);
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    padding: 16px;
+  }
+  .category-card {
+    overflow: hidden;
+    min-width: 0;
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-input-bg);
+  }
+  .category-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 14px 12px;
+    background: color-mix(in srgb, var(--navy) 4%, var(--surface-input-bg));
+    border-bottom: 1px solid var(--surface-border);
+  }
+  .category-head h3 { margin: 0 0 3px; color: var(--navy-text); font-size: 14px; }
+  .category-head p { margin: 0; color: var(--surface-text-muted); font-size: 10px; line-height: 1.45; }
+  .category-count {
+    flex-shrink: 0;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--surface-panel-bg);
+    color: var(--surface-text-muted);
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .service-option {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 9px;
+    padding: 12px 13px;
+    margin: 0;
+    cursor: pointer;
+  }
+  .service-option + .service-option { border-top: 1px solid var(--surface-border); }
+  .service-option:hover { background: color-mix(in srgb, var(--orange) 4%, var(--surface-input-bg)); }
+  .service-option.is-selected { background: color-mix(in srgb, var(--orange) 8%, var(--surface-input-bg)); }
+  .service-option input {
+    width: 17px;
+    height: 17px;
+    margin: 2px 0 0;
+    accent-color: var(--orange);
+  }
+  .option-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .option-top strong { color: var(--surface-text); font-size: 12px; line-height: 1.45; }
+  .option-unit { flex-shrink: 0; color: var(--surface-text-muted); font-size: 10px; }
+  .option-description {
+    display: block;
+    margin-top: 3px;
+    color: var(--surface-text-muted);
+    font-size: 10px;
+    line-height: 1.5;
+  }
+  .option-range {
+    display: block;
+    margin-top: 6px;
+    color: var(--navy-text);
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .estimate-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(260px, .65fr);
+    gap: 16px;
+    padding: 16px;
+  }
+  .selected-list { display: grid; gap: 9px; align-content: start; }
+  .empty-state {
+    display: grid;
+    place-items: center;
+    min-height: 176px;
+    padding: 24px;
+    border: 1px dashed var(--surface-input-border);
+    border-radius: var(--radius-sm);
+    color: var(--surface-text-muted);
+    font-size: 13px;
+    line-height: 1.7;
+    text-align: center;
+  }
+  .selected-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) 90px 132px 100px 30px;
+    align-items: end;
+    gap: 10px;
+    padding: 12px 13px;
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-input-bg);
+  }
+  .selected-copy { align-self: center; min-width: 0; }
+  .selected-copy strong {
+    display: block;
+    overflow: hidden;
+    color: var(--navy-text);
+    font-size: 15px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .selected-copy span { display: block; margin-top: 4px; color: var(--surface-text-muted); font-size: 12px; line-height: 1.5; }
+  .compact-field { display: grid; gap: 5px; margin: 0; color: var(--surface-text-muted); font-size: 12px; }
+  .compact-field input { margin: 0; padding: 8px 9px; font-size: 14px; }
+  .line-amount {
+    align-self: end;
+    padding-bottom: 7px;
+    color: var(--navy-text);
+    font-size: 14px;
+    font-weight: 800;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .remove-item {
+    align-self: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border-color: transparent;
+    background: transparent;
+    color: var(--surface-text-muted);
+    font-size: 18px;
+  }
+  .remove-item:hover { color: #c7352b; }
+
+  .estimate-card {
+    align-self: start;
+    position: sticky;
+    top: 16px;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    background: var(--navy);
+    color: #fff;
+  }
+  .estimate-card-head { padding: 15px 16px 12px; border-bottom: 1px solid rgba(255,255,255,.18); }
+  .estimate-card-head span { display: block; color: rgba(255,255,255,.72); font-size: 12px; letter-spacing: .08em; }
+  .estimate-card-head strong { display: block; margin-top: 3px; font-size: 17px; }
+  .estimate-lines { padding: 13px 16px; }
+  .estimate-line { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; line-height: 1.8; }
+  .estimate-line span { color: rgba(255,255,255,.72); }
+  .estimate-line strong { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .estimate-current {
+    margin-top: 9px;
+    padding-top: 11px;
+    border-top: 1px solid rgba(255,255,255,.18);
+  }
+  .estimate-current span { display: block; color: rgba(255,255,255,.75); font-size: 13px; }
+  .estimate-current strong { display: block; margin-top: 2px; color: #ffd5c2; font-size: 24px; line-height: 1.2; text-align: right; }
+  .estimate-recurring {
+    display: grid;
+    gap: 7px;
+    margin-top: 12px;
+  }
+  .estimate-recurring-line {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .estimate-recurring-line span { color: rgba(255,255,255,.76); font-size: 13px; }
+  .estimate-recurring-line strong {
+    color: #fff;
+    font-size: 17px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .estimate-first-year {
+    margin-top: 14px;
+    padding-top: 13px;
+    border-top: 1px solid rgba(255,255,255,.22);
+  }
+  .estimate-first-year span { display: block; color: rgba(255,255,255,.82); font-size: 13px; font-weight: 700; }
+  .estimate-first-year strong { display: block; margin-top: 3px; color: #ffd5c2; font-size: 24px; line-height: 1.2; text-align: right; }
+  .estimate-first-year small { display: block; margin-top: 5px; color: rgba(255,255,255,.6); font-size: 10px; }
+  .estimate-note {
+    margin: 0;
+    padding: 12px 16px 15px;
+    background: rgba(0,0,0,.12);
+    color: rgba(255,255,255,.68);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  .clear-button {
+    padding: 6px 10px;
+    border-color: var(--surface-input-border);
+    background: var(--surface-input-bg);
+    color: var(--surface-text-muted);
+    font-size: 12px;
+  }
+  .clear-button:hover { color: var(--orange); border-color: var(--orange); }
+
+  @media (max-width: 1040px) {
+    .catalog-grid { grid-template-columns: 1fr; }
+    .category-card { display: grid; grid-template-columns: 220px minmax(0, 1fr); }
+    .category-head { border-right: 1px solid var(--surface-border); border-bottom: 0; }
+  }
+  @media (max-width: 800px) {
+    .estimator-page { padding: 22px 18px 44px; }
+    .estimate-body { grid-template-columns: 1fr; }
+    .estimate-card { position: static; }
+    .selected-row { grid-template-columns: minmax(0, 1fr) 84px 120px 88px 30px; }
+  }
+  @media (max-width: 620px) {
+    .estimator-head { gap: 12px; }
+    .category-card { display: block; }
+    .category-head { border-right: 0; border-bottom: 1px solid var(--surface-border); }
+    .selected-row { grid-template-columns: minmax(0, 1fr) 30px; }
+    .selected-copy { grid-column: 1; }
+    .remove-item { grid-column: 2; grid-row: 1; }
+    .compact-field, .line-amount { grid-column: 1 / -1; }
+    .line-amount { padding: 0; text-align: left; }
+  }
+
+  /* ---- 三欄工作面：導覽／品項庫／對談概算 ---- */
+  .estimator-page {
+    height: 100%;
+    min-height: 0;
+    padding: 22px 24px 26px;
+    overflow: hidden;
+  }
+  .estimator-wrap {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    width: 100%;
+    height: 100%;
+    margin: 0;
+  }
+  .estimator-head { margin-bottom: 16px; }
+  .estimator-head h1 { font-size: 24px; }
+  .estimator-columns {
+    display: grid;
+    grid-template-columns: minmax(620px, 1fr) minmax(330px, 390px);
+    gap: 16px;
+    min-width: 0;
+    min-height: 0;
+  }
+  .workspace-section + .workspace-section { margin-top: 0; }
+  .catalog-section,
+  .summary-section {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .catalog-section {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .service-domain-nav {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 0 2px;
+    border-bottom: 1px solid var(--surface-border);
+  }
+  .service-domain-tabs { display: flex; align-items: flex-end; gap: 4px; }
+  .service-domain-tab {
+    position: relative;
+    padding: 10px 15px 11px;
+    border: 0;
+    border-radius: 8px 8px 0 0;
+    background: transparent;
+    color: var(--surface-text-muted);
+    font-size: 14px;
+    font-weight: 800;
+  }
+  .service-domain-tab:hover { background: var(--navy-soft); color: var(--navy-text); }
+  .service-domain-tab[aria-selected="true"] { color: var(--navy-text); }
+  .service-domain-tab[aria-selected="true"]::after {
+    position: absolute;
+    right: 10px;
+    bottom: -1px;
+    left: 10px;
+    height: 3px;
+    border-radius: 3px 3px 0 0;
+    background: var(--navy-text);
+    content: '';
+  }
+  .service-domain-nav .selection-count { margin-bottom: 8px; }
+  .service-domain-panel[hidden] { display: none; }
+  .catalog-scroll {
+    flex: 1;
+    min-height: 0;
+    padding: 14px;
+    overflow-y: auto;
+  }
+  .graphic-placeholder {
+    display: grid;
+    place-items: center;
+    min-height: 360px;
+    padding: 46px 24px;
+    color: var(--surface-text-muted);
+    text-align: center;
+  }
+  .graphic-placeholder strong { display: block; color: var(--navy-text); font-size: 18px; }
+  .graphic-placeholder p { max-width: 520px; margin: 8px auto 0; font-size: 13px; line-height: 1.7; }
+  .graphic-placeholder-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 7px;
+    margin-top: 18px;
+  }
+  .graphic-placeholder-list span {
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: var(--navy-soft);
+    color: var(--navy-text);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .quick-builder {
+    padding: 16px;
+    border: 1px solid color-mix(in srgb, var(--navy) 20%, var(--surface-border));
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--navy) 3%, var(--surface-panel-bg));
+  }
+  .quick-builder-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+  .quick-builder-head h3 { margin: 0 0 3px; color: var(--navy-text); font-size: 17px; }
+  .quick-builder-head p { margin: 0; color: var(--surface-text-muted); font-size: 12px; line-height: 1.5; }
+  .quick-step + .quick-step { margin-top: 14px; }
+  .quick-step[hidden] { display: none; }
+  .quick-step-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 8px;
+    color: var(--surface-text);
+    font-size: 13px;
+    font-weight: 800;
+  }
+  .foundation-fields,
+  .runtime-fields {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 9px;
+  }
+  label.compact-select-field {
+    display: grid;
+    gap: 5px;
+    margin: 0;
+    color: var(--surface-text-muted);
+    font-size: 11px;
+    font-weight: 800;
+  }
+  .compact-select-field[hidden] { display: none; }
+  .compact-select-field select { width: 100%; margin: 0; padding: 9px 30px 9px 10px; font-size: 13px; }
+  .feature-checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  label.feature-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--surface-input-border);
+    border-radius: 8px;
+    background: var(--surface-input-bg);
+    color: var(--navy-text);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .feature-check:has(input:checked) { border-color: var(--navy-text); background: var(--navy-soft); }
+  .feature-check input { width: 16px; height: 16px; margin: 0; accent-color: var(--navy); }
+  .runtime-recommendation {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 16px;
+    margin-top: 10px;
+    padding: 11px 12px;
+    border-left: 3px solid var(--navy-text);
+    border-radius: 0 8px 8px 0;
+    background: var(--navy-soft);
+  }
+  .runtime-recommendation span { color: var(--surface-text-muted); font-size: 11px; font-weight: 700; }
+  .runtime-recommendation strong { display: block; margin-top: 2px; color: var(--navy-text); font-size: 15px; }
+  .runtime-recommendation small { grid-column: 1 / -1; color: var(--surface-text-muted); font-size: 11px; line-height: 1.55; }
+  .runtime-badge { align-self: start; padding: 3px 8px; border-radius: 999px; background: var(--surface-panel-bg); color: var(--navy-text); font-size: 10px; font-weight: 800; }
+  .step-number {
+    display: inline-grid;
+    place-items: center;
+    width: 21px;
+    height: 21px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: #fff;
+    font-size: 11px;
+  }
+  .choice-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+  label.choice-card,
+  label.module-choice {
+    position: relative;
+    display: block;
+    min-width: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+  .choice-card input,
+  .module-choice input { position: absolute; opacity: 0; pointer-events: none; }
+  .choice-card span,
+  .module-choice span {
+    display: block;
+    height: 100%;
+    padding: 10px 11px;
+    border: 1px solid var(--surface-input-border);
+    border-radius: 8px;
+    background: var(--surface-input-bg);
+    color: var(--surface-text);
+  }
+  .choice-card strong,
+  .module-choice strong { display: block; color: var(--navy-text); font-size: 13px; }
+  .choice-card small,
+  .module-choice small { display: block; margin-top: 3px; color: var(--surface-text-muted); font-size: 10px; line-height: 1.4; }
+  .choice-card input:checked + span,
+  .module-choice input:checked + span {
+    border-color: var(--navy-text);
+    background: var(--navy-soft);
+    box-shadow: inset 0 0 0 1px var(--navy-text);
+  }
+  .module-choice[hidden] { display: none; }
+  .visual-choices { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .module-choices { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .status-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .goal-choices { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .deploy-choices { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .scale-fields {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .scale-field { display: grid; gap: 5px; margin: 0; color: var(--surface-text-muted); font-size: 11px; font-weight: 700; }
+  .scale-field[hidden] { display: none; }
+  .scale-field input { width: 100%; margin: 0; padding: 8px 9px; font-size: 13px; }
+  .quick-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 15px;
+    padding-top: 13px;
+    border-top: 1px solid var(--surface-border);
+  }
+  .quick-actions p { margin: 0; color: var(--surface-text-muted); font-size: 11px; line-height: 1.45; }
+  .build-estimate-button {
+    flex-shrink: 0;
+    padding: 9px 15px;
+    border-color: var(--navy);
+    background: var(--navy);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+  }
+  .build-estimate-button:hover { background: var(--navy-text); }
+  .advanced-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 17px 2px 9px;
+  }
+  .advanced-heading h3 { margin: 0; color: var(--navy-text); font-size: 15px; }
+  .advanced-heading p { margin: 0; color: var(--surface-text-muted); font-size: 11px; }
+  .catalog-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-content: start;
+    gap: 10px;
+    min-height: 0;
+    padding: 0;
+    overflow: visible;
+  }
+  .category-card { display: block; }
+  .category-toggle {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 13px 14px;
+    border: 0;
+    border-radius: 0;
+    background: color-mix(in srgb, var(--navy) 4%, var(--surface-input-bg));
+    color: var(--surface-text);
+    text-align: left;
+  }
+  .category-toggle:hover { background: color-mix(in srgb, var(--navy) 7%, var(--surface-input-bg)); }
+  .category-title { min-width: 0; }
+  .category-title strong { display: block; color: var(--navy-text); font-size: 16px; }
+  .category-title small {
+    display: block;
+    overflow: hidden;
+    margin-top: 2px;
+    color: var(--surface-text-muted);
+    font-size: 12px;
+    line-height: 1.45;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .category-selected {
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--navy-soft);
+    color: var(--navy-text);
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .category-subtotal {
+    min-width: 92px;
+    color: var(--navy-text);
+    font-size: 14px;
+    font-weight: 800;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .category-chevron {
+    display: inline-grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    color: var(--surface-text-muted);
+    font-size: 16px;
+    transition: transform .18s ease;
+  }
+  .category-card.is-open .category-chevron { transform: rotate(180deg); }
+  .category-content { border-top: 1px solid var(--surface-border); }
+  .service-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .service-table th {
+    padding: 9px 10px;
+    background: color-mix(in srgb, var(--navy) 2.5%, var(--surface-panel-bg));
+    color: var(--surface-text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    text-align: left;
+  }
+  .service-table td {
+    padding: 12px 10px;
+    border-top: 1px solid var(--surface-border);
+    color: var(--surface-text);
+    font-size: 14px;
+    line-height: 1.55;
+    vertical-align: middle;
+  }
+  .service-table tbody tr:first-child td { border-top: 0; }
+  .service-table tbody tr:hover { background: color-mix(in srgb, var(--orange) 4%, var(--surface-input-bg)); }
+  .service-table tbody tr.is-selected { background: color-mix(in srgb, var(--orange) 8%, var(--surface-input-bg)); }
+  .service-table .check-col { width: 44px; text-align: center; }
+  .service-table .name-col { width: 23%; }
+  .service-table .range-col { width: 29%; }
+  .service-table .unit-col { width: 62px; text-align: center; }
+  .service-table td.service-name { color: var(--navy-text); font-size: 15px; font-weight: 800; }
+  .service-name-wrap { display: flex; align-items: flex-start; gap: 7px; }
+  .service-name-text { min-width: 0; }
+  .internal-info {
+    display: inline-grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 21px;
+    height: 21px;
+    margin: 1px 0 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--surface-text-muted);
+  }
+  .internal-info:hover,
+  .internal-info:focus-visible,
+  .internal-info[aria-expanded="true"] { background: var(--navy-soft); color: var(--navy-text); }
+  .internal-info svg { width: 16px; height: 16px; pointer-events: none; }
+  .internal-tooltip-popover {
+    position: fixed;
+    z-index: 1200;
+    width: min(330px, calc(100vw - 24px));
+    padding: 11px 12px;
+    border: 1px solid color-mix(in srgb, var(--navy) 34%, var(--surface-border));
+    border-radius: 8px;
+    background: var(--navy);
+    box-shadow: 0 12px 30px rgba(5, 24, 58, .22);
+    color: rgba(255,255,255,.88);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.65;
+    text-align: left;
+  }
+  .internal-tooltip-popover[hidden] { display: none; }
+  .internal-tooltip-popover strong { display: block; margin-bottom: 4px; color: #ffd5c2; font-size: 11px; letter-spacing: .06em; }
+  .service-table td.service-range { color: var(--navy-text); font-size: 14px; font-weight: 800; white-space: nowrap; }
+  .service-table td.unit-col { font-size: 13px; }
+  .range-editor {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) 24px;
+    align-items: center;
+    gap: 5px;
+  }
+  .range-editor input {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 6px 7px;
+    color: var(--navy-text);
+    font-size: 13px;
+    font-weight: 800;
+  }
+  .range-separator { color: var(--navy-text); font-weight: 900; text-align: center; }
+  .range-reset {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border-color: transparent;
+    background: transparent;
+    color: var(--surface-text-muted);
+    font-size: 15px;
+  }
+  .range-reset:hover { color: var(--orange); }
+  .service-check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    cursor: pointer;
+  }
+  .service-check input { width: 17px; height: 17px; margin: 0; accent-color: var(--orange); }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .estimate-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+    padding: 14px;
+    overflow: hidden;
+  }
+  .selected-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding-right: 2px;
+    overflow-y: auto;
+  }
+  .selected-row {
+    position: relative;
+    grid-template-columns: minmax(0, 1fr) 22px 68px auto;
+    align-items: center;
+    gap: 8px;
+    padding-right: 42px;
+  }
+  .selected-copy { grid-column: 1 / -1; padding-right: 4px; }
+  .remove-item {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
+  .compact-field { grid-column: auto; min-width: 0; }
+  .compact-field input { width: 100%; min-width: 0; }
+  .compact-field + .compact-field { margin-top: 0; }
+  .multiply-mark {
+    color: var(--navy-text);
+    font-size: 18px;
+    font-weight: 900;
+    line-height: 1;
+    text-align: center;
+  }
+  .line-amount {
+    grid-column: auto;
+    align-self: center;
+    justify-self: stretch;
+    min-width: 104px;
+    padding: 0;
+    border-top: 0;
+    text-align: right;
+  }
+  .estimate-card {
+    flex: 0 0 auto;
+    position: static;
+    width: 100%;
+  }
+
+  @media (max-width: 1180px) {
+    .estimator-page { height: auto; min-height: 100%; overflow: visible; }
+    .estimator-wrap { height: auto; }
+    .estimator-columns { grid-template-columns: 1fr; }
+    .catalog-section, .summary-section { overflow: visible; }
+    .catalog-scroll, .catalog-grid, .estimate-body, .selected-list { overflow: visible; }
+    .summary-section { min-height: 420px; }
+    .selected-row { grid-template-columns: minmax(0, 1fr) 22px 72px auto; align-items: center; }
+    .selected-copy { grid-column: 1 / -1; }
+    .line-amount { grid-column: auto; padding: 0; border-top: 0; }
+  }
+  @media (max-width: 720px) {
+    .estimator-page { padding: 18px 14px 36px; }
+    .category-toggle { grid-template-columns: minmax(0, 1fr) auto auto; }
+    .category-subtotal { grid-column: 2; grid-row: 2; }
+    .category-chevron { grid-column: 3; grid-row: 1 / span 2; }
+    .service-table .description-col { display: none; }
+    .service-table .name-col { width: auto; }
+    .service-table .range-col { width: 46%; }
+    .selected-row { grid-template-columns: minmax(0, 1fr) 20px 68px auto; align-items: center; }
+    .selected-copy { grid-column: 1 / -1; }
+    .compact-field, .line-amount { grid-column: auto; }
+    .line-amount { padding: 0; border-top: 0; text-align: right; }
+    .choice-grid, .visual-choices, .module-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .scale-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .foundation-fields, .runtime-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .quick-actions { align-items: stretch; flex-direction: column; }
+    .build-estimate-button { width: 100%; }
+    .service-domain-tab { padding-right: 10px; padding-left: 10px; font-size: 13px; }
+  }
+</style>
+</head>
+<body data-tool="service-estimator">
+<div id="tool-workspace" class="estimator-page">
+  <div class="estimator-wrap">
+    <header class="estimator-head">
+      <div>
+        <p class="estimator-eyebrow">DISCOVERY WORKSPACE</p>
+        <h1>服務品項試算</h1>
+        <p class="hint">在客戶對談中快速勾選可能需要的服務，先掌握預算範圍。這裡的結果不會寫入正式報價單。</p>
+      </div>
+      <span class="prototype-mark">試驗中</span>
+    </header>
+
+    <div class="estimator-columns">
+      <section class="catalog-section" aria-label="服務類別與品項">
+        <div class="service-domain-nav">
+          <div class="service-domain-tabs" role="tablist" aria-label="服務類別">
+            <button type="button" class="service-domain-tab" id="service-tab-web" role="tab" aria-selected="true" aria-controls="service-panel-web" data-service-tab="web">網站／數位服務</button>
+            <button type="button" class="service-domain-tab" id="service-tab-graphic" role="tab" aria-selected="false" aria-controls="service-panel-graphic" data-service-tab="graphic">平面設計</button>
+          </div>
+          <span class="selection-count" id="selection-count">0 項已選</span>
+        </div>
+        <div class="catalog-scroll">
+          <div class="service-domain-panel" id="service-panel-web" role="tabpanel" aria-labelledby="service-tab-web" data-service-panel="web">
+          <section class="quick-builder" aria-labelledby="quick-builder-title">
+            <div class="quick-builder-head">
+              <div>
+                <h3 id="quick-builder-title">快速建立網站估價</h3>
+                <p>先辨識客戶現況，再只顯示這次需要討論的選項。</p>
+              </div>
+            </div>
+
+            <div class="quick-step" data-builder-step="foundation">
+              <div class="quick-step-title">案件基本條件</div>
+              <div class="foundation-fields">
+                <label class="compact-select-field">網站狀態
+                  <select name="site-status" id="builder-status"><option value="no-site">尚無網站</option><option value="existing">已有網站</option></select>
+                </label>
+                <label class="compact-select-field" data-foundation-field="goal" hidden>本次目的
+                  <select name="project-goal" id="builder-goal"><option value="redesign">整站改版</option><option value="features">功能擴充</option><option value="deploy">移轉／環境設定</option><option value="adjust">小幅調整</option><option value="maintenance">維護代管</option></select>
+                </label>
+                <label class="compact-select-field" data-foundation-field="type">網站形態
+                  <select name="project-type" id="builder-type"><option value="onepage">一頁式網站</option><option value="official">官方網站</option><option value="portfolio">作品集網站</option><option value="ecommerce">電商網站</option></select>
+                </label>
+                <label class="compact-select-field" data-foundation-field="visual">視覺方式
+                  <select name="visual-tier" id="builder-visual"><option value="template">套版建置</option><option value="template-custom" selected>套版客製</option><option value="custom">全客製設計</option></select>
+                </label>
+              </div>
+            </div>
+
+            <div class="quick-step" data-builder-step="modules">
+              <div class="quick-step-title">內容與功能（可複選）</div>
+              <div class="feature-checks">
+                <label class="feature-check"><input type="checkbox" value="news" data-builder-module><span>最新消息</span></label>
+                <label class="feature-check"><input type="checkbox" value="portfolio" data-builder-module><span>作品／案例</span></label>
+                <label class="feature-check"><input type="checkbox" value="catalog" data-builder-module><span>商品展示</span></label>
+                <label class="feature-check"><input type="checkbox" value="commerce" data-builder-module><span>完整電商</span></label>
+                <label class="feature-check"><input type="checkbox" value="bilingual" data-builder-module><span>雙語網站</span></label>
+              </div>
+            </div>
+
+            <div class="quick-step" data-builder-step="scale">
+              <div class="quick-step-title">內容規模</div>
+              <div class="scale-fields">
+                <label class="scale-field" data-scale-field="sections">內容區塊數<input type="number" id="builder-sections" min="1" value="6"></label>
+                <label class="scale-field" data-scale-field="pages" hidden>一般內容頁數<input type="number" id="builder-pages" min="1" value="5"></label>
+                <label class="scale-field" data-scale-field="news" hidden>首批新聞數<input type="number" id="builder-news" min="0" value="5"></label>
+                <label class="scale-field" data-scale-field="portfolio" hidden>首批作品數<input type="number" id="builder-portfolio" min="0" value="10"></label>
+                <label class="scale-field" data-scale-field="products" hidden>首批商品數<input type="number" id="builder-products" min="0" value="20"></label>
+              </div>
+            </div>
+
+            <div class="quick-step" data-builder-step="adjust" hidden>
+              <div class="quick-step-title"><span class="step-number" data-visible-step-number>3</span>預計調整內容</div>
+              <div class="scale-fields">
+                <label class="scale-field">預估處理時數<input type="number" id="builder-adjust-hours" min="1" value="3"></label>
+              </div>
+              <div class="choice-grid module-choices" style="margin-top:10px">
+                <label class="module-choice"><input type="checkbox" value="advanced-motion" data-adjust-option><span><strong>動畫互動</strong><small>轉場、視差或客製互動</small></span></label>
+                <label class="module-choice"><input type="checkbox" value="performance-optimization" data-adjust-option><span><strong>效能改善</strong><small>載入速度與資源優化</small></span></label>
+                <label class="module-choice"><input type="checkbox" value="security-hardening" data-adjust-option><span><strong>安全強化</strong><small>權限與防護設定</small></span></label>
+                <label class="module-choice"><input type="checkbox" value="analytics-setup" data-adjust-option><span><strong>分析工具</strong><small>GA4 與搜尋工具設定</small></span></label>
+              </div>
+            </div>
+
+            <div class="quick-step" data-builder-step="maintenance" hidden>
+              <div class="quick-step-title"><span class="step-number" data-visible-step-number>3</span>需要的維護方式</div>
+              <div class="scale-fields">
+                <label class="scale-field">單次維護時數<input type="number" id="builder-maintenance-hours" min="1" value="3"></label>
+              </div>
+              <div class="choice-grid module-choices" style="margin-top:10px">
+                <label class="module-choice"><input type="checkbox" value="maintenance-hour" data-maintenance-option checked><span><strong>單次維護</strong><small>依實際處理時數計價</small></span></label>
+                <label class="module-choice"><input type="checkbox" value="maintenance-plan" data-maintenance-option><span><strong>定期維護</strong><small>每月巡檢、更新與支援</small></span></label>
+                <label class="module-choice"><input type="checkbox" value="emergency-repair" data-maintenance-option><span><strong>緊急檢修</strong><small>錯誤、異常與無法瀏覽</small></span></label>
+                <label class="module-choice"><input type="checkbox" value="performance-optimization" data-maintenance-option><span><strong>效能改善</strong><small>載入速度與資源優化</small></span></label>
+                <label class="module-choice"><input type="checkbox" value="security-hardening" data-maintenance-option><span><strong>安全強化</strong><small>權限與防護設定</small></span></label>
+              </div>
+            </div>
+
+            <div class="quick-step" data-builder-step="runtime">
+              <div class="quick-step-title">網站運作與更新需求</div>
+              <div class="runtime-fields">
+                <label class="compact-select-field">日後由誰更新
+                  <select id="builder-update-owner"><option value="undecided">尚未確定</option><option value="developer">由工程師更新</option><option value="client-cms">客戶需自行登入後台</option></select>
+                </label>
+                <label class="compact-select-field">伺服器端需求
+                  <select id="builder-backend-need"><option value="undecided">尚未確定</option><option value="none">無，只有一般頁面</option><option value="cms">標準 CMS／電商（可含一般會員）</option><option value="custom">客製後端／特殊資料流程</option></select>
+                </label>
+                <label class="compact-select-field">技術判定
+                  <select id="builder-runtime-override"><option value="auto">依需求自動判定</option><option value="static">靜態託管與自動更新</option><option value="cms">內容管理系統主機</option><option value="app">應用程式雲端環境</option><option value="pending">暫不列入環境費用</option></select>
+                </label>
+              </div>
+              <div class="runtime-recommendation" id="runtime-recommendation">
+                <div><span>建議網站運作環境</span><strong id="runtime-title">需進一步確認技術需求</strong></div>
+                <span class="runtime-badge" id="runtime-badge">待判定</span>
+                <small id="runtime-reason">完成上方需求後，系統會提出建議；您仍可用「技術判定」覆寫。</small>
+              </div>
+            </div>
+
+            <div class="quick-step" data-builder-step="services">
+              <div class="quick-step-title">網域與持續服務（可複選）</div>
+              <div class="choice-grid visual-choices">
+                <label class="module-choice"><input type="checkbox" value="domain-ssl-setup" data-deploy-addon><span><strong>客戶指定網域＋HTTPS</strong><small>連接既有網域、主要網址與安全憑證</small></span></label>
+                <label class="module-choice"><input type="checkbox" value="first-purchase" data-domain-bundle><span><strong>首次網域申請代辦</strong><small>網域實費＋一次性 20% 代辦費</small></span></label>
+                <label class="module-choice"><input type="checkbox" value="annual-management" data-domain-bundle><span><strong>網域續約代管</strong><small>網域實費＋NT$2,400／年</small></span></label>
+                <label class="module-choice" data-runtime-addon-for="static"><input type="checkbox" value="cloud-hosting-space" data-deploy-addon><span><strong>網站雲端託管空間</strong><small>NT$6,000／年；每月含 5 次正式上線更新</small></span></label>
+                <label class="module-choice" data-runtime-addon-for="static"><input type="checkbox" value="git-deploy-managed" data-deploy-addon><span><strong>網站運作環境年度維運</strong><small>選配年費；持續監看並適時調整環境設定</small></span></label>
+                <label class="module-choice" data-runtime-addon-for="cms"><input type="checkbox" value="hosting-space" data-deploy-addon><span><strong>主機空間</strong><small>純租空間、按年計費</small></span></label>
+                <label class="module-choice" data-runtime-addon-for="cms"><input type="checkbox" value="hosting-managed" data-deploy-addon><span><strong>主機與年度代管</strong><small>空間、備份、巡檢與維護</small></span></label>
+                <label class="module-choice" data-runtime-addon-for="app"><input type="checkbox" value="app-environment-managed" data-deploy-addon><span><strong>應用環境年度代管</strong><small>運作監控與環境維護</small></span></label>
+              </div>
+            </div>
+
+            <div class="quick-actions">
+              <p>依目前路徑更新快捷組合；進階品項仍可手動增減。</p>
+              <button type="button" class="build-estimate-button" id="build-estimate">建立初步估價</button>
+            </div>
+          </section>
+
+          <div class="advanced-heading">
+            <div><h3>進階品項調整</h3><p>需要特殊內容時，再展開盒子增減。</p></div>
+          </div>
+          <div class="catalog-grid" id="catalog-grid"></div>
+          </div>
+
+          <div class="service-domain-panel" id="service-panel-graphic" role="tabpanel" aria-labelledby="service-tab-graphic" data-service-panel="graphic" hidden>
+            <div class="graphic-placeholder">
+              <div>
+                <strong>平面設計品項庫準備區</strong>
+                <p>這一頁會使用自己的快捷選擇與品項盒子，不和網站建置項目混在一起；右側仍共用同一份本次對談概算。</p>
+                <div class="graphic-placeholder-list" aria-label="預計分類">
+                  <span>品牌識別</span><span>行銷印刷品</span><span>社群與廣告素材</span><span>簡報與文件設計</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="workspace-section summary-section" aria-labelledby="estimate-title">
+        <div class="section-bar">
+          <div>
+            <h2 id="estimate-title">本次對談概算</h2>
+            <p>已選品項與總計</p>
+          </div>
+          <button type="button" class="clear-button" id="clear-button" hidden>清除全部</button>
+        </div>
+        <div class="estimate-body">
+          <div class="selected-list" id="selected-list"></div>
+          <aside class="estimate-card" id="estimate-card" aria-live="polite">
+            <div class="estimate-card-head">
+              <span>BUDGET SNAPSHOT</span>
+              <strong>預算快照</strong>
+            </div>
+            <div class="estimate-lines">
+              <div class="estimate-line"><span>一次性參考低標</span><strong id="range-min">NT$ 0</strong></div>
+              <div class="estimate-line"><span>一次性參考高標</span><strong id="range-max">NT$ 0</strong></div>
+              <div class="estimate-current"><span>一次性費用</span><strong id="current-total">NT$ 0</strong></div>
+              <div class="estimate-recurring">
+                <div class="estimate-recurring-line"><span>年度持續費用</span><strong id="annual-total">NT$ 0／年</strong></div>
+                <div class="estimate-recurring-line"><span>每月持續費用</span><strong id="monthly-total">NT$ 0／月</strong></div>
+              </div>
+              <div class="estimate-first-year">
+                <span>第一年預估總計</span>
+                <strong id="first-year-total">NT$ 0</strong>
+                <small>一次性＋年度＋每月費用 × 12</small>
+              </div>
+            </div>
+            <p class="estimate-note">僅供初步溝通與預算評估，不構成正式報價或承諾。</p>
+          </aside>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="internal-tooltip-popover" id="internal-tooltip" role="tooltip" hidden>
+  <strong>內部參考</strong>
+  <span id="internal-tooltip-text"></span>
+</div>
+
+<script src="tool-registry.js?v=20260923-1"></script>
+<script src="project-context.js?v=20260903-3"></script>
+<script src="app-shell.js?v=20260915-1"></script>
+<script>mountAppShell({ activeTool: 'service-estimator' });</script>
+<script src="dghm-ui.js?v=20260903-3"></script>
+<script>
+initTheme('dghm-service-estimator-theme');
+
+var STORAGE_KEY = 'dghm-service-price-estimator';
+var PRICE_STORAGE_KEY = 'dghm-service-price-ranges';
+var BUILDER_STORAGE_KEY = 'dghm-service-estimate-builder';
+var SERVICE_TAB_STORAGE_KEY = 'dghm-service-estimate-domain';
+var CATALOG = [
+  {
+    id: 'site-visual',
+    name: '網站建置與視覺',
+    description: '網站骨架、視覺等級、頁面與特殊呈現',
+    items: [
+      { id: 'onepage-base', name: '一頁式網站基礎建置', description: '含 6 個內容區塊、響應式版面、基礎設定、測試與上線。', min: 30000, max: 50000, defaultPrice: 40000, unit: '案' },
+      { id: 'multipage-base', name: '多頁網站基礎建置', description: '含首頁、5 個一般內容頁、響應式版面、基礎設定、測試與上線。', min: 50000, max: 90000, defaultPrice: 68000, unit: '案' },
+      { id: 'visual-template', name: '套版建置', description: '選用既有版型，替換內容、Logo 與品牌色。', min: 10000, max: 20000, defaultPrice: 15000, unit: '案' },
+      { id: 'visual-template-custom', name: '套版客製調整', description: '沿用版型架構，調整區塊、字體、色彩與部分版面。', min: 20000, max: 40000, defaultPrice: 30000, unit: '案' },
+      { id: 'visual-custom', name: '全客製視覺設計', description: '依品牌與內容重新規劃主要畫面及版型。', min: 40000, max: 80000, defaultPrice: 56000, unit: '案' },
+      { id: 'extra-section', name: '追加一頁式內容區塊', description: '超出基礎 6 區的內容設計與響應式建置。', min: 3000, max: 6000, defaultPrice: 4500, unit: '區' },
+      { id: 'extra-content-page', name: '追加一般內容頁', description: '依既有版型完成內容排版與響應式建置。', min: 5000, max: 10000, defaultPrice: 7000, unit: '頁' },
+      { id: 'advanced-motion', name: '特殊動畫與互動效果', description: '進階捲動、轉場、視差或客製互動呈現。', min: 10000, max: 35000, defaultPrice: 18000, unit: '項' }
+    ]
+  },
+  {
+    id: 'content-modules',
+    name: '內容與後台模組',
+    description: '新聞、作品、商品、電商、雙語與外部功能',
+    items: [
+      { id: 'news-module', name: '最新消息管理模組', description: '含消息列表、內容頁、分類及後台新增修改。', min: 18000, max: 35000, defaultPrice: 24000, unit: '式' },
+      { id: 'portfolio-module', name: '作品／案例管理模組', description: '含分類、作品列表、內容頁、圖片畫廊及後台管理。', min: 30000, max: 60000, defaultPrice: 42000, unit: '式' },
+      { id: 'product-catalog-module', name: '商品展示模組', description: '含商品分類、列表、內容頁及後台管理；不含購物車。', min: 28000, max: 55000, defaultPrice: 38000, unit: '式' },
+      { id: 'woocommerce-module', name: '網站購物與訂單管理模組', description: '含商品管理、購物車、結帳、訂單及通知基礎流程。', internalNote: '主要以 WordPress／WooCommerce 建置。評估時需確認商品類型、稅務、庫存、會員及既有外掛相容性。', min: 70000, max: 150000, defaultPrice: 98000, unit: '式' },
+      { id: 'payment-gateway', name: '第三方金流串接與測試', description: '完成付款服務連接、測試交易與基本付款流程驗證。', internalNote: '依客戶選用的金流平台與 API／外掛支援程度評估；通常包含測試環境、正式環境與基本退款驗證，不含金流商申請審核。', min: 15000, max: 30000, defaultPrice: 20000, unit: '家' },
+      { id: 'shipping-setup', name: '宅配與超商取貨設定', description: '建立宅配、超商取貨、運費與免運條件等配送規則。', internalNote: '依物流商提供的 WooCommerce 外掛或 API 設定。需先確認門市選擇、貨到付款、溫層、材積與物流帳號資格。', min: 12000, max: 25000, defaultPrice: 18000, unit: '式' },
+      { id: 'multilingual-site', name: '雙語網站擴充', description: '含語系切換與雙語欄位；不含翻譯及第二語系上稿。', min: 18000, max: 45000, defaultPrice: 26000, unit: '語系' },
+      { id: 'custom-feature', name: '其他客製功能', description: '預約、會員、篩選或依案件需求開發的特殊功能。', min: 15000, max: 60000, defaultPrice: 30000, unit: '功能' },
+      { id: 'third-party-integration', name: '外部服務功能串接', description: '連接客戶指定的管理、預約、行銷或其他外部服務。', internalNote: '先確認第三方服務是否提供 API、Webhook、SDK 或正式外掛，以及授權、用量與測試環境；平台費用另計。', min: 15000, max: 50000, defaultPrice: 26000, unit: '項' }
+    ]
+  },
+  {
+    id: 'content-production',
+    name: '內容製作與資料上架',
+    description: '文案、圖片、新聞、作品、商品與舊站資料',
+    items: [
+      { id: 'website-copywriting', name: '網站文案整理與撰寫', description: '依客戶資料整理頁面標題、段落與行動文案。', min: 3000, max: 8000, defaultPrice: 5000, unit: '頁' },
+      { id: 'visual-assets', name: '網站視覺素材製作', description: '圖片裁切、橫幅、圖示與基礎視覺素材處理。', min: 5000, max: 15000, defaultPrice: 8000, unit: '批' },
+      { id: 'content-entry', name: '一般頁面內容上稿', description: '將已提供的文字與圖片整理後放入既有頁面版型。', min: 1500, max: 3500, defaultPrice: 2500, unit: '頁' },
+      { id: 'news-entry', name: '首批新聞上架', description: '每筆含標題、日期、內文、圖片與分類。', min: 500, max: 1200, defaultPrice: 800, unit: '筆' },
+      { id: 'portfolio-entry', name: '首批作品／案例上架', description: '每筆含作品資料、說明、圖片整理與分類。', min: 800, max: 2000, defaultPrice: 1200, unit: '筆' },
+      { id: 'product-entry', name: '首批商品上架', description: '每筆含名稱、價格、圖片、庫存與簡述。', min: 475, max: 475, defaultPrice: 475, unit: '筆' },
+      { id: 'content-migration', name: '既有資料搬遷', description: '整理並匯入舊站文章、頁面、作品或商品資料。', min: 8000, max: 30000, defaultPrice: 15000, unit: '批' },
+      { id: 'operation-guide', name: '後台操作手冊', description: '提供網站內容維護用的簡易圖文操作步驟。', min: 5000, max: 12000, defaultPrice: 8000, unit: '份' }
+    ]
+  },
+  {
+    id: 'care-growth',
+    name: '主機、上線與維護',
+    description: '傳統主機、Git-based 部署、網域、追蹤與持續維護',
+    items: [
+      { id: 'hosting-space', name: '網站主機空間租用', description: '提供網站所需的主機空間，不含日常代管與內容維護。', internalNote: '適用於傳統虛擬主機方案，例如 Bluehost 類型的主機空間。需另確認容量、流量、資料庫、信箱與備份限制。', min: 4200, max: 4200, defaultPrice: 4200, unit: '年', billing: 'annual' },
+      { id: 'hosting-managed', name: '網站主機空間與年度代管', description: '提供網站主機空間，含自動備份、定期巡檢及基礎軟體維護。', internalNote: '主要適用 WordPress／PHP 傳統主機。需事先界定備份頻率、外掛更新、異常處理與是否包含內容修改。', min: 6000, max: 6000, defaultPrice: 6000, unit: '年', billing: 'annual' },
+      { id: 'cloud-hosting-space', name: '網站雲端託管空間', description: '提供網站持續運作及對外瀏覽所需的雲端託管空間，每月包含 5 次正式上線更新；不含主動監看、內容更新與程式維護。', internalNote: '適用放置於公司 Netlify Pro 帳戶的靜態網站。允許客戶工程師由指定 Git Repository 更新；每一網站每月包含 5 次成功的正式環境部署，未使用次數不累計，Deploy Preview、Branch Deploy 與失敗部署不計入。Netlify Credit Pro 的 credits 由 Team 內所有專案共用，超出約定或產生額外平台費用時另計。', min: 6000, max: 6000, defaultPrice: 6000, unit: '年', billing: 'annual' },
+      { id: 'git-netlify-deploy', name: '網站自動發布流程建置（一次性）', description: '首次建立網站的自動發布流程，完成環境連接、更新設定及發布測試；不含後續維運與程式功能修改。', internalNote: '適用程式碼存放於 GitHub 的網站。以 Netlify 連接 Repository，設定 production branch（通常為 main）、Build command 與 Publish directory；Push／Merge 至指定分支後觸發自動部署。本項為首次建置費，不含後續 Build error、程式修改或持續監控。', min: 8000, max: 15000, defaultPrice: 11000, unit: '次' },
+      { id: 'cms-host-environment-setup', name: '網站主機環境建置', description: '建立網站運作所需的主機環境，完成系統安裝、基本設定與連線測試。', internalNote: '適用 WordPress／WooCommerce 等 PHP＋MySQL 內容管理系統。依案件建立資料庫、網站目錄、PHP 版本、環境參數與基本安全設定；Bluehost 等主機方案費用另列。', min: 6000, max: 12000, defaultPrice: 8000, unit: '次' },
+      { id: 'app-environment-deploy', name: '應用程式運作環境建置', description: '建立含伺服器端功能之網站運作環境，完成部署、環境設定與基本測試。', internalNote: '適用需要自訂後端、資料庫、登入或 API 的應用程式。可使用 Render、Railway、Fly.io、AWS 等服務；實際平台、Build、環境變數、資料庫與用量費依技術架構另確認。', min: 15000, max: 40000, defaultPrice: 24000, unit: '次' },
+      { id: 'static-site-host-launch', name: '既有網站移轉與發布設定', description: '將既有網站移轉至指定主機，完成頁面路徑與發布環境檢查。', internalNote: '適用不需伺服器端程式的靜態網站。以 FTP／主機檔案管理介面部署，檢查 index、資源路徑、404 與快取；不含原始程式修正。', min: 4000, max: 8000, defaultPrice: 6000, unit: '次' },
+      { id: 'git-deploy-managed', name: '網站運作環境年度維運', description: '持續檢查網站連線、憑證與平台使用狀態，並於約定範圍內調整環境設定。', internalNote: '本項為選配年費，適用 GitHub＋Netlify 等 Git-based 網站環境。包含部署連線、平台用量、HTTPS 憑證與 production deploy 狀態檢查，以及必要的環境設定調整；不含客戶程式碼造成的 Build error、內容更新或功能修改。', min: 9000, max: 18000, defaultPrice: 12000, unit: '年', billing: 'annual' },
+      { id: 'app-environment-managed', name: '應用程式環境年度代管', description: '定期檢查網站運作環境、用量及部署狀態，處理約定範圍內的環境異常。', internalNote: '適用 Render、Railway、Fly.io、AWS 等應用程式平台。代管範圍應列明監控、部署協助、環境變數與資料庫備份責任；平台實際用量與程式功能修改另計。', min: 18000, max: 48000, defaultPrice: 24000, unit: '年', billing: 'annual' },
+      { id: 'domain-ssl-setup', name: '客戶指定網域連接與 HTTPS 啟用', description: '將客戶指定的既有網域連接至網站，完成主要網址、安全連線啟用及瀏覽測試。', internalNote: '技術工作包含將指定網域加入網站專案、DNS A／CNAME／ALIAS、www 與非 www canonical／redirect、HTTPS 憑證啟用及傳播後測試。憑證通常使用主機或平台提供的免費服務；不包含網域名稱更換、購買或續約。', min: 2400, max: 2400, defaultPrice: 2400, unit: '次' },
+      { id: 'domain-fee', name: '網域註冊／續約實費', description: '一般網域暫估 NT$1,200／年；特殊、溢價或指定網域依當期價格實報實銷。', internalNote: '先至實際註冊商查詢首年與續約價格；Premium／Aftermarket 網域不可沿用 NT$1,200 預設值，需將右側單價改為當期實費。', min: 1200, max: 1200, defaultPrice: 1200, unit: '年', billing: 'annual' },
+      { id: 'domain-purchase-agency', name: '首次網域申請代辦服務（實費 20%）', description: '協助完成首次網域申請，依網域實際註冊費的 20% 計算。', internalNote: '與「網域註冊／續約實費」一併使用。工具會依右側網域實費自動計算 20%；第一年不再重複收年度代管費。', min: 240, max: 240, defaultPrice: 240, unit: '次' },
+      { id: 'domain-management', name: '網域年度代管服務', description: '含續約代繳、到期提醒及約定範圍內的網域設定管理；網域實費另計。', internalNote: '從續約年度開始使用，通常與網域實費一併報價。內部需記錄註冊商帳號歸屬、到期日、付款方式與 DNS 代管位置。', min: 2400, max: 2400, defaultPrice: 2400, unit: '年', billing: 'annual' },
+      { id: 'maintenance-hour', name: '網站維護時數', description: '內容更新、版面微調與技術支援。', min: 2000, max: 3500, defaultPrice: 2500, unit: '小時' },
+      { id: 'maintenance-plan', name: '網站定期維護方案', description: '例行更新、備份檢查、異常處理與支援。', min: 6000, max: 15000, defaultPrice: 8000, unit: '月', billing: 'monthly' },
+      { id: 'emergency-repair', name: '網站緊急檢修', description: '針對無法瀏覽、錯誤或異常狀況進行排查。', min: 5000, max: 15000, defaultPrice: 8000, unit: '次' },
+      { id: 'analytics-setup', name: '網站成效追蹤設定', description: '建立基礎瀏覽、搜尋成效與重要操作的追蹤設定。', internalNote: '通常使用 GA4、Google Tag Manager 與 Search Console；需確認客戶 Google 帳號權限、事件需求、Cookie／同意管理及是否有跨網域追蹤。', min: 8000, max: 18000, defaultPrice: 12000, unit: '式' },
+      { id: 'seo-retainer', name: 'SEO 持續優化', description: '關鍵字追蹤、內容建議與每月成效檢視。', min: 12000, max: 30000, defaultPrice: 18000, unit: '月', billing: 'monthly' },
+      { id: 'performance-optimization', name: '網站效能進階優化', description: '改善載入速度、圖片與前端資源配置。', min: 12000, max: 35000, defaultPrice: 20000, unit: '案' },
+      { id: 'security-hardening', name: '網站安全強化', description: '權限檢查、防護與安全設定調整。', min: 12000, max: 30000, defaultPrice: 18000, unit: '案' }
+    ]
+  }
+];
+
+var selection = {};
+var priceOverrides = {};
+var internalTooltipPinnedButton = null;
+var openCategories = { 'site-visual': false, 'content-modules': false, 'content-production': false, 'care-growth': false };
+var QUICK_MANAGED_IDS = [
+  'onepage-base', 'multipage-base',
+  'visual-template', 'visual-template-custom', 'visual-custom',
+  'extra-section', 'extra-content-page', 'advanced-motion',
+  'news-module', 'portfolio-module', 'product-catalog-module', 'woocommerce-module',
+  'payment-gateway', 'shipping-setup', 'multilingual-site',
+  'news-entry', 'portfolio-entry', 'product-entry',
+  'git-netlify-deploy', 'cms-host-environment-setup', 'app-environment-deploy', 'static-site-host-launch',
+  'domain-ssl-setup', 'domain-fee', 'domain-purchase-agency', 'domain-management',
+  'cloud-hosting-space', 'git-deploy-managed', 'hosting-space', 'hosting-managed', 'app-environment-managed',
+  'maintenance-hour', 'maintenance-plan', 'emergency-repair',
+  'performance-optimization', 'security-hardening', 'analytics-setup'
+];
+
+function money(value) {
+  return 'NT$ ' + Math.round(Number(value) || 0).toLocaleString('zh-TW');
+}
+
+function escapeHtml(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function internalInfoMarkup(item) {
+  if (!item.internalNote) return '';
+  return '<button type="button" class="internal-info" data-internal-info="' + escapeHtml(item.id) + '" aria-label="查看' + escapeHtml(item.name) + '的內部參考" aria-expanded="false" aria-describedby="internal-tooltip">' +
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>' +
+  '</button>';
+}
+
+function findItem(id) {
+  for (var i = 0; i < CATALOG.length; i += 1) {
+    for (var j = 0; j < CATALOG[i].items.length; j += 1) {
+      if (CATALOG[i].items[j].id === id) return { category: CATALOG[i], item: CATALOG[i].items[j] };
+    }
+  }
+  return null;
+}
+
+function positionInternalTooltip(button) {
+  var tooltip = document.getElementById('internal-tooltip');
+  if (!tooltip || tooltip.hidden || !button) return;
+  var rect = button.getBoundingClientRect();
+  var gap = 7;
+  var left = Math.max(12, Math.min(rect.left, window.innerWidth - tooltip.offsetWidth - 12));
+  var top = rect.bottom + gap;
+  if (top + tooltip.offsetHeight > window.innerHeight - 12) top = Math.max(12, rect.top - tooltip.offsetHeight - gap);
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
+}
+
+function showInternalTooltip(button, pinned) {
+  var found = findItem(button && button.getAttribute('data-internal-info'));
+  var tooltip = document.getElementById('internal-tooltip');
+  if (!found || !found.item.internalNote || !tooltip) return;
+  document.querySelectorAll('[data-internal-info][aria-expanded="true"]').forEach(function (other) {
+    if (other !== button) other.setAttribute('aria-expanded', 'false');
+  });
+  document.getElementById('internal-tooltip-text').textContent = found.item.internalNote;
+  tooltip.hidden = false;
+  button.setAttribute('aria-expanded', String(!!pinned));
+  internalTooltipPinnedButton = pinned ? button : null;
+  positionInternalTooltip(button);
+}
+
+function hideInternalTooltip(force) {
+  if (internalTooltipPinnedButton && !force) return;
+  var tooltip = document.getElementById('internal-tooltip');
+  if (tooltip) tooltip.hidden = true;
+  document.querySelectorAll('[data-internal-info][aria-expanded="true"]').forEach(function (button) {
+    button.setAttribute('aria-expanded', 'false');
+  });
+  internalTooltipPinnedButton = null;
+}
+
+function addSelection(id, quantity) {
+  var found = findItem(id);
+  if (!found) return;
+  selection[id] = {
+    quantity: Math.max(1, parseInt(quantity, 10) || found.item.defaultQuantity || 1),
+    price: Math.min(found.item.max, Math.max(found.item.min, found.item.defaultPrice))
+  };
+}
+
+function syncDomainAgencyFee() {
+  if (!selection['domain-fee'] || !selection['domain-purchase-agency']) return;
+  selection['domain-purchase-agency'].price = Math.round(selection['domain-fee'].price * 0.2);
+  var agencyInput = document.querySelector('[data-price="domain-purchase-agency"]');
+  if (agencyInput) agencyInput.value = selection['domain-purchase-agency'].price;
+}
+
+function checkedValue(name) {
+  var select = document.querySelector('select[name="' + name + '"]');
+  if (select) return select.value;
+  var input = document.querySelector('input[name="' + name + '"]:checked');
+  return input ? input.value : '';
+}
+
+function numberValue(id, fallback) {
+  var input = document.getElementById(id);
+  return Math.max(0, parseInt(input && input.value, 10) || fallback || 0);
+}
+
+function builderModules() {
+  return Array.prototype.slice.call(document.querySelectorAll('[data-builder-module]:checked')).map(function (input) {
+    return input.value;
+  });
+}
+
+function checkedOptions(selector) {
+  return Array.prototype.slice.call(document.querySelectorAll(selector + ':checked')).map(function (input) {
+    return input.value;
+  });
+}
+
+function switchServiceDomain(domain) {
+  var nextDomain = domain === 'graphic' ? 'graphic' : 'web';
+  document.querySelectorAll('[data-service-tab]').forEach(function (tab) {
+    tab.setAttribute('aria-selected', String(tab.getAttribute('data-service-tab') === nextDomain));
+  });
+  document.querySelectorAll('[data-service-panel]').forEach(function (panel) {
+    panel.hidden = panel.getAttribute('data-service-panel') !== nextDomain;
+  });
+  try { localStorage.setItem(SERVICE_TAB_STORAGE_KEY, nextDomain); } catch (error) {}
+}
+
+function saveBuilder() {
+  var state = {
+    status: checkedValue('site-status'),
+    goal: checkedValue('project-goal'),
+    type: checkedValue('project-type'),
+    visual: checkedValue('visual-tier'),
+    updateOwner: document.getElementById('builder-update-owner').value,
+    backendNeed: document.getElementById('builder-backend-need').value,
+    runtimeOverride: document.getElementById('builder-runtime-override').value,
+    modules: builderModules(),
+    deployAddons: checkedOptions('[data-deploy-addon]'),
+    domainBundle: checkedOptions('[data-domain-bundle]')[0] || '',
+    adjustOptions: checkedOptions('[data-adjust-option]'),
+    maintenanceOptions: checkedOptions('[data-maintenance-option]'),
+    sections: numberValue('builder-sections', 6),
+    pages: numberValue('builder-pages', 5),
+    news: numberValue('builder-news', 5),
+    portfolio: numberValue('builder-portfolio', 10),
+    products: numberValue('builder-products', 20),
+    adjustHours: numberValue('builder-adjust-hours', 3),
+    maintenanceHours: numberValue('builder-maintenance-hours', 3)
+  };
+  try { localStorage.setItem(BUILDER_STORAGE_KEY, JSON.stringify(state)); } catch (error) {}
+}
+
+function setChecked(name, value) {
+  var select = document.querySelector('select[name="' + name + '"]');
+  if (select) {
+    select.value = value;
+    return;
+  }
+  var input = document.querySelector('input[name="' + name + '"][value="' + value + '"]');
+  if (input) input.checked = true;
+}
+
+function selectedRuntimeMode() {
+  var override = document.getElementById('builder-runtime-override').value;
+  if (override !== 'auto') return override;
+  var updateOwner = document.getElementById('builder-update-owner').value;
+  var backendNeed = document.getElementById('builder-backend-need').value;
+  var status = checkedValue('site-status');
+  var goal = checkedValue('project-goal');
+  var type = checkedValue('project-type');
+  var modules = builderModules();
+  if (backendNeed === 'custom') return 'app';
+  if (backendNeed === 'cms') return 'cms';
+  if (backendNeed === 'none') return 'static';
+  if (updateOwner === 'client-cms') return 'cms';
+  if (updateOwner === 'developer') return 'static';
+  if ((status === 'no-site' || goal === 'redesign' || goal === 'features') && (type === 'ecommerce' || modules.indexOf('commerce') >= 0)) return 'cms';
+  return 'pending';
+}
+
+function updateRuntimeRecommendation() {
+  var mode = selectedRuntimeMode();
+  var options = {
+    static: {
+      title: '靜態網站託管與自動更新',
+      badge: '靜態／前端',
+      reason: '適合由工程師更新、沒有伺服器端功能的網站；可由程式版本更新後自動發布。'
+    },
+    cms: {
+      title: '支援內容管理系統的網站主機',
+      badge: 'CMS／電商',
+      reason: '適合客戶需要自行登入後台，或使用標準內容管理、商品與訂單功能的網站。'
+    },
+    app: {
+      title: '應用程式雲端運作環境',
+      badge: '後端／資料庫',
+      reason: '適合含自訂登入、會員、資料庫、API 或其他伺服器端功能的網站。'
+    },
+    pending: {
+      title: '需進一步確認技術需求',
+      badge: '待判定',
+      reason: '確認日後更新方式與伺服器端功能後，系統才會將適合的環境建置費帶入估價。'
+    }
+  };
+  var option = options[mode] || options.pending;
+  document.getElementById('runtime-title').textContent = option.title;
+  document.getElementById('runtime-badge').textContent = option.badge;
+  document.getElementById('runtime-reason').textContent = option.reason;
+  document.getElementById('runtime-recommendation').setAttribute('data-runtime-mode', mode);
+  document.querySelectorAll('[data-runtime-addon-for]').forEach(function (label) {
+    var visible = label.getAttribute('data-runtime-addon-for') === mode;
+    label.hidden = !visible;
+    if (!visible) label.querySelector('input').checked = false;
+  });
+  return mode;
+}
+
+function updateBuilderFlow(resetModules) {
+  var status = checkedValue('site-status') || 'no-site';
+  var goal = checkedValue('project-goal') || 'deploy';
+  var type = checkedValue('project-type') || 'onepage';
+  var moduleInputs = document.querySelectorAll('[data-builder-module]');
+  if (resetModules) {
+    moduleInputs.forEach(function (input) { input.checked = false; });
+    if (type === 'official') document.querySelector('[data-builder-module][value="news"]').checked = true;
+    if (type === 'portfolio') document.querySelector('[data-builder-module][value="portfolio"]').checked = true;
+    if (type === 'ecommerce') document.querySelector('[data-builder-module][value="commerce"]').checked = true;
+  }
+  var modules = builderModules();
+  var isNewBuild = status === 'no-site' || goal === 'redesign';
+  var showModules = status === 'no-site' || goal === 'redesign' || goal === 'features';
+  var showRuntime = status === 'no-site' || goal === 'redesign' || goal === 'features' || goal === 'deploy';
+  document.querySelector('[data-foundation-field="goal"]').hidden = status !== 'existing';
+  document.querySelector('[data-foundation-field="type"]').hidden = !isNewBuild;
+  document.querySelector('[data-foundation-field="visual"]').hidden = !isNewBuild;
+  document.querySelector('[data-builder-step="modules"]').hidden = !showModules;
+  document.querySelector('[data-builder-step="scale"]').hidden = !showModules;
+  document.querySelector('[data-builder-step="adjust"]').hidden = status !== 'existing' || goal !== 'adjust';
+  document.querySelector('[data-builder-step="maintenance"]').hidden = status !== 'existing' || goal !== 'maintenance';
+  document.querySelector('[data-builder-step="runtime"]').hidden = !showRuntime;
+  document.querySelector('[data-builder-step="services"]').hidden = !showRuntime;
+  document.querySelector('[data-scale-field="sections"]').hidden = !isNewBuild || type !== 'onepage';
+  document.querySelector('[data-scale-field="pages"]').hidden = !isNewBuild || type === 'onepage';
+  document.querySelector('[data-scale-field="news"]').hidden = modules.indexOf('news') < 0;
+  document.querySelector('[data-scale-field="portfolio"]').hidden = modules.indexOf('portfolio') < 0;
+  document.querySelector('[data-scale-field="products"]').hidden = modules.indexOf('catalog') < 0 && modules.indexOf('commerce') < 0;
+  updateRuntimeRecommendation();
+  saveBuilder();
+}
+
+function restoreBuilder() {
+  var state;
+  try { state = JSON.parse(localStorage.getItem(BUILDER_STORAGE_KEY) || 'null'); } catch (error) {}
+  if (!state) {
+    updateBuilderFlow(false);
+    return;
+  }
+  setChecked('site-status', state.status || 'no-site');
+  setChecked('project-goal', state.goal || 'deploy');
+  setChecked('project-type', state.type || 'onepage');
+  setChecked('visual-tier', state.visual || 'template-custom');
+  document.getElementById('builder-update-owner').value = state.updateOwner || 'undecided';
+  document.getElementById('builder-backend-need').value = state.backendNeed || 'undecided';
+  document.getElementById('builder-runtime-override').value = state.runtimeOverride || 'auto';
+  document.querySelectorAll('[data-builder-module]').forEach(function (input) {
+    input.checked = (state.modules || []).indexOf(input.value) >= 0;
+  });
+  document.querySelectorAll('[data-deploy-addon]').forEach(function (input) {
+    input.checked = (state.deployAddons || []).indexOf(input.value) >= 0;
+  });
+  document.querySelectorAll('[data-domain-bundle]').forEach(function (input) {
+    input.checked = input.value === state.domainBundle;
+  });
+  document.querySelectorAll('[data-adjust-option]').forEach(function (input) {
+    input.checked = (state.adjustOptions || []).indexOf(input.value) >= 0;
+  });
+  document.querySelectorAll('[data-maintenance-option]').forEach(function (input) {
+    input.checked = (state.maintenanceOptions || ['maintenance-hour']).indexOf(input.value) >= 0;
+  });
+  document.getElementById('builder-sections').value = state.sections || 6;
+  document.getElementById('builder-pages').value = state.pages || 5;
+  document.getElementById('builder-news').value = state.news == null ? 5 : state.news;
+  document.getElementById('builder-portfolio').value = state.portfolio == null ? 10 : state.portfolio;
+  document.getElementById('builder-products').value = state.products == null ? 20 : state.products;
+  document.getElementById('builder-adjust-hours').value = state.adjustHours || 3;
+  document.getElementById('builder-maintenance-hours').value = state.maintenanceHours || 3;
+  updateBuilderFlow(false);
+}
+
+function billingSuffix(item) {
+  if (item.billing === 'annual') return '／年';
+  if (item.billing === 'monthly') return '／月';
+  return '';
+}
+
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(selection)); } catch (error) {}
+}
+
+function restorePriceOverrides() {
+  CATALOG.forEach(function (category) {
+    category.items.forEach(function (item) {
+      item.baseMin = item.min;
+      item.baseMax = item.max;
+    });
+  });
+  try { priceOverrides = JSON.parse(localStorage.getItem(PRICE_STORAGE_KEY) || '{}'); }
+  catch (error) { priceOverrides = {}; }
+  Object.keys(priceOverrides).forEach(function (id) {
+    var found = findItem(id);
+    var override = priceOverrides[id];
+    if (!found || !override) return;
+    var min = Number(override.min);
+    var max = Number(override.max);
+    if (!Number.isFinite(min) || !Number.isFinite(max) || min < 0 || max < 0) return;
+    found.item.min = Math.min(min, max);
+    found.item.max = Math.max(min, max);
+  });
+}
+
+function savePriceOverrides() {
+  try { localStorage.setItem(PRICE_STORAGE_KEY, JSON.stringify(priceOverrides)); } catch (error) {}
+}
+
+function restore() {
+  try {
+    var saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    Object.keys(saved).forEach(function (id) {
+      var found = findItem(id);
+      if (!found) return;
+      selection[id] = {
+        quantity: Math.max(1, parseInt(saved[id].quantity, 10) || 1),
+        price: Math.max(0, parseFloat(saved[id].price) || found.item.defaultPrice)
+      };
+    });
+  } catch (error) {
+    selection = {};
+  }
+}
+
+function renderCatalog() {
+  hideInternalTooltip(true);
+  document.getElementById('catalog-grid').innerHTML = CATALOG.map(function (category) {
+    var selectedCount = category.items.filter(function (item) { return !!selection[item.id]; }).length;
+    var categorySubtotal = category.items.reduce(function (sum, item) {
+      var entry = selection[item.id];
+      return sum + (entry ? entry.quantity * entry.price : 0);
+    }, 0);
+    var selectedCycles = category.items.filter(function (item) { return !!selection[item.id]; }).map(function (item) {
+      return item.billing || 'once';
+    }).filter(function (cycle, index, cycles) { return cycles.indexOf(cycle) === index; });
+    var categorySubtotalLabel = money(categorySubtotal);
+    if (selectedCycles.length > 1) categorySubtotalLabel = '多種週期';
+    else if (selectedCycles[0] === 'annual') categorySubtotalLabel += '／年';
+    else if (selectedCycles[0] === 'monthly') categorySubtotalLabel += '／月';
+    var isOpen = !!openCategories[category.id];
+    var items = category.items.map(function (item) {
+      var selected = !!selection[item.id];
+      return '<tr class="' + (selected ? 'is-selected' : '') + '">' +
+        '<td class="check-col"><label class="service-check"><input type="checkbox" data-service-check="' + escapeHtml(item.id) + '"' + (selected ? ' checked' : '') + '><span class="sr-only">選取' + escapeHtml(item.name) + '</span></label></td>' +
+        '<td class="service-name"><span class="service-name-wrap">' + internalInfoMarkup(item) + '<span class="service-name-text">' + escapeHtml(item.name) + '</span></span></td>' +
+        '<td class="description-col">' + escapeHtml(item.description) + '</td>' +
+        '<td class="service-range range-col"><div class="range-editor">' +
+          '<input type="number" min="0" step="100" value="' + item.min + '" aria-label="' + escapeHtml(item.name) + '價格低標" data-range-min="' + escapeHtml(item.id) + '">' +
+          '<span class="range-separator" aria-hidden="true">–</span>' +
+          '<input type="number" min="0" step="100" value="' + item.max + '" aria-label="' + escapeHtml(item.name) + '價格高標" data-range-max="' + escapeHtml(item.id) + '">' +
+          '<button type="button" class="range-reset" data-range-reset="' + escapeHtml(item.id) + '" aria-label="重設' + escapeHtml(item.name) + '價格區間" title="回復原始價格">↺</button>' +
+        '</div></td>' +
+        '<td class="unit-col">每' + escapeHtml(item.unit) + '</td>' +
+      '</tr>';
+    }).join('');
+    return '<article class="category-card' + (isOpen ? ' is-open' : '') + '">' +
+      '<button type="button" class="category-toggle" data-category-toggle="' + escapeHtml(category.id) + '" aria-expanded="' + String(isOpen) + '">' +
+        '<span class="category-title"><strong>' + escapeHtml(category.name) + '</strong><small>' + escapeHtml(category.description) + '</small></span>' +
+        '<span class="category-selected">已選 ' + selectedCount + ' 項</span>' +
+        '<span class="category-subtotal">' + categorySubtotalLabel + '</span>' +
+        '<span class="category-chevron" aria-hidden="true">⌄</span>' +
+      '</button>' +
+      '<div class="category-content"' + (isOpen ? '' : ' hidden') + '>' +
+        '<table class="service-table"><thead><tr><th class="check-col"><span class="sr-only">勾選</span></th><th class="name-col">工作項目</th><th class="description-col">說明</th><th class="range-col">價格區間（可編輯）</th><th class="unit-col">單位</th></tr></thead><tbody>' + items + '</tbody></table>' +
+      '</div>' +
+    '</article>';
+  }).join('');
+}
+
+function renderSelected() {
+  var ids = Object.keys(selection);
+  var root = document.getElementById('selected-list');
+  if (!ids.length) {
+    root.innerHTML = '<div class="empty-state">還沒有選擇服務。<br>可以邊和客戶對談，邊在上方勾選需求。</div>';
+    return;
+  }
+  root.innerHTML = ids.map(function (id) {
+    var found = findItem(id);
+    var entry = selection[id];
+    return '<div class="selected-row" data-selected-row="' + escapeHtml(id) + '">' +
+      '<div class="selected-copy"><strong>' + escapeHtml(found.item.name) + '</strong></div>' +
+      '<label class="compact-field"><span class="sr-only">對談單價</span><input type="number" min="0" step="100" value="' + entry.price + '" placeholder="單價" aria-label="對談單價" data-price="' + escapeHtml(id) + '"></label>' +
+      '<span class="multiply-mark" aria-hidden="true">×</span>' +
+      '<label class="compact-field"><span class="sr-only">數量</span><input type="number" min="1" step="1" value="' + entry.quantity + '" placeholder="數量" aria-label="數量" data-quantity="' + escapeHtml(id) + '"></label>' +
+      '<div class="line-amount" data-line-total="' + escapeHtml(id) + '">' + money(entry.quantity * entry.price) + billingSuffix(found.item) + '</div>' +
+      '<button type="button" class="remove-item" data-remove="' + escapeHtml(id) + '" aria-label="移除' + escapeHtml(found.item.name) + '" title="移除">×</button>' +
+    '</div>';
+  }).join('');
+}
+
+function updateTotals() {
+  var ids = Object.keys(selection);
+  var min = 0;
+  var max = 0;
+  var current = 0;
+  var annual = 0;
+  var monthly = 0;
+  ids.forEach(function (id) {
+    var found = findItem(id);
+    var entry = selection[id];
+    var amount = entry.price * entry.quantity;
+    if (found.item.billing === 'annual') annual += amount;
+    else if (found.item.billing === 'monthly') monthly += amount;
+    else {
+      min += found.item.min * entry.quantity;
+      max += found.item.max * entry.quantity;
+      current += amount;
+    }
+    var line = document.querySelector('[data-line-total="' + id + '"]');
+    if (line) line.textContent = money(amount) + billingSuffix(found.item);
+  });
+  document.getElementById('selection-count').textContent = ids.length + ' 項已選';
+  document.getElementById('clear-button').hidden = ids.length === 0;
+  document.getElementById('range-min').textContent = money(min);
+  document.getElementById('range-max').textContent = money(max);
+  document.getElementById('current-total').textContent = money(current);
+  document.getElementById('annual-total').textContent = money(annual) + '／年';
+  document.getElementById('monthly-total').textContent = money(monthly) + '／月';
+  document.getElementById('first-year-total').textContent = money(current + annual + (monthly * 12));
+}
+
+function render() {
+  renderCatalog();
+  renderSelected();
+  updateTotals();
+}
+
+document.getElementById('catalog-grid').addEventListener('input', function (event) {
+  var minId = event.target.getAttribute('data-range-min');
+  var maxId = event.target.getAttribute('data-range-max');
+  var id = minId || maxId;
+  if (!id) return;
+  var found = findItem(id);
+  if (!found) return;
+  var value = Math.max(0, Number(event.target.value) || 0);
+  if (minId) found.item.min = value;
+  if (maxId) found.item.max = value;
+  priceOverrides[id] = { min: found.item.min, max: found.item.max };
+  savePriceOverrides();
+  updateTotals();
+});
+
+document.getElementById('catalog-grid').addEventListener('change', function (event) {
+  var minId = event.target.getAttribute('data-range-min');
+  var maxId = event.target.getAttribute('data-range-max');
+  var rangeId = minId || maxId;
+  if (rangeId) {
+    var rangeFound = findItem(rangeId);
+    if (!rangeFound) return;
+    var value = Math.max(0, Number(event.target.value) || 0);
+    if (minId) rangeFound.item.min = value;
+    if (maxId) rangeFound.item.max = value;
+    if (rangeFound.item.min > rangeFound.item.max) {
+      if (minId) rangeFound.item.max = rangeFound.item.min;
+      else rangeFound.item.min = rangeFound.item.max;
+    }
+    priceOverrides[rangeId] = { min: rangeFound.item.min, max: rangeFound.item.max };
+    savePriceOverrides();
+    renderCatalog();
+    updateTotals();
+    return;
+  }
+  var checkbox = event.target.closest('[data-service-check]');
+  if (!checkbox) return;
+  var id = checkbox.getAttribute('data-service-check');
+  var found = findItem(id);
+  if (!found) return;
+  if (checkbox.checked) selection[id] = {
+    quantity: found.item.defaultQuantity || 1,
+    price: Math.min(found.item.max, Math.max(found.item.min, found.item.defaultPrice))
+  };
+  else delete selection[id];
+  if (checkbox.checked && (id === 'domain-purchase-agency' || id === 'domain-management') && !selection['domain-fee']) {
+    addSelection('domain-fee', 1);
+  }
+  if (!checkbox.checked && id === 'domain-fee') {
+    delete selection['domain-purchase-agency'];
+    delete selection['domain-management'];
+  }
+  syncDomainAgencyFee();
+  save();
+  render();
+});
+
+document.getElementById('catalog-grid').addEventListener('click', function (event) {
+  var info = event.target.closest('[data-internal-info]');
+  if (info) {
+    event.stopPropagation();
+    if (internalTooltipPinnedButton === info) hideInternalTooltip(true);
+    else showInternalTooltip(info, true);
+    return;
+  }
+  var reset = event.target.closest('[data-range-reset]');
+  if (reset) {
+    var resetId = reset.getAttribute('data-range-reset');
+    var resetFound = findItem(resetId);
+    if (!resetFound) return;
+    resetFound.item.min = resetFound.item.baseMin;
+    resetFound.item.max = resetFound.item.baseMax;
+    delete priceOverrides[resetId];
+    savePriceOverrides();
+    renderCatalog();
+    updateTotals();
+    return;
+  }
+  var button = event.target.closest('[data-category-toggle]');
+  if (!button) return;
+  var id = button.getAttribute('data-category-toggle');
+  openCategories[id] = !openCategories[id];
+  renderCatalog();
+});
+
+document.getElementById('catalog-grid').addEventListener('mouseover', function (event) {
+  var info = event.target.closest('[data-internal-info]');
+  if (!info || info.contains(event.relatedTarget) || internalTooltipPinnedButton) return;
+  showInternalTooltip(info, false);
+});
+
+document.getElementById('catalog-grid').addEventListener('mouseout', function (event) {
+  var info = event.target.closest('[data-internal-info]');
+  if (!info || info.contains(event.relatedTarget)) return;
+  hideInternalTooltip(false);
+});
+
+document.getElementById('catalog-grid').addEventListener('focusin', function (event) {
+  var info = event.target.closest('[data-internal-info]');
+  if (info && !internalTooltipPinnedButton) showInternalTooltip(info, false);
+});
+
+document.getElementById('catalog-grid').addEventListener('focusout', function (event) {
+  if (event.target.closest('[data-internal-info]')) hideInternalTooltip(false);
+});
+
+document.addEventListener('click', function (event) {
+  if (internalTooltipPinnedButton && !event.target.closest('[data-internal-info]')) hideInternalTooltip(true);
+});
+
+document.addEventListener('keydown', function (event) {
+  if (event.key === 'Escape') hideInternalTooltip(true);
+});
+
+window.addEventListener('resize', function () {
+  if (internalTooltipPinnedButton) positionInternalTooltip(internalTooltipPinnedButton);
+  else hideInternalTooltip(true);
+});
+
+document.getElementById('selected-list').addEventListener('click', function (event) {
+  var button = event.target.closest('[data-remove]');
+  if (!button) return;
+  var removeId = button.getAttribute('data-remove');
+  delete selection[removeId];
+  if (removeId === 'domain-fee') {
+    delete selection['domain-purchase-agency'];
+    delete selection['domain-management'];
+  }
+  save();
+  render();
+});
+
+document.getElementById('selected-list').addEventListener('input', function (event) {
+  var quantityId = event.target.getAttribute('data-quantity');
+  var priceId = event.target.getAttribute('data-price');
+  var id = quantityId || priceId;
+  if (!id || !selection[id]) return;
+  if (quantityId) selection[id].quantity = Math.max(1, parseInt(event.target.value, 10) || 1);
+  if (priceId) selection[id].price = Math.max(0, parseFloat(event.target.value) || 0);
+  if (priceId === 'domain-fee') syncDomainAgencyFee();
+  save();
+  renderCatalog();
+  updateTotals();
+});
+
+document.getElementById('clear-button').addEventListener('click', function () {
+  selection = {};
+  save();
+  render();
+});
+
+document.querySelectorAll('[data-service-tab]').forEach(function (tab) {
+  tab.addEventListener('click', function () {
+    switchServiceDomain(tab.getAttribute('data-service-tab'));
+  });
+});
+
+document.querySelectorAll('[name="project-type"]').forEach(function (input) {
+  input.addEventListener('change', function () { updateBuilderFlow(true); });
+});
+
+document.querySelectorAll('[name="site-status"], [name="project-goal"]').forEach(function (input) {
+  input.addEventListener('change', function () { updateBuilderFlow(false); });
+});
+
+document.querySelectorAll('#builder-update-owner, #builder-backend-need, #builder-runtime-override').forEach(function (input) {
+  input.addEventListener('change', function () { updateBuilderFlow(false); });
+});
+
+document.querySelectorAll('[data-builder-module]').forEach(function (input) {
+  input.addEventListener('change', function () {
+    if (input.value === 'catalog' && input.checked) document.querySelector('[data-builder-module][value="commerce"]').checked = false;
+    if (input.value === 'commerce' && input.checked) document.querySelector('[data-builder-module][value="catalog"]').checked = false;
+    updateBuilderFlow(false);
+  });
+});
+
+document.querySelectorAll('[name="visual-tier"], .scale-fields input, [data-deploy-addon], [data-adjust-option], [data-maintenance-option]').forEach(function (input) {
+  input.addEventListener('change', saveBuilder);
+});
+
+document.querySelectorAll('[data-domain-bundle]').forEach(function (input) {
+  input.addEventListener('change', function () {
+    if (input.checked) {
+      document.querySelectorAll('[data-domain-bundle]').forEach(function (other) {
+        if (other !== input) other.checked = false;
+      });
+    }
+    saveBuilder();
+  });
+});
+
+document.getElementById('build-estimate').addEventListener('click', function () {
+  var status = checkedValue('site-status') || 'no-site';
+  var goal = checkedValue('project-goal') || 'deploy';
+  var type = checkedValue('project-type');
+  var visual = checkedValue('visual-tier');
+  var modules = builderModules();
+  var isNewBuild = status === 'no-site' || goal === 'redesign';
+  var includeModules = isNewBuild || (status === 'existing' && goal === 'features');
+  var includeRuntime = isNewBuild || (status === 'existing' && (goal === 'features' || goal === 'deploy'));
+
+  QUICK_MANAGED_IDS.forEach(function (id) { delete selection[id]; });
+
+  if (isNewBuild) {
+    if (type === 'onepage') {
+      addSelection('onepage-base', 1);
+      var extraSections = Math.max(0, numberValue('builder-sections', 6) - 6);
+      if (extraSections) addSelection('extra-section', extraSections);
+    } else {
+      addSelection('multipage-base', 1);
+      var extraPages = Math.max(0, numberValue('builder-pages', 5) - 5);
+      if (extraPages) addSelection('extra-content-page', extraPages);
+    }
+    var visualMap = { template: 'visual-template', 'template-custom': 'visual-template-custom', custom: 'visual-custom' };
+    addSelection(visualMap[visual], 1);
+  }
+
+  if (includeModules && modules.indexOf('news') >= 0) {
+    addSelection('news-module', 1);
+    var newsCount = numberValue('builder-news', 0);
+    if (newsCount) addSelection('news-entry', newsCount);
+  }
+  if (includeModules && modules.indexOf('portfolio') >= 0) {
+    addSelection('portfolio-module', 1);
+    var portfolioCount = numberValue('builder-portfolio', 0);
+    if (portfolioCount) addSelection('portfolio-entry', portfolioCount);
+  }
+  if (includeModules && modules.indexOf('catalog') >= 0) {
+    addSelection('product-catalog-module', 1);
+    var catalogProductCount = numberValue('builder-products', 0);
+    if (catalogProductCount) addSelection('product-entry', catalogProductCount);
+  }
+  if (includeModules && modules.indexOf('commerce') >= 0) {
+    addSelection('woocommerce-module', 1);
+    addSelection('payment-gateway', 1);
+    addSelection('shipping-setup', 1);
+    var commerceProductCount = numberValue('builder-products', 0);
+    if (commerceProductCount) addSelection('product-entry', commerceProductCount);
+  }
+  if (includeModules && modules.indexOf('bilingual') >= 0) addSelection('multilingual-site', 1);
+
+  if (includeRuntime) {
+    var runtimeMap = {
+      static: 'git-netlify-deploy',
+      cms: 'cms-host-environment-setup',
+      app: 'app-environment-deploy'
+    };
+    var runtimeItem = runtimeMap[selectedRuntimeMode()];
+    if (runtimeItem) addSelection(runtimeItem, 1);
+    checkedOptions('[data-deploy-addon]').forEach(function (id) { addSelection(id, 1); });
+    var domainBundle = checkedOptions('[data-domain-bundle]')[0] || '';
+    if (domainBundle === 'first-purchase') {
+      addSelection('domain-fee', 1);
+      addSelection('domain-purchase-agency', 1);
+      syncDomainAgencyFee();
+    }
+    if (domainBundle === 'annual-management') {
+      addSelection('domain-fee', 1);
+      addSelection('domain-management', 1);
+    }
+  }
+
+  if (status === 'existing' && goal === 'adjust') {
+    addSelection('maintenance-hour', numberValue('builder-adjust-hours', 3));
+    checkedOptions('[data-adjust-option]').forEach(function (id) { addSelection(id, 1); });
+  }
+
+  if (status === 'existing' && goal === 'maintenance') {
+    checkedOptions('[data-maintenance-option]').forEach(function (id) {
+      addSelection(id, id === 'maintenance-hour' ? numberValue('builder-maintenance-hours', 3) : 1);
+    });
+  }
+
+  saveBuilder();
+  save();
+  render();
+  this.textContent = '基礎組合已更新';
+  var button = this;
+  window.setTimeout(function () { button.textContent = '更新初步估價'; }, 1800);
+});
+
+restorePriceOverrides();
+restore();
+restoreBuilder();
+try { switchServiceDomain(localStorage.getItem(SERVICE_TAB_STORAGE_KEY) || 'web'); }
+catch (error) { switchServiceDomain('web'); }
+render();
+</script>
+</body>
+</html>

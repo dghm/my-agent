@@ -40,6 +40,7 @@
       description: '報價、合約、分期請款與收入追蹤',
       defaultTool: 'quote',
       tools: [
+        { id: 'service-estimator', label: '服務品項試算', href: 'service-price-estimator.html', status: 'integrated', keywords: ['品項','價目','估價','試算','預算','price','estimate'] },
         { id: 'quote',    label: '服務報價單',   href: 'Quote-Generator.html',    status: 'integrated', keywords: ['報價','報價單','quote','估價'] },
         { id: 'contract', label: '合約生成',     href: 'Contract-Generator.html', status: 'integrated', keywords: ['合約','契約','contract'] },
         { id: 'invoice',  label: '應收帳款通知', href: 'Invoice-Generator.html',  status: 'integrated', keywords: ['請款','請款單','發票','invoice','應收'] },
