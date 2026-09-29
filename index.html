@@ -46,6 +46,23 @@
     .board-grid { grid-template-columns: 1fr; }
   }
 
+  /* ---- Last week distribution ---- */
+  .work-distribution-card { padding: 18px 20px; }
+  .stack-bar {
+    display: flex; height: 22px; margin-top: 2px; overflow: hidden;
+    border-radius: 999px; background: var(--surface-bg);
+  }
+  .stack-bar span { height: 100%; min-width: 2px; }
+  .stack-bar span + span { margin-left: 2px; }
+  .stack-legend {
+    display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px;
+    color: var(--surface-text-muted); font-size: 12px;
+  }
+  .stack-legend .item { display: flex; align-items: center; gap: 6px; }
+  .stack-legend .dot {
+    display: inline-block; width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%;
+  }
+
   /* ---- Primary entry ---- */
   .hero {
     display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(240px, .75fr);
@@ -207,6 +224,16 @@
     </div>
   </section>
 
+  <section class="section" aria-labelledby="last-week-distribution-title">
+    <div class="section-head">
+      <h2 id="last-week-distribution-title">上週工作內容分佈</h2>
+      <p id="last-week-range"></p>
+    </div>
+    <div class="board-card work-distribution-card" id="last-week-distribution">
+      <p class="board-empty">載入中…</p>
+    </div>
+  </section>
+
   <section class="section" aria-labelledby="service-monitor-title">
     <div class="section-head">
       <h2 id="service-monitor-title">服務監控</h2>
@@ -348,6 +375,11 @@ initTheme('my-agent-theme');
 
   var SITE_HEALTH_CACHE_KEY = 'dghm-site-monitor-last';
   var MAKE_MONITOR_CACHE_KEY = 'dghm-make-monitor-last';
+  var SERIES_COLORS = [
+    'var(--series-1)', 'var(--series-2)', 'var(--series-3)', 'var(--series-4)',
+    'var(--series-5)', 'var(--series-6)', 'var(--series-7)', 'var(--series-8)'
+  ];
+  var codeColorMap = {};
 
   function escapeHtml(value) {
     return String(value == null ? '' : value)
@@ -378,6 +410,36 @@ initTheme('my-agent-theme');
     try {
       return new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
     } catch (error) { return ''; }
+  }
+
+  function resolveProjectColor(color) {
+    if (!color) return 'var(--series-1)';
+    return color.indexOf('series-') === 0 ? 'var(--' + color + ')' : color;
+  }
+
+  function colorForCode(code) {
+    if (!code) return 'var(--series-internal)';
+    var projects = window.DGHMProjects ? window.DGHMProjects.list() : [];
+    var project = projects.find(function (item) { return item.projectCode === code; });
+    if (project && project.color) return resolveProjectColor(project.color);
+    if (!codeColorMap[code]) {
+      codeColorMap[code] = SERIES_COLORS[Object.keys(codeColorMap).length % SERIES_COLORS.length];
+    }
+    return codeColorMap[code];
+  }
+
+  function lastWorkWeekRange() {
+    var today = new Date(taipeiDateStr(0) + 'T12:00:00+08:00');
+    var day = today.getUTCDay();
+    var diffToMonday = day === 0 ? -6 : 1 - day;
+    var thisMonday = new Date(today);
+    thisMonday.setUTCDate(today.getUTCDate() + diffToMonday);
+    var lastMonday = new Date(thisMonday);
+    lastMonday.setUTCDate(thisMonday.getUTCDate() - 7);
+    var lastFriday = new Date(lastMonday);
+    lastFriday.setUTCDate(lastMonday.getUTCDate() + 4);
+    var formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei' });
+    return { start: formatter.format(lastMonday), end: formatter.format(lastFriday) };
   }
 
   async function fetchEvents(dateStr) {
@@ -421,6 +483,64 @@ initTheme('my-agent-theme');
     renderEventList('yesterday-events', yesterdayResult, '昨天沒有排定的行事曆項目');
     var tomorrowResult = await fetchEvents(taipeiDateStr(1));
     renderEventList('tomorrow-events', tomorrowResult, '明天還沒有排定的行事曆項目');
+  }
+
+  async function loadLastWeekDistribution() {
+    var container = document.getElementById('last-week-distribution');
+    var rangeLabel = document.getElementById('last-week-range');
+    var range = lastWorkWeekRange();
+    rangeLabel.textContent = range.start + ' ～ ' + range.end;
+
+    try {
+      var res = await fetch('/api/calendar/list?start=' + range.start + '&end=' + range.end, {
+        credentials: 'same-origin'
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (res.status === 401 || data.code === 'unauthenticated') {
+        container.innerHTML = '<p class="board-empty">尚未登入 Google，<a href="login.html">登入</a>後可顯示上週分佈</p>';
+        return;
+      }
+      if (!res.ok || !data.ok) {
+        container.innerHTML = '<p class="board-empty">上週資料讀取失敗' +
+          (data.error ? '：' + escapeHtml(data.error) : '') + '</p>';
+        return;
+      }
+
+      var byKey = {};
+      (data.events || []).forEach(function (event) {
+        if (!(event.hours > 0)) return;
+        var label = event.code ? '【' + event.code + '】' + event.desc : (event.summary || '(未命名事件)');
+        var key = event.code || label;
+        if (!byKey[key]) {
+          byKey[key] = { label: label, hours: 0, color: colorForCode(event.code) };
+        }
+        byKey[key].hours += event.hours;
+      });
+
+      var segments = Object.keys(byKey).map(function (key) { return byKey[key]; })
+        .filter(function (item) { return item.hours > 0; })
+        .sort(function (a, b) { return b.hours - a.hours; });
+      var total = segments.reduce(function (sum, item) { return sum + item.hours; }, 0);
+      if (!segments.length || total <= 0) {
+        container.innerHTML = '<p class="board-empty">上週日曆裡沒有可統計工時的工作事件。</p>';
+        return;
+      }
+
+      var barHtml = segments.map(function (item) {
+        var percent = item.hours / total * 100;
+        return '<span style="width:' + percent.toFixed(2) + '%;background:' + item.color +
+          ';" title="' + escapeHtml(item.label) + ' · ' + item.hours.toFixed(1) + 'h"></span>';
+      }).join('');
+      var legendHtml = segments.map(function (item) {
+        var percent = item.hours / total * 100;
+        return '<span class="item"><span class="dot" style="background:' + item.color + '"></span>' +
+          escapeHtml(item.label) + '・' + item.hours.toFixed(1) + 'h（' + percent.toFixed(0) + '%）</span>';
+      }).join('');
+      container.innerHTML = '<div class="stack-bar" role="img" aria-label="上週總工時 ' + total.toFixed(1) +
+        ' 小時的工作內容分佈">' + barHtml + '</div><div class="stack-legend">' + legendHtml + '</div>';
+    } catch (error) {
+      container.innerHTML = '<p class="board-empty">上週資料讀取失敗，請稍後再試一次。</p>';
+    }
   }
 
   function renderSiteHealth(data) {
@@ -549,6 +669,7 @@ initTheme('my-agent-theme');
   if (dateLabel) dateLabel.textContent = todayLabel();
 
   loadCalendarBoards();
+  loadLastWeekDistribution();
   loadSiteHealth();
   loadMakeMonitor();
 })();
