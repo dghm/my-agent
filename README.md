@@ -24,6 +24,11 @@
   - Dashboard 主頁（工作台總覽）。
   - 顯示客戶案件流程 01–06 與快速入口，各卡片連往對應工具。
 
+- `service-price-estimator.html` / `netlify/functions/service-prices.js`
+  - 服務品項試算工具；品項價格區間可在展開的分類表格中直接編輯。
+  - 「儲存共用價格」會將價格覆寫寫入 Netlify Blobs，登入同一個正式工作台後可跨電腦自動載入；瀏覽器 localStorage 僅作為離線／讀取失敗時的快取。
+  - API 路由為 `/api/service-prices`，需先登入工作台。本機須以 `npx netlify dev` 啟動才能測試共用儲存；一般靜態伺服器只會保留本機價格。
+
 - `Document-Generator.html`
   - 位於「案件與溝通」的 DGHM CI 文件表單產生器，沿用報價單的左右編輯／A4 預覽介面。
   - 可建立多個可獨立收合的內容區塊、兩欄表格、多頁文件及文件結尾的條件／補充說明，並支援 JSON 草稿載入／下載、即時預覽、HTML 複製、下載與列印。

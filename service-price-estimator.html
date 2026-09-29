@@ -413,13 +413,34 @@
   }
   .quick-builder-head {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 16px;
     margin-bottom: 14px;
   }
+  .quick-builder.is-collapsed .quick-builder-head { margin-bottom: 0; }
   .quick-builder-head h3 { margin: 0 0 3px; color: var(--navy-text); font-size: 17px; }
   .quick-builder-head p { margin: 0; color: var(--surface-text-muted); font-size: 12px; line-height: 1.5; }
+  .quick-builder-toggle {
+    display: inline-grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid var(--surface-input-border);
+    border-radius: 8px;
+    background: var(--surface-input-bg);
+    color: var(--navy-text);
+  }
+  .quick-builder-toggle:hover { border-color: var(--navy-text); background: var(--navy-soft); }
+  .quick-builder-toggle svg {
+    width: 18px;
+    height: 18px;
+    transition: transform .18s ease;
+  }
+  .quick-builder-toggle[aria-expanded="false"] svg { transform: rotate(180deg); }
+  .quick-builder-body[hidden] { display: none; }
   .quick-step + .quick-step { margin-top: 14px; }
   .quick-step[hidden] { display: none; }
   .quick-step-title {
@@ -570,6 +591,32 @@
   }
   .advanced-heading h3 { margin: 0; color: var(--navy-text); font-size: 15px; }
   .advanced-heading p { margin: 0; color: var(--surface-text-muted); font-size: 11px; }
+  .price-sync-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 9px;
+  }
+  .price-sync-status {
+    color: var(--surface-text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    text-align: right;
+  }
+  .price-sync-status[data-state="synced"] { color: #27724a; }
+  .price-sync-status[data-state="dirty"] { color: var(--orange-deep); }
+  .price-sync-status[data-state="error"] { color: #a33b32; }
+  .price-sync-button {
+    flex: 0 0 auto;
+    padding: 7px 10px;
+    border-color: var(--surface-input-border);
+    background: var(--surface-input-bg);
+    color: var(--navy-text);
+    font-size: 11px;
+    font-weight: 800;
+  }
+  .price-sync-button:hover { border-color: var(--navy-text); background: var(--navy-soft); }
+  .price-sync-button:disabled { cursor: wait; opacity: .65; }
   .catalog-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -822,6 +869,9 @@
     .scale-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .foundation-fields, .runtime-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .quick-actions { align-items: stretch; flex-direction: column; }
+    .advanced-heading { align-items: stretch; flex-direction: column; }
+    .price-sync-actions { align-items: stretch; flex-direction: column; }
+    .price-sync-status { text-align: left; }
     .build-estimate-button { width: 100%; }
     .service-domain-tab { padding-right: 10px; padding-left: 10px; font-size: 13px; }
   }
@@ -856,8 +906,12 @@
                 <h3 id="quick-builder-title">快速建立網站估價</h3>
                 <p>先辨識客戶現況，再只顯示這次需要討論的選項。</p>
               </div>
+              <button type="button" class="quick-builder-toggle" id="quick-builder-toggle" aria-expanded="true" aria-controls="quick-builder-body" aria-label="收合快速建立網站估價" title="收合">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"></path></svg>
+              </button>
             </div>
 
+            <div class="quick-builder-body" id="quick-builder-body">
             <div class="quick-step" data-builder-step="foundation">
               <div class="quick-step-title">案件基本條件</div>
               <div class="foundation-fields">
@@ -963,10 +1017,15 @@
               <p>依目前路徑更新快捷組合；進階品項仍可手動增減。</p>
               <button type="button" class="build-estimate-button" id="build-estimate">建立初步估價</button>
             </div>
+            </div>
           </section>
 
           <div class="advanced-heading">
             <div><h3>進階品項調整</h3><p>需要特殊內容時，再展開盒子增減。</p></div>
+            <div class="price-sync-actions">
+              <span class="price-sync-status" id="price-sync-status" role="status" data-state="loading">正在讀取共用價格…</span>
+              <button type="button" class="price-sync-button" id="save-price-settings">儲存共用價格</button>
+            </div>
           </div>
           <div class="catalog-grid" id="catalog-grid"></div>
           </div>
@@ -1037,6 +1096,7 @@ initTheme('dghm-service-estimator-theme');
 
 var STORAGE_KEY = 'dghm-service-price-estimator';
 var PRICE_STORAGE_KEY = 'dghm-service-price-ranges';
+var PRICE_API_ENDPOINT = '/api/service-prices';
 var BUILDER_STORAGE_KEY = 'dghm-service-estimate-builder';
 var SERVICE_TAB_STORAGE_KEY = 'dghm-service-estimate-domain';
 var CATALOG = [
@@ -1117,6 +1177,7 @@ var CATALOG = [
 
 var selection = {};
 var priceOverrides = {};
+var priceSyncDirty = false;
 var internalTooltipPinnedButton = null;
 var openCategories = { 'site-visual': false, 'content-modules': false, 'content-production': false, 'care-growth': false };
 var QUICK_MANAGED_IDS = [
@@ -1248,8 +1309,20 @@ function switchServiceDomain(domain) {
   try { localStorage.setItem(SERVICE_TAB_STORAGE_KEY, nextDomain); } catch (error) {}
 }
 
+function setQuickBuilderCollapsed(collapsed) {
+  var panel = document.querySelector('.quick-builder');
+  var body = document.getElementById('quick-builder-body');
+  var button = document.getElementById('quick-builder-toggle');
+  panel.classList.toggle('is-collapsed', collapsed);
+  body.hidden = collapsed;
+  button.setAttribute('aria-expanded', String(!collapsed));
+  button.setAttribute('aria-label', collapsed ? '展開快速建立網站估價' : '收合快速建立網站估價');
+  button.title = collapsed ? '展開' : '收合';
+}
+
 function saveBuilder() {
   var state = {
+    collapsed: document.getElementById('quick-builder-toggle').getAttribute('aria-expanded') === 'false',
     status: checkedValue('site-status'),
     goal: checkedValue('project-goal'),
     type: checkedValue('project-type'),
@@ -1375,9 +1448,11 @@ function restoreBuilder() {
   var state;
   try { state = JSON.parse(localStorage.getItem(BUILDER_STORAGE_KEY) || 'null'); } catch (error) {}
   if (!state) {
+    setQuickBuilderCollapsed(false);
     updateBuilderFlow(false);
     return;
   }
+  setQuickBuilderCollapsed(!!state.collapsed);
   setChecked('site-status', state.status || 'no-site');
   setChecked('project-goal', state.goal || 'deploy');
   setChecked('project-type', state.type || 'onepage');
@@ -1427,22 +1502,103 @@ function restorePriceOverrides() {
       item.baseMax = item.max;
     });
   });
-  try { priceOverrides = JSON.parse(localStorage.getItem(PRICE_STORAGE_KEY) || '{}'); }
-  catch (error) { priceOverrides = {}; }
-  Object.keys(priceOverrides).forEach(function (id) {
+  var saved;
+  try { saved = JSON.parse(localStorage.getItem(PRICE_STORAGE_KEY) || '{}'); }
+  catch (error) { saved = {}; }
+  applyPriceOverrides(saved);
+}
+
+function applyPriceOverrides(overrides) {
+  var normalized = {};
+  CATALOG.forEach(function (category) {
+    category.items.forEach(function (item) {
+      item.min = item.baseMin;
+      item.max = item.baseMax;
+    });
+  });
+  Object.keys(overrides || {}).forEach(function (id) {
     var found = findItem(id);
-    var override = priceOverrides[id];
+    var override = overrides[id];
     if (!found || !override) return;
     var min = Number(override.min);
     var max = Number(override.max);
     if (!Number.isFinite(min) || !Number.isFinite(max) || min < 0 || max < 0) return;
     found.item.min = Math.min(min, max);
     found.item.max = Math.max(min, max);
+    normalized[id] = { min: found.item.min, max: found.item.max };
   });
+  priceOverrides = normalized;
 }
 
 function savePriceOverrides() {
   try { localStorage.setItem(PRICE_STORAGE_KEY, JSON.stringify(priceOverrides)); } catch (error) {}
+}
+
+function setPriceSyncStatus(message, state) {
+  var status = document.getElementById('price-sync-status');
+  status.textContent = message;
+  status.setAttribute('data-state', state || '');
+}
+
+function markPriceSyncDirty() {
+  priceSyncDirty = true;
+  setPriceSyncStatus('價格已修改，尚未儲存到共用設定', 'dirty');
+}
+
+function syncedAtLabel(value) {
+  if (!value) return '共用價格已同步';
+  var date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '共用價格已同步';
+  return '共用價格已同步 · ' + date.toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+async function loadSharedPriceOverrides() {
+  setPriceSyncStatus('正在讀取共用價格…', 'loading');
+  try {
+    var response = await fetch(PRICE_API_ENDPOINT, { credentials: 'same-origin', cache: 'no-store' });
+    var result = await response.json().catch(function () { return {}; });
+    if (!response.ok) throw new Error(result.error || '無法讀取共用價格');
+    if (!result.exists) {
+      if (Object.keys(priceOverrides).length) setPriceSyncStatus('尚未建立共用價格，可儲存目前設定', 'dirty');
+      else setPriceSyncStatus('目前使用原始價格，可儲存為共用設定', 'dirty');
+      return;
+    }
+    if (priceSyncDirty) return;
+    applyPriceOverrides(result.ranges || {});
+    savePriceOverrides();
+    render();
+    priceSyncDirty = false;
+    setPriceSyncStatus(syncedAtLabel(result.updatedAt), 'synced');
+  } catch (error) {
+    var message = error instanceof Error ? error.message : '無法讀取共用價格';
+    setPriceSyncStatus(message + '；目前使用本機價格', 'error');
+  }
+}
+
+async function saveSharedPriceOverrides() {
+  var button = document.getElementById('save-price-settings');
+  button.disabled = true;
+  button.textContent = '儲存中…';
+  setPriceSyncStatus('正在儲存共用價格…', 'loading');
+  try {
+    var response = await fetch(PRICE_API_ENDPOINT, {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ranges: priceOverrides })
+    });
+    var result = await response.json().catch(function () { return {}; });
+    if (!response.ok) throw new Error(result.error || '無法儲存共用價格');
+    savePriceOverrides();
+    priceSyncDirty = false;
+    setPriceSyncStatus(syncedAtLabel(result.updatedAt), 'synced');
+  } catch (error) {
+    var message = error instanceof Error ? error.message : '無法儲存共用價格';
+    setPriceSyncStatus(message + '；修改仍保留在本機', 'error');
+  } finally {
+    button.disabled = false;
+    button.textContent = '儲存共用價格';
+  }
 }
 
 function restore() {
@@ -1576,6 +1732,7 @@ document.getElementById('catalog-grid').addEventListener('input', function (even
   if (maxId) found.item.max = value;
   priceOverrides[id] = { min: found.item.min, max: found.item.max };
   savePriceOverrides();
+  markPriceSyncDirty();
   updateTotals();
 });
 
@@ -1595,6 +1752,7 @@ document.getElementById('catalog-grid').addEventListener('change', function (eve
     }
     priceOverrides[rangeId] = { min: rangeFound.item.min, max: rangeFound.item.max };
     savePriceOverrides();
+    markPriceSyncDirty();
     renderCatalog();
     updateTotals();
     return;
@@ -1638,6 +1796,7 @@ document.getElementById('catalog-grid').addEventListener('click', function (even
     resetFound.item.max = resetFound.item.baseMax;
     delete priceOverrides[resetId];
     savePriceOverrides();
+    markPriceSyncDirty();
     renderCatalog();
     updateTotals();
     return;
@@ -1715,10 +1874,18 @@ document.getElementById('clear-button').addEventListener('click', function () {
   render();
 });
 
+document.getElementById('save-price-settings').addEventListener('click', saveSharedPriceOverrides);
+
 document.querySelectorAll('[data-service-tab]').forEach(function (tab) {
   tab.addEventListener('click', function () {
     switchServiceDomain(tab.getAttribute('data-service-tab'));
   });
+});
+
+document.getElementById('quick-builder-toggle').addEventListener('click', function () {
+  var collapsed = this.getAttribute('aria-expanded') === 'true';
+  setQuickBuilderCollapsed(collapsed);
+  saveBuilder();
 });
 
 document.querySelectorAll('[name="project-type"]').forEach(function (input) {
@@ -1852,6 +2019,7 @@ restoreBuilder();
 try { switchServiceDomain(localStorage.getItem(SERVICE_TAB_STORAGE_KEY) || 'web'); }
 catch (error) { switchServiceDomain('web'); }
 render();
+loadSharedPriceOverrides();
 </script>
 </body>
 </html>
