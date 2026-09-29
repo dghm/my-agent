@@ -118,79 +118,14 @@
     display: flex; justify-content: space-between; align-items: center; gap: 12px;
     margin-top: auto; padding-top: 20px;
   }
-  .monthly-footprint-controls { display: flex; flex-wrap: wrap; gap: 12px; }
   .monthly-footprint-edit {
-    padding: 0; border: 0; background: transparent; color: var(--navy-text);
-    font: inherit; font-size: 11px; font-weight: 800; cursor: pointer;
+    padding: 0; color: var(--navy-text); text-decoration: none;
+    font-size: 11px; font-weight: 800;
   }
   .monthly-footprint-edit:hover { color: var(--orange); }
-  .monthly-footprint-history { color: var(--surface-text-muted); }
   .monthly-footprint-hint { color: var(--surface-text-faint); font-size: 10px; text-align: right; }
   .monthly-footprint-hint.is-saved { color: #1E7B34; }
   .monthly-footprint-hint.is-local { color: var(--orange); }
-  .monthly-footprint-form { display: grid; gap: 11px; }
-  .monthly-footprint-form[hidden], #monthly-footprint-view[hidden] { display: none; }
-  .monthly-footprint-form label {
-    display: grid; gap: 5px; color: var(--surface-text-muted); font-size: 10px; font-weight: 700;
-  }
-  .monthly-footprint-form input,
-  .monthly-footprint-form textarea {
-    width: 100%; box-sizing: border-box; padding: 9px 10px;
-    border: 1px solid var(--surface-border); border-radius: var(--radius-xs);
-    background: var(--surface-bg); color: var(--surface-text); font: inherit; font-size: 12px;
-  }
-  .monthly-footprint-form textarea { min-height: 62px; resize: vertical; }
-  .monthly-footprint-actions { display: flex; gap: 8px; margin-top: 2px; }
-  .monthly-footprint-actions button {
-    padding: 7px 11px; border: 0; border-radius: var(--radius-xs);
-    font: inherit; font-size: 11px; font-weight: 800; cursor: pointer;
-  }
-  .monthly-footprint-save { background: var(--navy); color: #fff; }
-  .monthly-footprint-cancel { background: var(--surface-bg); color: var(--surface-text-muted); }
-
-  .footprint-dialog {
-    width: min(620px, calc(100vw - 32px)); max-height: min(720px, calc(100vh - 32px));
-    padding: 0; overflow: hidden; border: 1px solid var(--surface-border);
-    border-radius: calc(var(--radius) + 4px); background: var(--surface-panel-bg);
-    color: var(--surface-text); box-shadow: 0 24px 80px rgba(9, 28, 67, .28);
-  }
-  .footprint-dialog::backdrop { background: rgba(9, 28, 67, .58); backdrop-filter: blur(3px); }
-  .footprint-dialog-inner { max-height: inherit; overflow-y: auto; padding: 24px; }
-  .footprint-dialog-head {
-    display: flex; align-items: flex-start; justify-content: space-between; gap: 20px;
-    margin-bottom: 22px;
-  }
-  .footprint-dialog-head h2 { margin: 3px 0 5px; color: var(--navy-text); font-size: 21px; }
-  .footprint-dialog-head p { margin: 0; color: var(--surface-text-muted); font-size: 12px; }
-  .footprint-dialog-close {
-    display: grid; place-items: center; width: 32px; height: 32px; padding: 0;
-    border: 0; border-radius: 50%; background: var(--surface-bg);
-    color: var(--surface-text-muted); font-size: 19px; cursor: pointer;
-  }
-  .footprint-year-nav {
-    display: flex; align-items: center; justify-content: space-between; gap: 14px;
-    padding: 10px 12px; border-radius: var(--radius-xs); background: var(--surface-bg);
-  }
-  .footprint-year-nav button {
-    padding: 5px 8px; border: 0; background: transparent; color: var(--navy-text);
-    font: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
-  }
-  .footprint-year-nav button:disabled { opacity: .35; cursor: default; }
-  .footprint-year-label { color: var(--navy-text); font-size: 14px; font-weight: 800; }
-  .footprint-year-list { display: grid; gap: 0; margin-top: 12px; }
-  .footprint-year-item {
-    display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 14px;
-    padding: 16px 4px; border-bottom: 1px solid var(--surface-border);
-  }
-  .footprint-year-item:last-child { border-bottom: 0; }
-  .footprint-year-month { color: var(--orange); font-size: 12px; font-weight: 900; }
-  .footprint-year-content h3 { margin: 0 0 5px; color: var(--navy-text); font-size: 14px; }
-  .footprint-year-content p { margin: 0; color: var(--surface-text-muted); font-size: 12px; line-height: 1.6; }
-  .footprint-year-empty {
-    margin: 12px 0 0; padding: 34px 16px; border-radius: var(--radius);
-    background: var(--surface-bg); color: var(--surface-text-muted); font-size: 12px;
-    text-align: center; line-height: 1.7;
-  }
 
   /* ---- Primary entry ---- */
   .hero {
@@ -373,61 +308,20 @@
       </article>
 
       <article class="monthly-footprint-card" aria-labelledby="monthly-footprint-title">
-        <div id="monthly-footprint-view">
-          <div class="monthly-footprint-top">
-            <span class="monthly-footprint-mark" aria-hidden="true">✓</span>
-            <span class="monthly-footprint-month" id="monthly-footprint-month">2026 年 9 月</span>
-          </div>
-          <p class="monthly-footprint-label">本月值得記住</p>
-          <h3 id="monthly-footprint-title">中秋卡片寄送及送禮</h3>
-          <p class="monthly-footprint-note" id="monthly-footprint-note">這個月已經完成了一件值得記住的事。先讓成果停留一下，不必立刻追趕下一個目標。</p>
-          <div class="monthly-footprint-footer">
-            <div class="monthly-footprint-controls">
-              <button class="monthly-footprint-edit" id="monthly-footprint-edit" type="button">編輯這個足跡 →</button>
-              <button class="monthly-footprint-edit monthly-footprint-history" id="monthly-footprint-history" type="button">查看年度足跡</button>
-            </div>
-            <span class="monthly-footprint-hint" id="monthly-footprint-status">讀取中…</span>
-          </div>
+        <div class="monthly-footprint-top">
+          <span class="monthly-footprint-mark" aria-hidden="true">★</span>
+          <span class="monthly-footprint-month" id="monthly-footprint-month">2026 年 9 月</span>
         </div>
-        <form class="monthly-footprint-form" id="monthly-footprint-form" hidden>
-          <label>月份
-            <input id="monthly-footprint-month-input" name="month" type="month" required>
-          </label>
-          <label>這個月完成了什麼
-            <input id="monthly-footprint-title-input" name="title" type="text" maxlength="60" required>
-          </label>
-          <label>想留給自己的話（選填）
-            <textarea id="monthly-footprint-note-input" name="note" maxlength="140"></textarea>
-          </label>
-          <div class="monthly-footprint-actions">
-            <button class="monthly-footprint-save" type="submit">留下足跡</button>
-            <button class="monthly-footprint-cancel" id="monthly-footprint-cancel" type="button">取消</button>
-          </div>
-        </form>
+        <p class="monthly-footprint-label">本月焦點</p>
+        <h3 id="monthly-footprint-title">讀取中…</h3>
+        <p class="monthly-footprint-note" id="monthly-footprint-note">正在從大事紀取得本月選定的重點。</p>
+        <div class="monthly-footprint-footer">
+          <a class="monthly-footprint-edit" href="milestones.html">查看大事紀 →</a>
+          <span class="monthly-footprint-hint" id="monthly-footprint-status">來自大事紀</span>
+        </div>
       </article>
     </div>
   </section>
-
-  <dialog class="footprint-dialog" id="footprint-dialog" aria-labelledby="footprint-dialog-title">
-    <div class="footprint-dialog-inner">
-      <div class="footprint-dialog-head">
-        <div>
-          <span class="review-kicker">年度回顧</span>
-          <h2 id="footprint-dialog-title">這一年留下的足跡</h2>
-          <p>只收下值得記住的成果，不計算完成率。</p>
-        </div>
-        <button class="footprint-dialog-close" id="footprint-dialog-close" type="button" aria-label="關閉年度足跡">×</button>
-      </div>
-      <div class="footprint-year-nav">
-        <button id="footprint-year-prev" type="button" aria-label="上一年">← 上一年</button>
-        <span class="footprint-year-label" id="footprint-year-label"></span>
-        <button id="footprint-year-next" type="button" aria-label="下一年">下一年 →</button>
-      </div>
-      <div class="footprint-year-list" id="footprint-year-list">
-        <p class="footprint-year-empty">讀取中…</p>
-      </div>
-    </div>
-  </dialog>
 
   <section class="section" aria-labelledby="service-monitor-title">
     <div class="section-head">
@@ -570,8 +464,7 @@ initTheme('my-agent-theme');
 
   var SITE_HEALTH_CACHE_KEY = 'dghm-site-monitor-last';
   var MAKE_MONITOR_CACHE_KEY = 'dghm-make-monitor-last';
-  var MONTHLY_FOOTPRINT_CACHE_KEY = 'dghm-monthly-footprints-cache-v1';
-  var MONTHLY_FOOTPRINT_LEGACY_KEY = 'dghm-monthly-footprint-prototype';
+  var MILESTONE_CACHE_KEY = 'dghm-milestones-cache-v1';
   var SERIES_COLORS = [
     'var(--series-1)', 'var(--series-2)', 'var(--series-3)', 'var(--series-4)',
     'var(--series-5)', 'var(--series-6)', 'var(--series-7)', 'var(--series-8)'
@@ -740,9 +633,6 @@ initTheme('my-agent-theme');
     }
   }
 
-  var activeFootprint = null;
-  var footprintYear = null;
-
   function taipeiMonthStr() {
     try {
       return new Intl.DateTimeFormat('en-CA', {
@@ -753,245 +643,43 @@ initTheme('my-agent-theme');
     }
   }
 
-  function readFootprintCache() {
-    var records = {};
-    try { records = JSON.parse(localStorage.getItem(MONTHLY_FOOTPRINT_CACHE_KEY) || '{}') || {}; } catch (error) {}
-    try {
-      var legacy = JSON.parse(localStorage.getItem(MONTHLY_FOOTPRINT_LEGACY_KEY) || 'null');
-      if (legacy && legacy.month && legacy.title && !records[legacy.month]) {
-        records[legacy.month] = {
-          month: legacy.month,
-          title: legacy.title,
-          note: legacy.note || '',
-          updatedAt: new Date().toISOString(),
-          pendingSync: true
-        };
-        localStorage.setItem(MONTHLY_FOOTPRINT_CACHE_KEY, JSON.stringify(records));
-      }
-      localStorage.removeItem(MONTHLY_FOOTPRINT_LEGACY_KEY);
-    } catch (error) {}
-    return records;
-  }
-
-  function cacheFootprint(footprint, pendingSync) {
-    var records = readFootprintCache();
-    records[footprint.month] = Object.assign({}, footprint, { pendingSync: !!pendingSync });
-    try { localStorage.setItem(MONTHLY_FOOTPRINT_CACHE_KEY, JSON.stringify(records)); } catch (error) {}
-    return records[footprint.month];
-  }
-
-  function sampleFootprint(month) {
-    if (month !== '2026-09') return null;
-    return {
-      month: month,
-      title: '中秋卡片寄送及送禮',
-      note: '這個月已經完成了一件值得記住的事。先讓成果停留一下，不必立刻追趕下一個目標。',
-      isDraft: true
-    };
-  }
-
   function formatFootprintMonth(month) {
     var parts = String(month || '').split('-');
     if (parts.length !== 2) return month;
     return Number(parts[0]) + ' 年 ' + Number(parts[1]) + ' 月';
   }
 
-  function setFootprintStatus(message, state) {
-    var status = document.getElementById('monthly-footprint-status');
-    status.textContent = message;
-    status.className = 'monthly-footprint-hint' + (state ? ' is-' + state : '');
-  }
-
-  function renderMonthlyFootprint(footprint, storageState) {
-    var month = footprint?.month || taipeiMonthStr();
-    var hasContent = !!(footprint && footprint.title);
-    activeFootprint = footprint;
-    document.getElementById('monthly-footprint-month').textContent = formatFootprintMonth(month);
-    document.getElementById('monthly-footprint-title').textContent = hasContent
-      ? footprint.title
-      : '這個月，想留下哪一件事？';
-    document.getElementById('monthly-footprint-note').textContent = hasContent
-      ? (footprint.note || '這個月完成了一件值得記住的事。')
-      : '不用列出所有工作，只留下你最想在年末記得的一件。';
-    document.getElementById('monthly-footprint-edit').textContent = hasContent && !footprint.isDraft
-      ? '編輯這個足跡 →'
-      : '留下本月足跡 →';
-
-    if (footprint?.isDraft) setFootprintStatus('尚未儲存', 'local');
-    else if (storageState === 'cloud') setFootprintStatus('已同步', 'saved');
-    else if (storageState === 'local') setFootprintStatus('本機暫存', 'local');
-    else setFootprintStatus('每月只留一件', '');
-  }
-
-  async function parseApiResponse(response) {
-    var data = await response.json().catch(function () { return {}; });
-    if (!response.ok) {
-      var error = new Error(data.error || '目前無法連線');
-      error.status = response.status;
-      error.code = data.code;
-      throw error;
-    }
-    return data;
-  }
-
-  async function putMonthlyFootprint(footprint) {
-    var response = await fetch('/api/monthly-footprints', {
-      method: 'PUT',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ month: footprint.month, title: footprint.title, note: footprint.note || '' })
-    });
-    return parseApiResponse(response);
-  }
-
-  async function loadMonthlyFootprint() {
+  function renderMilestoneFocus(focus, isLocal) {
     var month = taipeiMonthStr();
-    var cached = readFootprintCache()[month] || null;
+    document.getElementById('monthly-footprint-month').textContent = formatFootprintMonth(month);
+    if (focus) {
+      document.getElementById('monthly-footprint-title').textContent = focus.title;
+      document.getElementById('monthly-footprint-note').textContent = focus.note || '這是你為本月選定、最想記住的一件事。';
+      document.getElementById('monthly-footprint-status').textContent = isLocal ? '本機暫存' : '來自大事紀';
+      document.getElementById('monthly-footprint-status').className = 'monthly-footprint-hint' + (isLocal ? ' is-local' : ' is-saved');
+    } else {
+      document.getElementById('monthly-footprint-title').textContent = '尚未選擇本月焦點';
+      document.getElementById('monthly-footprint-note').textContent = '到大事紀裡新增紀錄，並選一件作為本月焦點。';
+      document.getElementById('monthly-footprint-status').textContent = '由你決定重點';
+      document.getElementById('monthly-footprint-status').className = 'monthly-footprint-hint';
+    }
+  }
+
+  async function loadMilestoneFocus() {
+    var month = taipeiMonthStr();
     try {
-      var response = await fetch('/api/monthly-footprints?month=' + encodeURIComponent(month), {
+      var response = await fetch('/api/milestones?month=' + encodeURIComponent(month), {
         credentials: 'same-origin', cache: 'no-store'
       });
-      var data = await parseApiResponse(response);
-      if (cached?.pendingSync) {
-        var synced = await putMonthlyFootprint(cached);
-        renderMonthlyFootprint(cacheFootprint(synced.footprint, false), 'cloud');
-        return;
-      }
-      if (data.footprint) {
-        renderMonthlyFootprint(cacheFootprint(data.footprint, false), 'cloud');
-        return;
-      }
-      renderMonthlyFootprint(cached || sampleFootprint(month), cached ? 'local' : '');
+      var data = await response.json().catch(function () { return {}; });
+      if (!response.ok) throw new Error(data.error || '目前無法讀取大事紀');
+      renderMilestoneFocus((data.milestones || []).find(function (item) { return item.isFocus; }) || null, false);
     } catch (error) {
-      renderMonthlyFootprint(cached || sampleFootprint(month), cached ? 'local' : '');
-      if (error.status === 401) setFootprintStatus('登入後可同步', 'local');
-      else if (!cached && !sampleFootprint(month)) setFootprintStatus('目前使用本機模式', 'local');
+      var cached = [];
+      try { cached = JSON.parse(localStorage.getItem(MILESTONE_CACHE_KEY) || '[]') || []; } catch (readError) {}
+      var focus = cached.find(function (item) { return item.month === month && item.isFocus; }) || null;
+      renderMilestoneFocus(focus, !!focus);
     }
-  }
-
-  function setupMonthlyFootprint() {
-    var view = document.getElementById('monthly-footprint-view');
-    var form = document.getElementById('monthly-footprint-form');
-    var monthInput = document.getElementById('monthly-footprint-month-input');
-    var titleInput = document.getElementById('monthly-footprint-title-input');
-    var noteInput = document.getElementById('monthly-footprint-note-input');
-
-    document.getElementById('monthly-footprint-edit').addEventListener('click', function () {
-      var footprint = activeFootprint || { month: taipeiMonthStr(), title: '', note: '' };
-      monthInput.value = footprint.month || taipeiMonthStr();
-      titleInput.value = footprint.title || '';
-      noteInput.value = footprint.note || '';
-      view.hidden = true;
-      form.hidden = false;
-      titleInput.focus();
-    });
-
-    document.getElementById('monthly-footprint-cancel').addEventListener('click', function () {
-      form.hidden = true;
-      view.hidden = false;
-    });
-
-    form.addEventListener('submit', async function (event) {
-      event.preventDefault();
-      var submitButton = form.querySelector('[type="submit"]');
-      var footprint = {
-        month: monthInput.value,
-        title: titleInput.value.trim(),
-        note: noteInput.value.trim()
-      };
-      if (!footprint.month || !footprint.title) return;
-      submitButton.disabled = true;
-      submitButton.textContent = '儲存中…';
-      try {
-        var data = await putMonthlyFootprint(footprint);
-        footprint = cacheFootprint(data.footprint, false);
-        renderMonthlyFootprint(footprint, 'cloud');
-      } catch (error) {
-        footprint.updatedAt = new Date().toISOString();
-        footprint = cacheFootprint(footprint, true);
-        renderMonthlyFootprint(footprint, 'local');
-        setFootprintStatus(error.status === 401 ? '已暫存，登入後同步' : '已暫存，連線後同步', 'local');
-      } finally {
-        submitButton.disabled = false;
-        submitButton.textContent = '留下足跡';
-        form.hidden = true;
-        view.hidden = false;
-      }
-    });
-
-    setupFootprintHistory();
-    loadMonthlyFootprint();
-  }
-
-  function localFootprintsForYear(year) {
-    var records = readFootprintCache();
-    return Object.keys(records)
-      .map(function (month) { return records[month]; })
-      .filter(function (item) { return item && item.month && item.month.slice(0, 4) === String(year); })
-      .sort(function (a, b) { return b.month.localeCompare(a.month); });
-  }
-
-  async function syncPendingFootprintsForYear(year) {
-    var pending = localFootprintsForYear(year).filter(function (item) { return item.pendingSync; });
-    await Promise.all(pending.map(async function (item) {
-      var data = await putMonthlyFootprint(item);
-      cacheFootprint(data.footprint, false);
-    }));
-  }
-
-  function renderFootprintYear(year, footprints, isLocal) {
-    var list = document.getElementById('footprint-year-list');
-    document.getElementById('footprint-year-label').textContent = year + ' 年';
-    document.getElementById('footprint-year-next').disabled = Number(year) >= Number(taipeiMonthStr().slice(0, 4));
-    if (!footprints.length) {
-      list.innerHTML = '<p class="footprint-year-empty">這一年還沒有留下足跡。<br>完成值得記住的事時，再回來寫下一筆就好。</p>';
-      return;
-    }
-    list.innerHTML = footprints.map(function (item) {
-      var month = Number(item.month.slice(5, 7));
-      var note = item.note ? '<p>' + escapeHtml(item.note) + '</p>' : '';
-      var local = isLocal && item.pendingSync ? '<span class="monthly-footprint-hint is-local">待同步</span>' : '';
-      return '<article class="footprint-year-item">' +
-        '<div class="footprint-year-month">' + month + ' 月</div>' +
-        '<div class="footprint-year-content"><h3>' + escapeHtml(item.title) + '</h3>' + note + local + '</div>' +
-      '</article>';
-    }).join('');
-  }
-
-  async function loadFootprintYear(year) {
-    var list = document.getElementById('footprint-year-list');
-    list.innerHTML = '<p class="footprint-year-empty">讀取中…</p>';
-    try {
-      await syncPendingFootprintsForYear(year);
-      var response = await fetch('/api/monthly-footprints?year=' + encodeURIComponent(year), {
-        credentials: 'same-origin', cache: 'no-store'
-      });
-      var data = await parseApiResponse(response);
-      data.footprints.forEach(function (item) { cacheFootprint(item, false); });
-      renderFootprintYear(year, data.footprints, false);
-    } catch (error) {
-      renderFootprintYear(year, localFootprintsForYear(year), true);
-    }
-  }
-
-  function setupFootprintHistory() {
-    var dialog = document.getElementById('footprint-dialog');
-    document.getElementById('monthly-footprint-history').addEventListener('click', function () {
-      footprintYear = Number(taipeiMonthStr().slice(0, 4));
-      if (typeof dialog.showModal === 'function') dialog.showModal();
-      else dialog.setAttribute('open', '');
-      loadFootprintYear(footprintYear);
-    });
-    document.getElementById('footprint-dialog-close').addEventListener('click', function () { dialog.close(); });
-    document.getElementById('footprint-year-prev').addEventListener('click', function () {
-      footprintYear -= 1;
-      loadFootprintYear(footprintYear);
-    });
-    document.getElementById('footprint-year-next').addEventListener('click', function () {
-      if (footprintYear >= Number(taipeiMonthStr().slice(0, 4))) return;
-      footprintYear += 1;
-      loadFootprintYear(footprintYear);
-    });
   }
 
   function renderSiteHealth(data) {
@@ -1121,7 +809,7 @@ initTheme('my-agent-theme');
 
   loadCalendarBoards();
   loadLastWeekDistribution();
-  setupMonthlyFootprint();
+  loadMilestoneFocus();
   loadSiteHealth();
   loadMakeMonitor();
 })();

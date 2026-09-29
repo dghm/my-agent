@@ -16,6 +16,7 @@
       defaultTool: 'home',
       tools: [
         { id: 'home',     label: '總覽',       href: 'index.html',         status: 'integrated', keywords: ['首頁','總覽','dashboard'] },
+        { id: 'milestones', label: '大事紀',   href: 'milestones.html',    status: 'integrated', keywords: ['大事紀','年度回顧','本月焦點','里程碑','milestone'] },
         { id: 'schedule', label: '週工作排程', href: 'work-schedule.html', status: 'integrated', keywords: ['排程','行事曆','工作比例'] },
         { id: 'todo',     label: 'Clear 待辦', href: 'clear-todo.html',    status: 'legacy', keywords: ['待辦','todo','清單'] },
       ],
