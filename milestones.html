@@ -101,8 +101,10 @@
     transition: transform .16s ease, box-shadow .16s ease;
   }
   .milestone-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
-  .milestone-date { color: var(--surface-text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-  .milestone-date strong { display: block; color: var(--navy-text); font-size: 21px; line-height: 1.1; }
+  .milestone-date {
+    display: grid; place-items: center; color: var(--navy-text);
+    font-size: 21px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums;
+  }
   .milestone-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: 5px; }
   .milestone-meta:empty { display: none; }
   .milestone-category {
@@ -116,6 +118,12 @@
     padding: 3px 0; border: 0; background: transparent; color: var(--surface-text-muted);
     font: inherit; font-size: 10px; font-weight: 700; white-space: nowrap; cursor: pointer;
   }
+  .milestone-actions .icon-action {
+    display: grid; place-items: center; width: 26px; height: 26px; padding: 0;
+    border-radius: 7px;
+  }
+  .milestone-actions .icon-action:hover { background: var(--surface-bg); }
+  .milestone-actions .icon-action svg { width: 15px; height: 15px; stroke-width: 1.8; }
   .milestone-actions button:hover { color: var(--orange); }
   .milestone-actions .set-focus { color: var(--navy-text); }
   .empty-state {
@@ -368,12 +376,14 @@ initTheme('my-agent-theme');
         var note = record.note ? '<p>' + escapeHtml(record.note) + '</p>' : '';
         var focusAction = record.isFocus ? '' : '<button class="set-focus" type="button" data-action="focus" data-id="' + record.id + '">設為本月焦點</button>';
         return '<article class="milestone-card">' +
-          '<div class="milestone-date"><strong>' + day + '</strong>日</div>' +
+          '<div class="milestone-date">' + day + '</div>' +
           '<div class="milestone-content"><div class="milestone-meta">' + category + '</div>' +
             '<h2>' + escapeHtml(record.title) + '</h2>' + note + '</div>' +
           '<div class="milestone-actions">' + focusAction +
-            '<button type="button" data-action="edit" data-id="' + record.id + '">編輯</button>' +
-            '<button type="button" data-action="delete" data-id="' + record.id + '">刪除</button></div>' +
+            '<button class="icon-action" type="button" data-action="edit" data-id="' + record.id + '" aria-label="編輯" title="編輯">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></svg></button>' +
+            '<button class="icon-action" type="button" data-action="delete" data-id="' + record.id + '" aria-label="刪除" title="刪除">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button></div>' +
         '</article>';
       }).join('');
       return '<section class="month-group"><div class="month-label"><strong>' + monthAbbr(month) + '</strong></div>' +
