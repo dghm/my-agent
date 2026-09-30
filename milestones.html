@@ -151,11 +151,13 @@
   .milestone-form { display: grid; gap: 13px; }
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .milestone-form label { display: grid; gap: 6px; color: var(--surface-text-muted); font-size: 11px; font-weight: 700; }
-  .milestone-form input, .milestone-form textarea {
+  .milestone-form input, .milestone-form select, .milestone-form textarea {
     width: 100%; box-sizing: border-box; padding: 10px 11px;
     border: 1px solid var(--surface-border); border-radius: var(--radius-xs);
     background: var(--surface-bg); color: var(--surface-text); font: inherit; font-size: 13px;
   }
+  .milestone-form select { cursor: pointer; }
+  .milestone-form [hidden] { display: none; }
   .milestone-form textarea { min-height: 90px; resize: vertical; }
   .focus-check { display: flex !important; grid-template-columns: none; flex-direction: row; align-items: center; gap: 8px !important; }
   .focus-check input { width: auto; }
@@ -229,7 +231,8 @@
           <input id="milestone-date" type="date" required>
         </label>
         <label>分類（選填）
-          <input id="milestone-category" type="text" maxlength="30" placeholder="例如：專案、品牌、營運">
+          <select id="milestone-category"></select>
+          <input id="milestone-category-new" type="text" maxlength="30" placeholder="輸入新分類名稱" hidden>
         </label>
       </div>
       <label>值得記住的事情
@@ -264,6 +267,8 @@ initTheme('my-agent-theme');
 
   var CACHE_KEY = 'dghm-milestones-cache-v1';
   var LEGACY_CACHE_KEY = 'dghm-monthly-footprints-cache-v1';
+  var DEFAULT_CATEGORIES = ['專案', '品牌', '營運', '系統', '行政', '財務', '客戶'];
+  var NEW_CATEGORY_VALUE = '__new__';
   var currentYear = Number(taipeiDate().slice(0, 4));
   var records = [];
   var usingLocalMode = false;
@@ -409,13 +414,44 @@ initTheme('my-agent-theme');
     render();
   }
 
+  function populateCategoryOptions(selectedCategory) {
+    var select = document.getElementById('milestone-category');
+    var categories = DEFAULT_CATEGORIES.concat(records, readCache()).reduce(function (list, item) {
+      var category = typeof item === 'string' ? item : item?.category;
+      category = String(category || '').trim();
+      if (category && category !== NEW_CATEGORY_VALUE && !list.includes(category)) list.push(category);
+      return list;
+    }, []);
+    select.textContent = '';
+    [['', '未分類']].concat(categories.map(function (category) { return [category, category]; }), [
+      [NEW_CATEGORY_VALUE, '＋ 新增分類']
+    ]).forEach(function (entry) {
+      var option = document.createElement('option');
+      option.value = entry[0];
+      option.textContent = entry[1];
+      select.appendChild(option);
+    });
+    select.value = selectedCategory || '';
+  }
+
+  function updateNewCategoryInput() {
+    var select = document.getElementById('milestone-category');
+    var input = document.getElementById('milestone-category-new');
+    var isAdding = select.value === NEW_CATEGORY_VALUE;
+    input.hidden = !isAdding;
+    if (!isAdding) input.value = '';
+    if (isAdding) input.focus();
+  }
+
   function openForm(record) {
     var dialog = document.getElementById('milestone-dialog');
     var isEdit = !!record;
     document.getElementById('milestone-dialog-title').textContent = isEdit ? '編輯大事紀' : '新增大事紀';
     document.getElementById('milestone-id').value = record?.id || '';
     document.getElementById('milestone-date').value = record?.date || taipeiDate();
-    document.getElementById('milestone-category').value = record?.category || '';
+    populateCategoryOptions(record?.category || '');
+    document.getElementById('milestone-category-new').value = '';
+    updateNewCategoryInput();
     document.getElementById('milestone-title').value = record?.title || '';
     document.getElementById('milestone-note').value = record?.note || '';
     document.getElementById('milestone-focus').checked = record?.isFocus || false;
@@ -480,10 +516,19 @@ initTheme('my-agent-theme');
     var saveButton = document.getElementById('form-save');
     var message = document.getElementById('form-message');
     var id = document.getElementById('milestone-id').value;
+    var categorySelect = document.getElementById('milestone-category');
+    var category = categorySelect.value === NEW_CATEGORY_VALUE
+      ? document.getElementById('milestone-category-new').value.trim()
+      : categorySelect.value;
+    if (categorySelect.value === NEW_CATEGORY_VALUE && !category) {
+      message.textContent = '請輸入新分類名稱';
+      document.getElementById('milestone-category-new').focus();
+      return;
+    }
     var payload = {
       id: id,
       date: document.getElementById('milestone-date').value,
-      category: document.getElementById('milestone-category').value.trim(),
+      category: category,
       title: document.getElementById('milestone-title').value.trim(),
       note: document.getElementById('milestone-note').value.trim(),
       isFocus: document.getElementById('milestone-focus').checked
@@ -554,6 +599,7 @@ initTheme('my-agent-theme');
   });
   document.getElementById('dialog-close').addEventListener('click', closeForm);
   document.getElementById('form-cancel').addEventListener('click', closeForm);
+  document.getElementById('milestone-category').addEventListener('change', updateNewCategoryInput);
   document.getElementById('milestone-form').addEventListener('submit', saveRecord);
   document.getElementById('milestone-timeline').addEventListener('click', function (event) {
     var button = event.target.closest('[data-action]');
