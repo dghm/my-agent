@@ -63,14 +63,17 @@
     background: var(--surface-panel-bg); color: var(--navy-text); font-size: 18px;
     box-shadow: var(--shadow-sm);
   }
-  .month-block { min-width: 0; }
+  .month-block {
+    min-width: 0; overflow: hidden; border: 1px solid var(--surface-border);
+    border-radius: var(--radius); background: var(--surface-panel-bg); box-shadow: var(--shadow-sm);
+  }
   .month-summary {
     position: relative; display: grid; width: 100%; gap: 10px; padding: 16px 104px 16px 18px;
-    border: 1px solid var(--surface-border); border-radius: var(--radius);
-    background: var(--surface-panel-bg); color: inherit; text-align: left;
-    box-shadow: var(--shadow-sm); cursor: pointer;
+    border: 0; border-radius: 0; background: transparent; color: inherit; text-align: left;
+    cursor: pointer;
   }
-  .month-summary:hover { border-color: rgba(230,111,57,.35); }
+  .month-summary:hover { background: rgba(230,111,57,.035); }
+  .month-summary[aria-expanded="true"] { border-bottom: 1px solid var(--surface-border); }
   .month-count {
     position: absolute; top: 50%; right: 46px; display: inline-flex; align-items: baseline; gap: 2px;
     color: var(--navy-text); transform: translateY(-50%); font-variant-numeric: tabular-nums;
@@ -88,15 +91,15 @@
     font-size: 15px; transform: translateY(-50%) rotate(0deg); transition: transform .18s ease;
   }
   .month-summary[aria-expanded="true"] .month-chevron { transform: translateY(-50%) rotate(180deg); }
-  .month-events { display: grid; gap: 10px; margin-top: 10px; }
+  .month-events { display: grid; gap: 10px; padding: 12px; background: var(--surface-bg); }
   .month-events[hidden] { display: none; }
   .milestone-card {
     display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; gap: 14px; align-items: start;
-    padding: 17px 18px; border: 1px solid transparent; border-radius: var(--radius);
-    background: var(--surface-panel-bg); box-shadow: var(--shadow-sm);
+    padding: 17px 18px; border: 1px solid var(--surface-border); border-radius: var(--radius);
+    background: var(--surface-panel-bg); box-shadow: none;
     transition: transform .16s ease, box-shadow .16s ease;
   }
-  .milestone-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+  .milestone-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
   .milestone-date { color: var(--surface-text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
   .milestone-date strong { display: block; color: var(--navy-text); font-size: 21px; line-height: 1.1; }
   .milestone-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: 5px; }
