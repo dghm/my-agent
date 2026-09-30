@@ -60,7 +60,8 @@
   .month-label strong {
     display: grid; place-items: center; width: 46px; height: 46px; margin: 0 auto 5px;
     border: 1px solid rgba(230,111,57,.35); border-radius: 50%;
-    background: var(--surface-panel-bg); color: var(--navy-text); font-size: 18px;
+    background: var(--surface-panel-bg); color: var(--navy-text); font-size: 11px;
+    letter-spacing: .06em;
     box-shadow: var(--shadow-sm);
   }
   .month-block {
@@ -94,7 +95,7 @@
   .month-events { display: grid; gap: 10px; padding: 12px; background: var(--surface-bg); }
   .month-events[hidden] { display: none; }
   .milestone-card {
-    display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; gap: 14px; align-items: start;
+    display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; gap: 14px; align-items: center;
     padding: 17px 18px; border: 1px solid var(--surface-border); border-radius: var(--radius);
     background: var(--surface-panel-bg); box-shadow: none;
     transition: transform .16s ease, box-shadow .16s ease;
@@ -103,13 +104,14 @@
   .milestone-date { color: var(--surface-text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
   .milestone-date strong { display: block; color: var(--navy-text); font-size: 21px; line-height: 1.1; }
   .milestone-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: 5px; }
+  .milestone-meta:empty { display: none; }
   .milestone-category {
     display: inline-flex; padding: 2px 7px; border-radius: 999px;
     background: var(--surface-bg); color: var(--surface-text-muted); font-size: 9px; font-weight: 800;
   }
   .milestone-content h2 { margin: 0 0 5px; color: var(--navy-text); font-size: 15px; line-height: 1.45; }
   .milestone-content p { margin: 0; color: var(--surface-text-muted); font-size: 12px; line-height: 1.65; }
-  .milestone-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .milestone-actions { display: flex; flex-direction: column; align-items: flex-end; align-self: center; gap: 6px; }
   .milestone-actions button {
     padding: 3px 0; border: 0; background: transparent; color: var(--surface-text-muted);
     font: inherit; font-size: 10px; font-weight: 700; white-space: nowrap; cursor: pointer;
@@ -162,18 +164,17 @@
     .milestones-toolbar { align-items: flex-start; flex-direction: column; }
     .timeline::before { left: 22px; }
     .month-group { grid-template-columns: 46px minmax(0, 1fr); gap: 10px; }
-    .month-label strong { width: 40px; height: 40px; font-size: 15px; }
-    .month-label span { display: none; }
-    .milestone-card { grid-template-columns: 42px minmax(0, 1fr); }
+    .month-label strong { width: 40px; height: 40px; font-size: 10px; }
+    .milestone-card { grid-template-columns: 42px minmax(0, 1fr) auto; }
     .month-summary { padding: 14px 88px 14px 14px; }
     .month-count { right: 40px; }
     .month-count strong { font-size: 23px; }
     .month-chevron { right: 13px; }
-    .milestone-actions { grid-column: 2; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; }
   }
   @media (max-width: 460px) {
     .form-row { grid-template-columns: 1fr; }
-    .milestone-card { padding: 15px 14px; }
+    .milestone-card { grid-template-columns: 42px minmax(0, 1fr); padding: 15px 14px; }
+    .milestone-actions { grid-column: 2; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; }
   }
 </style>
 </head>
@@ -324,8 +325,9 @@ initTheme('my-agent-theme');
     return data;
   }
 
-  function monthName(month) {
-    return Number(month.slice(5, 7));
+  function monthAbbr(month) {
+    var labels = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    return labels[Number(month.slice(5, 7)) - 1] || '';
   }
 
   function render() {
@@ -358,7 +360,7 @@ initTheme('my-agent-theme');
         : month === taipeiDate().slice(0, 7);
       var titleList = groups[month].map(function (record) {
         return '<span class="month-title-chip' + (record.isFocus ? ' is-focus' : '') + '">' +
-          (record.isFocus ? '★ ' : '') + escapeHtml(record.title) + '</span>';
+          escapeHtml(record.title) + '</span>';
       }).join('');
       var cards = groups[month].map(function (record) {
         var day = Number(record.date.slice(8, 10));
@@ -374,7 +376,7 @@ initTheme('my-agent-theme');
             '<button type="button" data-action="delete" data-id="' + record.id + '">刪除</button></div>' +
         '</article>';
       }).join('');
-      return '<section class="month-group"><div class="month-label"><strong>' + monthName(month) + '</strong><span>月</span></div>' +
+      return '<section class="month-group"><div class="month-label"><strong>' + monthAbbr(month) + '</strong></div>' +
         '<div class="month-block"><button class="month-summary" type="button" data-action="toggle-month" data-month="' + month +
           '" aria-expanded="' + isExpanded + '" aria-controls="month-events-' + month + '">' +
           '<span class="month-title-list">' + titleList + '</span><span class="month-count"><strong>' + groups[month].length +
