@@ -65,25 +65,24 @@
   }
   .month-block { min-width: 0; }
   .month-summary {
-    position: relative; display: grid; width: 100%; gap: 10px; padding: 16px 46px 16px 18px;
+    position: relative; display: grid; width: 100%; gap: 10px; padding: 16px 104px 16px 18px;
     border: 1px solid var(--surface-border); border-radius: var(--radius);
     background: var(--surface-panel-bg); color: inherit; text-align: left;
     box-shadow: var(--shadow-sm); cursor: pointer;
   }
   .month-summary:hover { border-color: rgba(230,111,57,.35); }
-  .month-summary-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
-  .month-count { color: var(--navy-text); font-size: 12px; font-weight: 900; }
-  .month-focus {
-    display: inline-flex; align-items: center; gap: 5px; color: var(--orange);
-    font-size: 11px; font-weight: 800;
+  .month-count {
+    position: absolute; top: 50%; right: 46px; display: inline-flex; align-items: baseline; gap: 2px;
+    color: var(--navy-text); transform: translateY(-50%); font-variant-numeric: tabular-nums;
   }
-  .month-focus.is-empty { color: var(--surface-text-faint); font-weight: 700; }
+  .month-count strong { font-size: 26px; line-height: 1; }
+  .month-count small { color: var(--surface-text-muted); font-size: 9px; font-weight: 800; }
   .month-title-list { display: flex; flex-wrap: wrap; gap: 6px; }
   .month-title-chip {
     display: inline-flex; max-width: 100%; padding: 3px 8px; border-radius: 999px;
     background: var(--surface-bg); color: var(--surface-text-muted); font-size: 10px; line-height: 1.45;
   }
-  .month-title-chip.is-focus { background: rgba(230,111,57,.12); color: var(--navy-text); font-weight: 800; }
+  .month-title-chip.is-focus { background: var(--orange); color: #fff; font-weight: 800; }
   .month-chevron {
     position: absolute; top: 50%; right: 18px; color: var(--surface-text-muted);
     font-size: 15px; transform: translateY(-50%) rotate(0deg); transition: transform .18s ease;
@@ -98,18 +97,13 @@
     transition: transform .16s ease, box-shadow .16s ease;
   }
   .milestone-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
-  .milestone-card.is-focus {
-    border-color: rgba(230,111,57,.28);
-    background: linear-gradient(105deg, rgba(230,111,57,.09), transparent 38%), var(--surface-panel-bg);
-  }
   .milestone-date { color: var(--surface-text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
   .milestone-date strong { display: block; color: var(--navy-text); font-size: 21px; line-height: 1.1; }
   .milestone-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: 5px; }
-  .milestone-category, .focus-badge {
+  .milestone-category {
     display: inline-flex; padding: 2px 7px; border-radius: 999px;
     background: var(--surface-bg); color: var(--surface-text-muted); font-size: 9px; font-weight: 800;
   }
-  .focus-badge { background: rgba(230,111,57,.13); color: var(--orange); }
   .milestone-content h2 { margin: 0 0 5px; color: var(--navy-text); font-size: 15px; line-height: 1.45; }
   .milestone-content p { margin: 0; color: var(--surface-text-muted); font-size: 12px; line-height: 1.65; }
   .milestone-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
@@ -168,8 +162,9 @@
     .month-label strong { width: 40px; height: 40px; font-size: 15px; }
     .month-label span { display: none; }
     .milestone-card { grid-template-columns: 42px minmax(0, 1fr); }
-    .month-summary { padding: 14px 38px 14px 14px; }
-    .month-summary-top { align-items: flex-start; flex-direction: column; gap: 5px; }
+    .month-summary { padding: 14px 88px 14px 14px; }
+    .month-count { right: 40px; }
+    .month-count strong { font-size: 23px; }
     .month-chevron { right: 13px; }
     .milestone-actions { grid-column: 2; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; }
   }
@@ -358,23 +353,18 @@ initTheme('my-agent-theme');
       var isExpanded = Object.prototype.hasOwnProperty.call(expandedMonths, month)
         ? expandedMonths[month]
         : month === taipeiDate().slice(0, 7);
-      var focusRecord = groups[month].find(function (record) { return record.isFocus; }) || null;
-      var focusSummary = focusRecord
-        ? '<span class="month-focus">★ 本月焦點・' + escapeHtml(focusRecord.title) + '</span>'
-        : '<span class="month-focus is-empty">尚未指定本月焦點</span>';
       var titleList = groups[month].map(function (record) {
         return '<span class="month-title-chip' + (record.isFocus ? ' is-focus' : '') + '">' +
-          escapeHtml(record.title) + '</span>';
+          (record.isFocus ? '★ ' : '') + escapeHtml(record.title) + '</span>';
       }).join('');
       var cards = groups[month].map(function (record) {
         var day = Number(record.date.slice(8, 10));
         var category = record.category ? '<span class="milestone-category">' + escapeHtml(record.category) + '</span>' : '';
-        var focus = record.isFocus ? '<span class="focus-badge">首頁焦點</span>' : '';
         var note = record.note ? '<p>' + escapeHtml(record.note) + '</p>' : '';
         var focusAction = record.isFocus ? '' : '<button class="set-focus" type="button" data-action="focus" data-id="' + record.id + '">設為本月焦點</button>';
-        return '<article class="milestone-card' + (record.isFocus ? ' is-focus' : '') + '">' +
+        return '<article class="milestone-card">' +
           '<div class="milestone-date"><strong>' + day + '</strong>日</div>' +
-          '<div class="milestone-content"><div class="milestone-meta">' + category + focus + '</div>' +
+          '<div class="milestone-content"><div class="milestone-meta">' + category + '</div>' +
             '<h2>' + escapeHtml(record.title) + '</h2>' + note + '</div>' +
           '<div class="milestone-actions">' + focusAction +
             '<button type="button" data-action="edit" data-id="' + record.id + '">編輯</button>' +
@@ -384,8 +374,8 @@ initTheme('my-agent-theme');
       return '<section class="month-group"><div class="month-label"><strong>' + monthName(month) + '</strong><span>月</span></div>' +
         '<div class="month-block"><button class="month-summary" type="button" data-action="toggle-month" data-month="' + month +
           '" aria-expanded="' + isExpanded + '" aria-controls="month-events-' + month + '">' +
-          '<span class="month-summary-top"><span class="month-count">本月共 ' + groups[month].length + ' 件紀事</span>' + focusSummary + '</span>' +
-          '<span class="month-title-list">' + titleList + '</span><span class="month-chevron" aria-hidden="true">⌄</span></button>' +
+          '<span class="month-title-list">' + titleList + '</span><span class="month-count"><strong>' + groups[month].length +
+          '</strong><small>件</small></span><span class="month-chevron" aria-hidden="true">⌄</span></button>' +
         '<div class="month-events" id="month-events-' + month + '"' + (isExpanded ? '' : ' hidden') + '>' + cards + '</div></div></section>';
     }).join('');
   }
