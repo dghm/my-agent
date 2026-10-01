@@ -240,6 +240,38 @@
   }
   .usage-ring-value { position: relative; font-size: 12px; font-weight: 800; color: var(--navy-text); }
   .usage-tile-label { font-size: 11px; color: var(--surface-text-muted); line-height: 1.4; }
+  .scenario-manager { margin-top: 13px; padding-top: 11px; border-top: 1px solid var(--surface-border); }
+  .scenario-manager-toggle {
+    display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 0;
+    border: 0; background: transparent; color: var(--navy-text); font: inherit;
+    font-size: 11px; font-weight: 800; cursor: pointer;
+  }
+  .scenario-manager-toggle span:last-child { color: var(--surface-text-muted); transition: transform .18s ease; }
+  .scenario-manager-toggle[aria-expanded="true"] span:last-child { transform: rotate(180deg); }
+  .scenario-list { display: grid; gap: 0; max-height: 300px; margin-top: 9px; overflow-y: auto; }
+  .scenario-list[hidden] { display: none; }
+  .scenario-row {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px;
+    padding: 9px 0; border-top: 1px solid var(--surface-border);
+  }
+  .scenario-row:first-child { border-top: 0; }
+  .scenario-name { display: block; overflow: hidden; color: var(--surface-text); font-size: 11px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+  .scenario-state { display: block; margin-top: 2px; color: var(--surface-text-muted); font-size: 9px; }
+  .scenario-state.is-on { color: #1E7B34; }
+  .scenario-state.is-invalid { color: #C0392B; }
+  .scenario-switch {
+    position: relative; width: 36px; height: 20px; padding: 0; border: 0; border-radius: 999px;
+    background: var(--surface-border); cursor: pointer; transition: background .18s ease;
+  }
+  .scenario-switch::after {
+    content: ''; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px;
+    border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(9,28,67,.24); transition: transform .18s ease;
+  }
+  .scenario-switch[aria-checked="true"] { background: #2E8B57; }
+  .scenario-switch[aria-checked="true"]::after { transform: translateX(16px); }
+  .scenario-switch:disabled { opacity: .45; cursor: wait; }
+  .scenario-message { min-height: 15px; margin: 7px 0 0; color: var(--surface-text-muted); font-size: 10px; line-height: 1.5; }
+  .scenario-message.is-error { color: #C0392B; }
 
   footer { margin-top: 46px; padding-top: 16px; border-top: 1px solid var(--surface-border); font-size: 11px; color: var(--surface-text-muted); }
 
@@ -465,6 +497,8 @@ initTheme('my-agent-theme');
   var SITE_HEALTH_CACHE_KEY = 'dghm-site-monitor-last';
   var MAKE_MONITOR_CACHE_KEY = 'dghm-make-monitor-last';
   var MILESTONE_CACHE_KEY = 'dghm-milestones-cache-v1';
+  var makeMonitorData = null;
+  var makeScenarioListExpanded = false;
   var SERIES_COLORS = [
     'var(--series-1)', 'var(--series-2)', 'var(--series-3)', 'var(--series-4)',
     'var(--series-5)', 'var(--series-6)', 'var(--series-7)', 'var(--series-8)'
@@ -730,7 +764,71 @@ initTheme('my-agent-theme');
           return '<li><span class="board-tag">' + escapeHtml(tag) + '</span><span>' + escapeHtml(p.name) + '</span></li>';
         }).join('') + '</ul>'
       : '';
-    container.innerHTML = summary + list;
+    var scenarios = Array.isArray(data.scenarios) ? data.scenarios.slice() : [];
+    scenarios.sort(function (a, b) { return a.name.localeCompare(b.name, 'zh-Hant'); });
+    var scenarioRows = scenarios.map(function (scenario) {
+      var stateClass = scenario.isinvalid ? ' is-invalid' : (scenario.isActive ? ' is-on' : '');
+      var stateText = scenario.isinvalid ? '設定異常' : (scenario.isActive ? '運作中' : '已關閉');
+      var nextState = !scenario.isActive;
+      return '<div class="scenario-row"><div><span class="scenario-name" title="' + escapeHtml(scenario.name) + '">' +
+        escapeHtml(scenario.name) + '</span><span class="scenario-state' + stateClass + '">' + stateText + '</span></div>' +
+        '<button class="scenario-switch" type="button" role="switch" aria-checked="' + scenario.isActive + '"' +
+          ' aria-label="' + (nextState ? '啟用 ' : '停用 ') + escapeHtml(scenario.name) + '" data-action="toggle-scenario"' +
+          ' data-scenario-id="' + escapeHtml(scenario.id) + '" data-next-active="' + nextState + '"></button></div>';
+    }).join('');
+    var manager = scenarios.length
+      ? '<div class="scenario-manager"><button class="scenario-manager-toggle" type="button" data-action="toggle-scenario-list"' +
+          ' aria-expanded="' + makeScenarioListExpanded + '"><span>管理 Scenario（' + scenarios.length + '）</span><span aria-hidden="true">⌄</span></button>' +
+          '<div class="scenario-list"' + (makeScenarioListExpanded ? '' : ' hidden') + '>' + scenarioRows + '</div>' +
+          '<p class="scenario-message" id="scenario-message" aria-live="polite"></p></div>'
+      : '<div class="scenario-manager"><p class="board-empty">重新檢查後即可管理 Scenario</p></div>';
+    container.innerHTML = summary + list + manager;
+  }
+
+  async function toggleMakeScenario(button) {
+    if (!makeMonitorData) return;
+    var scenarioId = button.dataset.scenarioId;
+    var nextActive = button.dataset.nextActive === 'true';
+    var scenario = (makeMonitorData.scenarios || []).find(function (item) { return String(item.id) === scenarioId; });
+    if (!scenario) return;
+    var warning = nextActive
+      ? '要啟用「' + scenario.name + '」嗎？依排程設定，它可能會立即執行。'
+      : '要停用「' + scenario.name + '」嗎？相關自動化將停止執行。';
+    if (!window.confirm(warning)) return;
+
+    var message = document.getElementById('scenario-message');
+    button.disabled = true;
+    if (message) {
+      message.className = 'scenario-message';
+      message.textContent = nextActive ? '正在啟用…' : '正在停用…';
+    }
+    try {
+      var response = await fetch('/api/make-monitor/check', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scenarioId: scenarioId, active: nextActive })
+      });
+      var data = await response.json().catch(function () { return {}; });
+      if (!response.ok || !data.ok) throw new Error(data.error || 'Scenario 狀態更新失敗');
+      makeMonitorData.scenarios = makeMonitorData.scenarios.map(function (item) {
+        return String(item.id) === scenarioId ? data.scenario : item;
+      });
+      makeMonitorData.activeCount = makeMonitorData.scenarios.filter(function (item) { return item.isActive; }).length;
+      makeMonitorData.checkedAt = new Date().toISOString();
+      try { localStorage.setItem(MAKE_MONITOR_CACHE_KEY, JSON.stringify(makeMonitorData)); } catch (error) {}
+      renderMakeProblems(makeMonitorData);
+      var updatedLabel = document.getElementById('service-monitor-updated');
+      if (updatedLabel) updatedLabel.textContent = '最後檢查：' + formatDateTime(makeMonitorData.checkedAt);
+      var successMessage = document.getElementById('scenario-message');
+      if (successMessage) successMessage.textContent = nextActive ? 'Scenario 已啟用' : 'Scenario 已停用';
+    } catch (error) {
+      button.disabled = false;
+      if (message) {
+        message.className = 'scenario-message is-error';
+        message.textContent = error.message || 'Scenario 狀態更新失敗';
+      }
+    }
   }
 
   function renderMakeUsage(data) {
@@ -776,6 +874,7 @@ initTheme('my-agent-theme');
     var cached = null;
     try { cached = JSON.parse(localStorage.getItem(MAKE_MONITOR_CACHE_KEY) || 'null'); } catch (error) {}
     if (cached) {
+      makeMonitorData = cached;
       renderMakeProblems(cached);
       renderMakeUsage(cached);
       if (updatedLabel) updatedLabel.textContent = '最後檢查：' + formatDateTime(cached.checkedAt);
@@ -788,6 +887,7 @@ initTheme('my-agent-theme');
       var res = await fetch('/api/make-monitor/check', { cache: 'no-store' });
       var data = await res.json();
       if (data.ok) {
+        makeMonitorData = data;
         try { localStorage.setItem(MAKE_MONITOR_CACHE_KEY, JSON.stringify(data)); } catch (error) {}
         renderMakeProblems(data);
         renderMakeUsage(data);
@@ -806,6 +906,17 @@ initTheme('my-agent-theme');
 
   var dateLabel = document.getElementById('today-date-label');
   if (dateLabel) dateLabel.textContent = todayLabel();
+
+  document.getElementById('make-problems').addEventListener('click', function (event) {
+    var button = event.target.closest('[data-action]');
+    if (!button) return;
+    if (button.dataset.action === 'toggle-scenario-list') {
+      makeScenarioListExpanded = button.getAttribute('aria-expanded') !== 'true';
+      if (makeMonitorData) renderMakeProblems(makeMonitorData);
+      return;
+    }
+    if (button.dataset.action === 'toggle-scenario') toggleMakeScenario(button);
+  });
 
   loadCalendarBoards();
   loadLastWeekDistribution();
