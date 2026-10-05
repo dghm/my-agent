@@ -70,6 +70,23 @@
     color: var(--surface-text-muted);
     white-space: nowrap;
   }
+  .draft-drop-zone {
+    display: block;
+    width: 100%;
+    margin-bottom: 16px;
+    padding: 14px 12px;
+    border: 1px dashed var(--surface-input-border);
+    background: var(--surface-input-bg);
+    color: var(--surface-text-muted);
+    font-size: 12px;
+    line-height: 1.6;
+    text-align: center;
+  }
+  .draft-drop-zone.is-dragging {
+    border-color: var(--orange);
+    background: color-mix(in srgb, var(--orange) 10%, var(--surface-input-bg));
+    color: var(--navy-text);
+  }
   .draft-actions #accordion-toggle-all {
     width: 32px;
     height: 32px;
@@ -460,12 +477,13 @@ __PAGES__
         <svg class="action-icon" aria-hidden="true"><use href="#i-trash-2"></use></svg>
         <span>清除本機暫存</span>
       </button>
-      <span class="draft-status" id="draft-status"></span>
+      <span class="draft-status" id="draft-status" role="status"></span>
       <button type="button" class="secondary" id="accordion-toggle-all" aria-label="全部收合" title="全部收合">
         <svg class="action-icon" aria-hidden="true"><use href="#i-list-chevrons-down-up"></use></svg>
       </button>
-      <input type="file" id="load-draft-input" accept="application/json" style="display:none">
+      <input type="file" id="load-draft-input" accept=".json,application/json" style="display:none">
     </div>
+    <button type="button" class="draft-drop-zone" id="draft-drop-zone">將 Finder 的 JSON 草稿拖到這裡，或點選載入<br>載入後會取代目前的報價內容</button>
 
     <div class="handoff-actions">
       <button type="button" id="to-invoice-btn">開立請款單 →</button>
@@ -1701,9 +1719,12 @@ document.getElementById('clear-session-btn').addEventListener('click', function 
   clearSessionDraft(true);
 });
 
-document.getElementById('load-draft-input').addEventListener('change', function (e) {
-  var file = e.target.files[0];
+function loadDraftFile(file) {
   if (!file) return;
+  if (!/\.json$/i.test(file.name)) {
+    setDraftStatus('請選擇報價單 JSON 草稿檔案');
+    return;
+  }
   var reader = new FileReader();
   reader.onload = function () {
     var draft;
@@ -1722,8 +1743,62 @@ document.getElementById('load-draft-input').addEventListener('change', function 
     persistSessionDraft();
     setDraftStatus('已載入草稿 JSON，並更新本機暫存');
   };
+  reader.onerror = function () {
+    setDraftStatus('檔案讀取失敗，請重新載入');
+  };
   reader.readAsText(file);
+}
+
+document.getElementById('load-draft-input').addEventListener('change', function (e) {
+  loadDraftFile(e.target.files[0]);
   e.target.value = '';
+});
+
+var draftDropZone = document.getElementById('draft-drop-zone');
+var draftDragDepth = 0;
+function isFileDrag(e) {
+  return e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files');
+}
+draftDropZone.addEventListener('click', function () {
+  document.getElementById('load-draft-input').click();
+});
+draftDropZone.addEventListener('dragenter', function (e) {
+  if (!isFileDrag(e)) return;
+  e.preventDefault();
+  draftDragDepth++;
+  draftDropZone.classList.add('is-dragging');
+});
+draftDropZone.addEventListener('dragleave', function () {
+  draftDragDepth = Math.max(0, draftDragDepth - 1);
+  if (!draftDragDepth) draftDropZone.classList.remove('is-dragging');
+});
+draftDropZone.addEventListener('dragover', function (e) {
+  if (!isFileDrag(e)) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+});
+draftDropZone.addEventListener('drop', function (e) {
+  if (!isFileDrag(e)) return;
+  e.preventDefault();
+  draftDragDepth = 0;
+  draftDropZone.classList.remove('is-dragging');
+  if (e.dataTransfer.files.length !== 1) {
+    setDraftStatus('一次請拖入一個 JSON 草稿檔案');
+    return;
+  }
+  loadDraftFile(e.dataTransfer.files[0]);
+});
+// Prevent the browser from navigating away when a file misses the drop zone.
+window.addEventListener('dragover', function (e) {
+  if (!isFileDrag(e)) return;
+  e.preventDefault();
+  if (!draftDropZone.contains(e.target)) e.dataTransfer.dropEffect = 'none';
+});
+window.addEventListener('drop', function (e) {
+  if (!isFileDrag(e)) return;
+  e.preventDefault();
+  draftDragDepth = 0;
+  draftDropZone.classList.remove('is-dragging');
 });
 
 /* ============================================================
