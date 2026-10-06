@@ -702,7 +702,7 @@ initTheme('my-agent-theme');
   async function loadMilestoneFocus() {
     var month = taipeiMonthStr();
     try {
-      var response = await fetch('/api/milestones?month=' + encodeURIComponent(month), {
+      var response = await fetch('/api/milestones?month=' + encodeURIComponent(month) + '&scope=company', {
         credentials: 'same-origin', cache: 'no-store'
       });
       var data = await response.json().catch(function () { return {}; });

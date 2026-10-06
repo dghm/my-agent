@@ -57,13 +57,15 @@ function normalizeInput(input) {
   const title = String(input?.title || '').trim();
   const note = String(input?.note || '').trim();
   const category = String(input?.category || '').trim();
+  const scope = String(input?.scope || 'company').trim();
 
   if (!validDate(date)) return { error: '日期格式錯誤' };
   if (!title) return { error: '請填寫大事紀標題' };
   if (title.length > 80) return { error: '標題不可超過 80 字' };
   if (note.length > 300) return { error: '說明不可超過 300 字' };
   if (category.length > 30) return { error: '分類不可超過 30 字' };
-  return { date, month: date.slice(0, 7), title, note, category, isFocus: input?.isFocus === true };
+  if (!['company', 'personal'].includes(scope)) return { error: '大事紀類型錯誤' };
+  return { date, month: date.slice(0, 7), title, note, category, scope, isFocus: input?.isFocus === true };
 }
 
 async function readRecords(store, owner, filter = {}) {
@@ -72,13 +74,14 @@ async function readRecords(store, owner, filter = {}) {
   return records
     .filter((record) => !filter.year || record.month?.slice(0, 4) === filter.year)
     .filter((record) => !filter.month || record.month === filter.month)
+    .filter((record) => !filter.scope || (record.scope || 'company') === filter.scope)
     .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
 }
 
-async function clearMonthFocus(store, owner, month, exceptId) {
+async function clearMonthFocus(store, owner, month, scope, exceptId) {
   const records = await readRecords(store, owner, { month });
   await Promise.all(records
-    .filter((record) => record.isFocus && record.id !== exceptId)
+    .filter((record) => record.isFocus && (record.scope || 'company') === scope && record.id !== exceptId)
     .map((record) => store.setJSON(`${owner}/${record.id}`, {
       ...record,
       isFocus: false,
@@ -106,6 +109,7 @@ async function migrateLegacyYear(owner, year, store) {
       title: String(legacy.title).slice(0, 80),
       note: String(legacy.note || '').slice(0, 300),
       category: '',
+      scope: 'company',
       isFocus: sameMonth.length === 0,
       createdAt: legacy.createdAt || now,
       updatedAt: legacy.updatedAt || now,
@@ -127,12 +131,14 @@ export default async (req) => {
     if (req.method === 'GET') {
       const year = String(url.searchParams.get('year') || '').trim();
       const month = String(url.searchParams.get('month') || '').trim();
+      const scope = String(url.searchParams.get('scope') || '').trim();
       if (year && !YEAR_PATTERN.test(year)) return json(400, { ok: false, error: '年份格式錯誤' });
       if (month && !MONTH_PATTERN.test(month)) return json(400, { ok: false, error: '月份格式錯誤' });
+      if (scope && !['company', 'personal'].includes(scope)) return json(400, { ok: false, error: '大事紀類型錯誤' });
       if (!year && !month) return json(400, { ok: false, error: '請提供年份或月份' });
 
       await migrateLegacyYear(owner, year || month.slice(0, 4), store);
-      const milestones = await readRecords(store, owner, { year, month });
+      const milestones = await readRecords(store, owner, { year, month, scope });
       return json(200, { ok: true, milestones });
     }
 
@@ -144,7 +150,7 @@ export default async (req) => {
 
       const isFocus = normalized.isFocus;
       const id = `${Date.now().toString(36)}-${crypto.randomBytes(4).toString('hex')}`;
-      if (isFocus) await clearMonthFocus(store, owner, normalized.month, id);
+      if (isFocus) await clearMonthFocus(store, owner, normalized.month, normalized.scope, id);
       const now = new Date().toISOString();
       const milestone = { id, ...normalized, isFocus, createdAt: now, updatedAt: now };
       await store.setJSON(`${owner}/${id}`, milestone);
@@ -161,7 +167,7 @@ export default async (req) => {
       const normalized = normalizeInput(input);
       if (normalized.error) return json(400, { ok: false, error: normalized.error });
 
-      if (normalized.isFocus) await clearMonthFocus(store, owner, normalized.month, id);
+      if (normalized.isFocus) await clearMonthFocus(store, owner, normalized.month, normalized.scope, id);
       const milestone = {
         ...existing,
         ...normalized,

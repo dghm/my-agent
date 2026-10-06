@@ -31,8 +31,32 @@
   }
   .milestones-toolbar {
     display: flex; justify-content: space-between; align-items: center; gap: 18px;
-    margin: 24px 0 18px;
+    margin: 18px 0;
   }
+  .scope-tabs {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
+    margin-top: 18px; padding: 6px; border: 1px solid var(--surface-border);
+    border-radius: calc(var(--radius) + 2px); background: var(--surface-panel-bg);
+    box-shadow: var(--shadow-sm);
+  }
+  .scope-tab {
+    display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px;
+    padding: 9px 14px; border: 0; border-radius: var(--radius-xs); background: transparent;
+    color: var(--surface-text-muted); font: inherit; cursor: pointer;
+  }
+  .scope-tab:hover { background: var(--surface-bg); color: var(--navy-text); }
+  .scope-tab[aria-selected="true"] {
+    background: var(--navy); color: #fff; box-shadow: 0 5px 16px rgba(9,28,67,.18);
+  }
+  .scope-tab-icon {
+    display: grid; place-items: center; width: 28px; height: 28px; flex: 0 0 auto;
+    border-radius: 9px; background: rgba(255,255,255,.12);
+  }
+  .scope-tab[aria-selected="false"] .scope-tab-icon { background: var(--surface-bg); }
+  .scope-tab-icon svg { width: 15px; height: 15px; stroke-width: 1.8; }
+  .scope-tab-copy { display: grid; gap: 1px; text-align: left; }
+  .scope-tab-copy strong { font-size: 13px; line-height: 1.3; }
+  .scope-tab-copy small { color: inherit; font-size: 10px; line-height: 1.3; opacity: .72; }
   .year-switcher {
     display: flex; align-items: center; gap: 10px; padding: 5px;
     border-radius: 999px; background: var(--surface-panel-bg); box-shadow: var(--shadow-sm);
@@ -171,6 +195,9 @@
     .milestones-wrap { padding: 24px 18px 46px; }
     .milestones-hero { grid-template-columns: 1fr; padding: 24px; }
     .milestones-add { justify-self: start; }
+    .scope-tabs { grid-template-columns: 1fr 1fr; }
+    .scope-tab { min-height: 44px; padding: 8px 10px; }
+    .scope-tab-copy small { display: none; }
     .milestones-toolbar { align-items: flex-start; flex-direction: column; }
     .timeline::before { left: 22px; }
     .month-group { grid-template-columns: 46px minmax(0, 1fr); gap: 10px; }
@@ -193,12 +220,23 @@
   <main class="milestones-wrap">
     <section class="milestones-hero">
       <div>
-        <span class="milestones-kicker">DGHM YEAR IN REVIEW</span>
+        <span class="milestones-kicker" id="milestones-kicker">DGHM YEAR IN REVIEW</span>
         <h1>大事紀</h1>
-        <p>記下真正值得回頭看的成果。這裡沒有完成率，也不要求每個月都留下紀錄。</p>
+        <p id="milestones-intro">記下真正值得回頭看的成果。這裡沒有完成率，也不要求每個月都留下紀錄。</p>
       </div>
       <button class="milestones-add" id="add-milestone" type="button"><span aria-hidden="true">＋</span> 新增大事紀</button>
     </section>
+
+    <div class="scope-tabs" role="tablist" aria-label="大事紀類型">
+      <button class="scope-tab" id="company-tab" type="button" role="tab" aria-selected="true" aria-controls="milestone-timeline" data-scope="company">
+        <span class="scope-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/></svg></span>
+        <span class="scope-tab-copy"><strong>公司</strong><small>專案、品牌與營運成果</small></span>
+      </button>
+      <button class="scope-tab" id="personal-tab" type="button" role="tab" aria-selected="false" aria-controls="milestone-timeline" data-scope="personal" tabindex="-1">
+        <span class="scope-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
+        <span class="scope-tab-copy"><strong>個人</strong><small>生活、成長與自己的里程碑</small></span>
+      </button>
+    </div>
 
     <div class="milestones-toolbar">
       <div class="year-switcher" aria-label="切換年份">
@@ -230,10 +268,19 @@
         <label>日期
           <input id="milestone-date" type="date" required>
         </label>
+        <label>紀錄類型
+          <select id="milestone-scope">
+            <option value="company">公司</option>
+            <option value="personal">個人</option>
+          </select>
+        </label>
+      </div>
+      <div class="form-row">
         <label>分類（選填）
           <select id="milestone-category"></select>
           <input id="milestone-category-new" type="text" maxlength="30" placeholder="輸入新分類名稱" hidden>
         </label>
+        <span aria-hidden="true"></span>
       </div>
       <label>值得記住的事情
         <input id="milestone-title" type="text" maxlength="80" required placeholder="例如：中秋卡片寄送及送禮">
@@ -243,7 +290,7 @@
       </label>
       <label class="focus-check">
         <input id="milestone-focus" type="checkbox">
-        設為該月份的首頁焦點
+        設為該月份焦點
       </label>
       <p class="form-message" id="form-message"></p>
       <div class="form-actions">
@@ -270,6 +317,7 @@ initTheme('my-agent-theme');
   var DEFAULT_CATEGORIES = ['專案', '品牌', '營運', '系統', '行政', '財務', '客戶'];
   var NEW_CATEGORY_VALUE = '__new__';
   var currentYear = Number(taipeiDate().slice(0, 4));
+  var currentScope = 'company';
   var records = [];
   var usingLocalMode = false;
   var expandedMonths = {};
@@ -346,8 +394,21 @@ initTheme('my-agent-theme');
   function render() {
     var timeline = document.getElementById('milestone-timeline');
     var yearRecords = records
-      .filter(function (record) { return record.month?.slice(0, 4) === String(currentYear); })
+      .filter(function (record) {
+        return record.month?.slice(0, 4) === String(currentYear) && (record.scope || 'company') === currentScope;
+      })
       .sort(function (a, b) { return b.date.localeCompare(a.date); });
+    var isPersonal = currentScope === 'personal';
+    document.querySelectorAll('.scope-tab').forEach(function (tab) {
+      var isActive = tab.dataset.scope === currentScope;
+      tab.setAttribute('aria-selected', String(isActive));
+      tab.tabIndex = isActive ? 0 : -1;
+    });
+    document.getElementById('milestones-kicker').textContent = isPersonal ? 'MY YEAR IN REVIEW' : 'DGHM YEAR IN REVIEW';
+    document.getElementById('milestones-intro').textContent = isPersonal
+      ? '收藏生活、成長與值得記得的片刻，只為自己留下這一年的足跡。'
+      : '記下真正值得回頭看的成果。這裡沒有完成率，也不要求每個月都留下紀錄。';
+    document.getElementById('add-milestone').innerHTML = '<span aria-hidden="true">＋</span> 新增' + (isPersonal ? '個人' : '公司') + '大事紀';
     document.getElementById('year-label').textContent = currentYear + ' 年';
     document.getElementById('next-year').disabled = currentYear >= Number(taipeiDate().slice(0, 4));
     document.getElementById('year-summary').textContent = yearRecords.length
@@ -356,8 +417,8 @@ initTheme('my-agent-theme');
     document.getElementById('sync-state').textContent = usingLocalMode ? '・本機暫存' : '';
 
     if (!yearRecords.length) {
-      timeline.innerHTML = '<div class="empty-state"><strong>這一年還是空白的</strong>' +
-        '<p>不用補進度。等完成真正值得記住的事，再留下第一筆就好。</p>' +
+      timeline.innerHTML = '<div class="empty-state"><strong>' + (isPersonal ? '這一年還沒有個人紀錄' : '這一年還是空白的') + '</strong>' +
+        '<p>' + (isPersonal ? '旅行、學習、生活轉折，任何對你重要的時刻都可以留在這裡。' : '不用補進度。等完成真正值得記住的事，再留下第一筆就好。') + '</p>' +
         '<button class="milestones-add" type="button" data-action="add">新增第一筆大事紀</button></div>';
       return;
     }
@@ -416,7 +477,14 @@ initTheme('my-agent-theme');
 
   function populateCategoryOptions(selectedCategory) {
     var select = document.getElementById('milestone-category');
-    var categories = DEFAULT_CATEGORIES.concat(records, readCache()).reduce(function (list, item) {
+    var categoryScope = document.getElementById('milestone-scope').value || currentScope;
+    var defaultCategories = categoryScope === 'personal'
+      ? ['生活', '成長', '學習', '健康', '旅行', '家人', '財務']
+      : DEFAULT_CATEGORIES;
+    var scopedRecords = records.concat(readCache()).filter(function (item) {
+      return typeof item === 'string' || (item.scope || 'company') === categoryScope;
+    });
+    var categories = defaultCategories.concat(scopedRecords).reduce(function (list, item) {
       var category = typeof item === 'string' ? item : item?.category;
       category = String(category || '').trim();
       if (category && category !== NEW_CATEGORY_VALUE && !list.includes(category)) list.push(category);
@@ -449,6 +517,7 @@ initTheme('my-agent-theme');
     document.getElementById('milestone-dialog-title').textContent = isEdit ? '編輯大事紀' : '新增大事紀';
     document.getElementById('milestone-id').value = record?.id || '';
     document.getElementById('milestone-date').value = record?.date || taipeiDate();
+    document.getElementById('milestone-scope').value = record?.scope || currentScope;
     populateCategoryOptions(record?.category || '');
     document.getElementById('milestone-category-new').value = '';
     updateNewCategoryInput();
@@ -475,7 +544,7 @@ initTheme('my-agent-theme');
     var clearedRecords = [];
     if (payload.isFocus) {
       records = records.map(function (record) {
-        if (record.month !== month || record.id === id || !record.isFocus) return record;
+        if (record.month !== month || (record.scope || 'company') !== payload.scope || record.id === id || !record.isFocus) return record;
         var cleared = Object.assign({}, record, { isFocus: false });
         clearedRecords.push(cleared);
         return cleared;
@@ -528,6 +597,7 @@ initTheme('my-agent-theme');
     var payload = {
       id: id,
       date: document.getElementById('milestone-date').value,
+      scope: document.getElementById('milestone-scope').value,
       category: category,
       title: document.getElementById('milestone-title').value.trim(),
       note: document.getElementById('milestone-note').value.trim(),
@@ -555,6 +625,7 @@ initTheme('my-agent-theme');
     }
     closeForm();
     currentYear = Number(payload.date.slice(0, 4));
+    currentScope = payload.scope;
     await loadYear();
   }
 
@@ -591,6 +662,19 @@ initTheme('my-agent-theme');
   }
 
   document.getElementById('add-milestone').addEventListener('click', function () { openForm(null); });
+  document.querySelector('.scope-tabs').addEventListener('click', function (event) {
+    var tab = event.target.closest('[data-scope]');
+    if (!tab || tab.dataset.scope === currentScope) return;
+    currentScope = tab.dataset.scope;
+    render();
+  });
+  document.querySelector('.scope-tabs').addEventListener('keydown', function (event) {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    currentScope = currentScope === 'company' ? 'personal' : 'company';
+    render();
+    document.querySelector('.scope-tab[aria-selected="true"]').focus();
+  });
   document.getElementById('previous-year').addEventListener('click', function () { currentYear -= 1; loadYear(); });
   document.getElementById('next-year').addEventListener('click', function () {
     if (currentYear >= Number(taipeiDate().slice(0, 4))) return;
@@ -599,6 +683,10 @@ initTheme('my-agent-theme');
   });
   document.getElementById('dialog-close').addEventListener('click', closeForm);
   document.getElementById('form-cancel').addEventListener('click', closeForm);
+  document.getElementById('milestone-scope').addEventListener('change', function () {
+    populateCategoryOptions('');
+    updateNewCategoryInput();
+  });
   document.getElementById('milestone-category').addEventListener('change', updateNewCategoryInput);
   document.getElementById('milestone-form').addEventListener('submit', saveRecord);
   document.getElementById('milestone-timeline').addEventListener('click', function (event) {
