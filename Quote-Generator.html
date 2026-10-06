@@ -279,6 +279,23 @@
     padding: 6px;
   }
   .output-toolbar .copy-status { flex-shrink: 0; }
+  .docs-export-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    background: var(--surface-panel-bg);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .docs-export-bar button { flex-shrink: 0; }
+  .docs-export-hint { flex: 1; min-width: 160px; color: var(--surface-text-muted); }
+  .docs-export-result { flex-basis: 100%; }
+  .docs-export-result a { margin-left: 8px; }
   .icon-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
   .action-icon {
     display: inline-block;
@@ -709,6 +726,15 @@ __PAGES__
         </svg>
       </button>
       <span class="copy-status" id="copy-status"></span>
+    </div>
+    <div class="docs-export-bar">
+      <button type="button" id="create-docs-btn">建立 Google 文件</button>
+      <span class="docs-export-hint">存到你的 Google Drive。表格可編輯，長文字自動分頁；每次建立一份新文件。</span>
+      <div class="docs-export-result" role="status" aria-live="polite">
+        <span id="docs-export-status"></span>
+        <a id="docs-auth-link" href="/api/auth/login/google?grant=docs" hidden>授權 Google 文件</a>
+        <a id="docs-result-link" target="_blank" rel="noopener noreferrer" hidden>開啟 Google 文件</a>
+      </div>
     </div>
     <div class="output-view" id="view-preview">
       <iframe id="preview-frame"></iframe>
@@ -2320,5 +2346,6 @@ if (!_sessionRestored) {
   persistSessionDraft();
 }
 </script>
+<script src="quote-docs-client.js?v=20261006-1"></script>
 </body>
 </html>

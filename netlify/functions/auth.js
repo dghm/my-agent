@@ -14,6 +14,7 @@ import crypto from 'node:crypto';
 
 const SESSION_COOKIE = 'dghm_session';
 const STATE_COOKIE = 'dghm_oauth_state';
+const RETURN_COOKIE = 'dghm_oauth_return';
 const SESSION_MAX_AGE = 30 * 24 * 60 * 60; // 30 天
 const STATE_MAX_AGE = 10 * 60; // 10 分鐘
 
@@ -99,6 +100,7 @@ async function findOrCreateUser(profile) {
     user.avatar = profile.avatar || user.avatar;
     user.lastLoginAt = now;
     if (profile.googleRefreshToken) user.googleRefreshToken = profile.googleRefreshToken;
+    if (profile.googleScopes) user.googleScopes = profile.googleScopes;
   } else {
     user = {
       id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
@@ -110,6 +112,7 @@ async function findOrCreateUser(profile) {
       createdAt: now,
       lastLoginAt: now,
       ...(profile.googleRefreshToken ? { googleRefreshToken: profile.googleRefreshToken } : {}),
+      ...(profile.googleScopes ? { googleScopes: profile.googleScopes } : {}),
     };
     users.push(user);
   }
@@ -130,12 +133,17 @@ function googleLogin(req) {
   const secure = origin.startsWith('https');
   const state = crypto.randomBytes(16).toString('hex');
 
+  const docsGrant = new URL(req.url).searchParams.get('grant') === 'docs';
+  const scopes = ['openid', 'email', 'profile', 'https://www.googleapis.com/auth/calendar.events'];
+  if (docsGrant) scopes.push('https://www.googleapis.com/auth/drive.file');
+
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: `${origin}/api/auth/callback/google`,
     response_type: 'code',
     // calendar.events 同時涵蓋讀取與建立/刪除事件，比 calendar.readonly 多了寫入權限
-    scope: 'openid email profile https://www.googleapis.com/auth/calendar.events',
+    scope: scopes.join(' '),
+    include_granted_scopes: 'true',
     state,
     access_type: 'offline',
     prompt: 'consent select_account',
@@ -143,6 +151,7 @@ function googleLogin(req) {
 
   return redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`, [
     buildCookie(STATE_COOKIE, state, STATE_MAX_AGE, secure),
+    buildCookie(RETURN_COOKIE, docsGrant ? '/Quote-Generator.html' : '', docsGrant ? STATE_MAX_AGE : 0, secure),
   ]);
 }
 
@@ -154,17 +163,21 @@ async function googleCallback(req) {
   const state = url.searchParams.get('state');
   const cookieState = getCookie(req, STATE_COOKIE);
 
+  const returnToQuote = getCookie(req, RETURN_COOKIE) === '/Quote-Generator.html';
+  const clearOAuth = [buildCookie(STATE_COOKIE, '', 0, secure), buildCookie(RETURN_COOKIE, '', 0, secure)];
+  const fail = (error) => redirect(returnToQuote ? `/Quote-Generator.html?docsAuth=${error}` : `/login.html?error=${error}`, clearOAuth);
+
   if (url.searchParams.get('error')) {
-    return redirect('/login.html?error=denied');
+    return fail('denied');
   }
   if (!code || !state || !cookieState || state !== cookieState) {
-    return redirect('/login.html?error=state');
+    return fail('state');
   }
 
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   if (!clientId || !clientSecret) {
-    return redirect('/login.html?error=config');
+    return fail('config');
   }
 
   // 1) 用 code 換 access token
@@ -179,14 +192,14 @@ async function googleCallback(req) {
       grant_type: 'authorization_code',
     }),
   });
-  if (!tokenRes.ok) return redirect('/login.html?error=token');
+  if (!tokenRes.ok) return fail('token');
   const token = await tokenRes.json();
 
   // 2) 用 access token 取得使用者資料
   const infoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
     headers: { Authorization: `Bearer ${token.access_token}` },
   });
-  if (!infoRes.ok) return redirect('/login.html?error=userinfo');
+  if (!infoRes.ok) return fail('userinfo');
   const info = await infoRes.json();
 
   // 3) 建立／更新會員（連帶存 refresh token，供 calendar.js 之後代打 Calendar API 用）
@@ -197,12 +210,13 @@ async function googleCallback(req) {
     name: info.name || '',
     avatar: info.picture || '',
     googleRefreshToken: token.refresh_token || undefined,
+    googleScopes: token.scope || undefined,
   });
 
   // 4) 發登入 cookie，清除 state，導回首頁
-  return redirect('/index.html', [
+  return redirect(returnToQuote ? '/Quote-Generator.html?docsAuth=ready' : '/index.html', [
     buildCookie(SESSION_COOKIE, createSession(user), SESSION_MAX_AGE, secure),
-    buildCookie(STATE_COOKIE, '', 0, secure),
+    ...clearOAuth,
   ]);
 }
 
