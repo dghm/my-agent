@@ -138,16 +138,34 @@
     .records-head { margin: -20px -20px 20px; padding: 20px; }
     .income-actions { flex-wrap: wrap; }
   }
+  .income-editor-column {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(500px, 100vw);
+    z-index: 101; border-right: 0; border-left: 1px solid var(--surface-border);
+    box-shadow: -12px 0 40px rgba(0, 0, 0, .18);
+  }
+  .income-editor-column[hidden], .income-backdrop[hidden] { display: none; }
+  .income-backdrop { position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, .3); }
+  .income-page > .split-handle { display: none; }
+  .drawer-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  #income-editor-close { padding: 6px 10px; }
+  @media (max-width: 760px) {
+    .income-editor-column { width: 100%; }
+    .income-editor-column .form-panel { overflow-y: auto; }
+  }
 </style>
 </head>
 <body data-tool="income">
 <div id="tool-workspace" class="income-page">
 
-  <section class="income-editor-column" id="income-editor" aria-label="收入登記編輯區">
+  <div class="income-backdrop" id="income-backdrop" hidden></div>
+  <section class="income-editor-column" id="income-editor" role="dialog" aria-modal="true" aria-labelledby="income-editor-title" hidden>
     <header class="income-page-head">
       <p class="income-eyebrow">BUSINESS WORKSPACE</p>
-      <h1>收入登記</h1>
-      <p class="hint">登記案件收入與收款狀態，右側即時彙整收入並管理歷史紀錄。</p>
+      <div class="drawer-heading">
+        <h1 id="income-editor-title">新增收入</h1>
+        <button type="button" class="secondary" id="income-editor-close" aria-label="關閉收入表單">關閉</button>
+      </div>
+      <p class="hint">匯入請款單 JSON 或手動填寫，確認後儲存到列表。</p>
     </header>
 
     <div class="form-panel">
@@ -250,7 +268,6 @@
       <button type="button" class="full" id="save-btn">儲存登記</button>
       <button type="button" class="full secondary" id="reset-btn">清空表單</button>
     </form>
-      <div class="status" id="status" role="status" aria-live="polite">狀態：待命中</div>
     </div>
   </section>
 
@@ -260,9 +277,10 @@
     <header class="records-head">
       <div class="records-title-row">
         <h2>收入總覽</h2>
-        <button type="button" class="secondary" id="income-editor-toggle" aria-controls="income-editor" aria-expanded="true">收合登記欄</button>
+        <button type="button" id="income-editor-toggle" aria-controls="income-editor" aria-expanded="false">新增收入</button>
       </div>
       <p class="hint">依年度與月份篩選，查看收款進度或匯出報稅用 CSV。</p>
+      <div class="status" id="status" role="status" aria-live="polite">狀態：待命中</div>
     </header>
     <div class="summary-bar">
       <div>
@@ -330,12 +348,6 @@ const API_BASE = "";
 let records = [];
 
 initTheme('dghm-income-tracker-theme');
-initColumnResize({
-  page: '.income-page',
-  editor: '.income-editor-column',
-  handle: '.split-handle',
-  storageKey: 'dghm-income-editor-width'
-});
 
 // Keep existing field IDs and handlers intact while matching the invoice editor.
 (function initIncomeSections() {
@@ -504,13 +516,38 @@ function renderActionIcon(action) {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${incomeActionIcons[action]}</svg>`;
 }
 const incomeEditorToggle = document.getElementById('income-editor-toggle');
-function setIncomeEditorOpen(open) {
-  document.getElementById('tool-workspace').classList.toggle('is-editor-collapsed', !open);
+const incomeEditor = document.getElementById('income-editor');
+let incomeEditorBaseline = '';
+let incomeReturnFocus = null;
+function incomeFormSnapshot() {
+  return JSON.stringify(Array.from(document.querySelectorAll('#form input:not([type="file"]), #form select, #form textarea')).map(el => [el.id, el.value]));
+}
+function setIncomeEditorOpen(open, force = false) {
+  if (!open && !force && !incomeEditor.hidden && incomeFormSnapshot() !== incomeEditorBaseline && !confirm('表單有未儲存的修改，確定關閉？')) return;
+  if (open && incomeEditor.hidden) incomeReturnFocus = document.activeElement;
+  incomeEditor.hidden = !open;
+  document.getElementById('income-backdrop').hidden = !open;
+  document.querySelector('.main-panel').inert = open;
   incomeEditorToggle.setAttribute('aria-expanded', String(open));
-  incomeEditorToggle.textContent = open ? '收合登記欄' : '展開登記欄';
+  if (open) {
+    incomeEditorBaseline = incomeFormSnapshot();
+    document.getElementById('income-editor-close').focus();
+  } else if (incomeReturnFocus) incomeReturnFocus.focus();
 }
 incomeEditorToggle.addEventListener('click', () => {
-  setIncomeEditorOpen(incomeEditorToggle.getAttribute('aria-expanded') !== 'true');
+  clearForm();
+  document.getElementById('income-editor-title').textContent = '新增收入';
+  setIncomeEditorOpen(true);
+});
+document.getElementById('income-editor-close').addEventListener('click', () => setIncomeEditorOpen(false));
+document.getElementById('income-backdrop').addEventListener('click', () => setIncomeEditorOpen(false));
+incomeEditor.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { e.preventDefault(); setIncomeEditorOpen(false); }
+  if (e.key !== 'Tab') return;
+  const controls = Array.from(incomeEditor.querySelectorAll('button, input, select, textarea, a[href]')).filter(el => !el.disabled && el.getClientRects().length);
+  const first = controls[0], last = controls[controls.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
 });
 
 function renderTable() {
@@ -553,7 +590,6 @@ function renderTable() {
 }
 
 function editRecord(id) {
-  setIncomeEditorOpen(true);
   const r = records.find((x) => x.id === id);
   if (!r) return;
   document.getElementById('f_id').value = r.id;
@@ -573,6 +609,8 @@ function editRecord(id) {
   document.getElementById('f_note').value = r.note || '';
   updateTotalWithTax();
   renderAttachments(r);
+  document.getElementById('income-editor-title').textContent = '編輯收入';
+  setIncomeEditorOpen(true);
   setStatus(`編輯中：${r.project}`);
 }
 
@@ -742,6 +780,7 @@ async function saveRecord() {
     if (!data.record || !data.record.id || !data.record.date) throw new Error('儲存回應缺少紀錄，請重新讀取確認');
     showSavedIncomeRecord(data.record);
     clearForm();
+    setIncomeEditorOpen(false, true);
     setStatus('已儲存');
   } catch (err) {
     setStatus(`儲存失敗：${err.message}`);
