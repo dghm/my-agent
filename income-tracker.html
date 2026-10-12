@@ -4,25 +4,77 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DGHM 接案收入登記系統</title>
-<link rel="stylesheet" href="dghm-ui.css">
+<link rel="icon" href="favicon.svg">
+<link rel="stylesheet" href="dghm-ui.css?v=20260903-3">
+<link rel="stylesheet" href="app-shell.css?v=20260915-1">
 <style>
   /* ---- Tool-specific layout ---- */
-  .app { height: 100vh; }
+  .income-page {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .income-editor-column {
+    display: flex;
+    flex: 0 0 var(--editor-col-width, 500px);
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    border-right: 1px solid var(--surface-border);
+    background: var(--surface-panel-bg);
+  }
+
+  .income-page-head {
+    flex-shrink: 0;
+    padding: 22px 20px 18px;
+    border-bottom: 1px solid var(--surface-border);
+    background: var(--surface-bg);
+  }
+  .income-eyebrow {
+    margin: 0 0 5px;
+    color: var(--orange);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .14em;
+  }
+  .income-page-head h1 { margin: 0 0 5px; font-size: 24px; }
+  .income-page-head .hint { margin: 0; font-size: 12px; line-height: 1.55; }
 
   .form-panel {
-    width: 380px;
-    flex-shrink: 0;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding: 20px;
     background: var(--surface-panel-bg);
-    border-right: 1px solid var(--surface-border);
   }
-  h1 { font-size: 18px; margin: 0 0 4px; }
   #import-btn { margin-bottom: 16px; }
+  .income-actions { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; }
+  .income-actions #import-btn { margin: 0; flex: 1; }
+  .income-actions button { font-size: 12px; padding: 6px 10px; }
+  #form > fieldset.form-section { overflow: hidden; padding: 0; }
+  .form-section-toggle {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    width: 100%; padding: 11px 14px; border: 0; border-radius: 0;
+    background: transparent; color: var(--navy-text); font-size: 12px;
+    font-weight: 700; text-align: left;
+  }
+  .form-section-toggle:hover { background: color-mix(in srgb, var(--navy) 6%, var(--surface-panel-bg)); }
+  .form-section-content { padding: 0 14px 12px; }
+  .form-section-content[hidden] { display: none; }
   textarea { min-height: 50px; }
   .status { margin-top: 8px; font-size: 12px; color: var(--surface-text-muted); min-height: 18px; }
 
-  .main-panel { flex: 1; overflow-y: auto; padding: 24px; }
+  .main-panel {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    padding: 24px;
+  }
+  .records-head { margin: -24px -24px 20px; padding: 22px 24px 18px; border-bottom: 1px solid var(--surface-border); background: var(--surface-bg); }
+  .records-head h2 { margin: 0 0 4px; color: var(--navy-text); font-size: 18px; }
+  .records-head .hint { margin: 0; font-size: 12px; }
   .summary-bar {
     display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 16px;
   }
@@ -34,10 +86,11 @@
     border-radius: 10px; padding: 14px 16px;
   }
   .card .label { font-size: 12px; color: var(--surface-text-muted); margin-bottom: 6px; }
-  .card .value { font-size: 20px; font-weight: 700; color: var(--heading); }
+  .card .value { font-size: 20px; font-weight: 700; color: var(--surface-text); }
   .card.unpaid .value { color: var(--orange); }
 
-  table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--surface-panel-bg); border-radius: 10px; overflow: hidden; }
+  .table-wrap { width: 100%; overflow-x: auto; border-radius: 10px; box-shadow: var(--shadow-sm); }
+  table { width: 100%; min-width: 860px; border-collapse: collapse; font-size: 13px; background: var(--surface-panel-bg); overflow: hidden; }
   th { background: var(--navy); color: #fff; padding: 8px 10px; text-align: left; font-size: 12px; }
   td { padding: 8px 10px; border-bottom: 1px solid var(--surface-border); vertical-align: middle; }
   tr:last-child td { border-bottom: none; }
@@ -54,24 +107,40 @@
     display: flex; align-items: center; justify-content: space-between; gap: 6px;
     padding: 6px 8px; border: 1px solid var(--surface-border); border-radius: 6px; margin-bottom: 6px; font-size: 12px;
   }
-  .attachment-item a { color: var(--heading); text-decoration: none; word-break: break-all; }
+  .attachment-item a { color: var(--navy-text); text-decoration: none; word-break: break-all; }
   .attachment-item button { padding: 2px 6px; font-size: 11px; flex-shrink: 0; }
+
+  @media (max-width: 760px) {
+    .income-page { display: block; height: auto; min-height: 100%; overflow: auto; }
+    .income-editor-column { width: 100%; border-right: 0; border-bottom: 1px solid var(--surface-border); }
+    .income-editor-column .form-panel { overflow: visible; }
+    .income-page .split-handle { display: none; }
+    .main-panel { overflow: visible; padding: 20px; }
+    .records-head { margin: -20px -20px 20px; padding: 20px; }
+    .income-actions { flex-wrap: wrap; }
+  }
 </style>
 </head>
-<body>
-<div class="app">
+<body data-tool="income">
+<div id="tool-workspace" class="income-page">
 
-  <div class="form-panel">
-    <div class="form-head">
-      <div>
-        <h1>接案收入登記</h1>
-        <p class="hint">登記每筆案件收入，可一鍵帶入應收帳款通知產生器，並依月／年彙整報稅用收入。</p>
+  <section class="income-editor-column" aria-label="收入登記編輯區">
+    <header class="income-page-head">
+      <p class="income-eyebrow">BUSINESS WORKSPACE</p>
+      <h1>收入登記</h1>
+      <p class="hint">登記案件收入與收款狀態，右側即時彙整收入並管理歷史紀錄。</p>
+    </header>
+
+    <div class="form-panel">
+      <div class="form-head">
+        <p class="hint">可匯入請款單草稿，或直接填寫本次收入資訊。</p>
       </div>
-      <button id="theme-toggle" type="button" aria-label="切換 Dark／Day 模式" title="切換深色／淺色模式">🌙</button>
-    </div>
 
     <input type="file" id="import-file" accept=".json,application/json" style="display:none">
-    <button type="button" class="full secondary" id="import-btn">匯入請款單 JSON</button>
+    <div class="income-actions">
+      <button type="button" class="secondary" id="import-btn">匯入請款單 JSON</button>
+      <button type="button" class="secondary" id="income-toggle-all" aria-label="全部收合">全部收合</button>
+    </div>
 
     <form id="form">
       <input type="hidden" id="f_id">
@@ -161,10 +230,17 @@
       <button type="button" class="full" id="save-btn">儲存登記</button>
       <button type="button" class="full secondary" id="reset-btn">清空表單</button>
     </form>
-    <div class="status" id="status">狀態：待命中</div>
-  </div>
+      <div class="status" id="status" role="status" aria-live="polite">狀態：待命中</div>
+    </div>
+  </section>
 
-  <div class="main-panel">
+  <div class="split-handle" role="separator" aria-orientation="vertical" aria-label="拖曳調整登記表單寬度" title="拖曳調整登記表單寬度"></div>
+
+  <section class="main-panel" aria-label="收入紀錄與摘要">
+    <header class="records-head">
+      <h2>收入總覽</h2>
+      <p class="hint">依年度與月份篩選，查看收款進度或匯出報稅用 CSV。</p>
+    </header>
     <div class="summary-bar">
       <div>
         <label>年度</label>
@@ -198,33 +274,93 @@
       </div>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>日期</th>
-          <th>案件名稱</th>
-          <th>客戶</th>
-          <th>專案代碼／期數</th>
-          <th>金額（含稅）</th>
-          <th>收款</th>
-          <th>發票</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody id="list-tbody">
-        <tr class="empty-row"><td colspan="7">尚無登記紀錄</td></tr>
-      </tbody>
-    </table>
-  </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>日期</th>
+            <th>案件名稱</th>
+            <th>客戶</th>
+            <th>專案代碼／期數</th>
+            <th>金額（含稅）</th>
+            <th>收款</th>
+            <th>發票</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="list-tbody">
+          <tr class="empty-row"><td colspan="8">尚無登記紀錄</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 
 </div>
 
-<script src="dghm-ui.js"></script>
+<script src="tool-registry.js?v=20260903-3"></script>
+<script src="project-context.js?v=20260903-3"></script>
+<script src="app-shell.js?v=20260915-1"></script>
+<script>mountAppShell({ activeTool: 'income' });</script>
+<script src="dghm-ui.js?v=20260903-3"></script>
 <script>
 const API_BASE = "";
 let records = [];
 
 initTheme('dghm-income-tracker-theme');
+initColumnResize({
+  page: '.income-page',
+  editor: '.income-editor-column',
+  handle: '.split-handle',
+  storageKey: 'dghm-income-editor-width'
+});
+
+// Keep existing field IDs and handlers intact while matching the invoice editor.
+(function initIncomeSections() {
+  const sections = [];
+  const toggleAll = document.getElementById('income-toggle-all');
+  function syncToggle() {
+    const collapsed = sections.every(({ content }) => content.hidden);
+    toggleAll.textContent = collapsed ? '全部展開' : '全部收合';
+    toggleAll.setAttribute('aria-label', toggleAll.textContent);
+  }
+  function setOpen(section, open) {
+    section.content.hidden = !open;
+    section.button.setAttribute('aria-expanded', String(open));
+    section.indicator.textContent = open ? '-' : '+';
+  }
+  document.querySelectorAll('#form > fieldset').forEach((fieldset, index) => {
+    const legend = fieldset.querySelector('legend');
+    const title = legend.textContent;
+    legend.remove();
+    fieldset.classList.add('form-section');
+    fieldset.setAttribute('aria-label', title);
+    const content = document.createElement('div');
+    content.className = 'form-section-content';
+    content.id = 'income-section-' + index;
+    while (fieldset.firstChild) content.appendChild(fieldset.firstChild);
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'form-section-toggle';
+    button.setAttribute('aria-controls', content.id);
+    const label = document.createElement('span');
+    label.textContent = title;
+    const indicator = document.createElement('span');
+    indicator.setAttribute('aria-hidden', 'true');
+    button.append(label, indicator);
+    fieldset.append(button, content);
+    const section = { button, content, indicator };
+    sections.push(section);
+    setOpen(section, true);
+    button.addEventListener('click', () => { setOpen(section, content.hidden); syncToggle(); });
+    content.addEventListener('focusin', () => { setOpen(section, true); syncToggle(); });
+  });
+  toggleAll.addEventListener('click', () => {
+    const open = sections.every(({ content }) => content.hidden);
+    sections.forEach(section => setOpen(section, open));
+    syncToggle();
+  });
+  syncToggle();
+})();
 
 function setStatus(text) {
   document.getElementById('status').textContent = `狀態：${text}`;
