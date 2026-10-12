@@ -10,6 +10,7 @@ import crypto from 'node:crypto';
 const DEFAULT_ZONE = 'us2.make.com';
 const DEFAULT_TEAM_ID = '2215044';
 const DEFAULT_ORG_ID = '7453677';
+const DEFAULT_FOLDER_ID = '247235';
 const MONITORED_RECIPIENT = 'bingyu.wu@compass.com';
 const SCENARIO_ID_PATTERN = /^\d+$/;
 
@@ -52,6 +53,7 @@ function makeConfig() {
     zone: env('MAKE_ZONE', DEFAULT_ZONE),
     teamId: env('MAKE_TEAM_ID', DEFAULT_TEAM_ID),
     orgId: env('MAKE_ORG_ID', DEFAULT_ORG_ID),
+    folderId: env('MAKE_FOLDER_ID', DEFAULT_FOLDER_ID),
   };
 }
 
@@ -65,7 +67,8 @@ function makeError(data, response, label) {
 }
 
 async function fetchScenarios(config) {
-  const response = await fetch(`https://${config.zone}/api/v2/scenarios?teamId=${config.teamId}`, {
+  const query = new URLSearchParams({ teamId: config.teamId, folderId: config.folderId });
+  const response = await fetch(`https://${config.zone}/api/v2/scenarios?${query}`, {
     headers: { Authorization: `Token ${config.token}` },
   });
   const data = await response.json().catch(() => ({}));
