@@ -103,6 +103,7 @@
   table { width: 100%; min-width: 860px; border-collapse: collapse; font-size: 13px; background: var(--surface-panel-bg); overflow: hidden; }
   th { background: var(--navy); color: #fff; padding: 8px 10px; text-align: center; font-size: 12px; }
   td { padding: 8px 10px; border-bottom: 1px solid var(--surface-border); vertical-align: middle; }
+  .table-wrap th:first-child, .table-wrap td:first-child { white-space: nowrap; }
   tr:last-child td { border-bottom: none; }
   .status-icon { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; }
   .status-icon svg { width: 18px; height: 18px; color: #E8ECF5; opacity: .4; }
@@ -300,7 +301,7 @@
       <table>
         <thead>
           <tr>
-            <th>日期</th>
+            <th>開立日期</th>
             <th>案件名稱</th>
             <th>客戶</th>
             <th>專案代碼／期數</th>
@@ -533,7 +534,7 @@ function renderTable() {
 
   tbody.innerHTML = filtered.map((r) => `
     <tr>
-      <td>${esc(r.date)}</td>
+      <td>${esc(displayIncomeDate(r.date))}</td>
       <td>${esc(r.project)}</td>
       <td>${esc(r.client)}</td>
       <td>${esc(r.projectCode)}${r.projectCode && r.installment ? '／' : ''}${esc(r.installment)}</td>
