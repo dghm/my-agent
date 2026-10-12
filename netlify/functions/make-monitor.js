@@ -10,6 +10,7 @@ import crypto from 'node:crypto';
 const DEFAULT_ZONE = 'us2.make.com';
 const DEFAULT_TEAM_ID = '2215044';
 const DEFAULT_ORG_ID = '7453677';
+const MONITORED_RECIPIENT = 'bingyu.wu@compass.com';
 const SCENARIO_ID_PATTERN = /^\d+$/;
 
 function json(status, payload) {
@@ -72,13 +73,70 @@ async function fetchScenarios(config) {
   return Array.isArray(data) ? data : (data.scenarios || []);
 }
 
-function scenarioSummary(scenario) {
+function parseBlueprint(payload) {
+  let blueprint = payload?.blueprint ?? payload?.response?.blueprint ?? payload?.scenario?.blueprint ?? payload;
+  if (typeof blueprint === 'string') blueprint = JSON.parse(blueprint);
+  if (!blueprint || typeof blueprint !== 'object') throw new Error('Blueprint 格式無法辨識');
+  return blueprint;
+}
+
+function isSendEmailModule(module) {
+  const moduleName = String(module?.module || '').toLowerCase();
+  return moduleName.includes('mail') && (moduleName.includes('send') || moduleName.includes('reply'));
+}
+
+function isRecipientField(key) {
+  const normalized = String(key).replace(/[^a-z]/gi, '').toLowerCase();
+  return /^(to|cc|bcc|recipient|recipients|recipientemail|recipientemails|emailaddress|emailaddresses)$/.test(normalized);
+}
+
+function valueContainsRecipient(value, target, recipientContext = false) {
+  if (typeof value === 'string') {
+    if (!recipientContext) return false;
+    const emails = value.toLowerCase().match(/[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*/g) || [];
+    return emails.includes(target);
+  }
+  if (Array.isArray(value)) return value.some((item) => valueContainsRecipient(item, target, recipientContext));
+  if (!value || typeof value !== 'object') return false;
+  return Object.entries(value).some(([key, item]) => (
+    valueContainsRecipient(item, target, recipientContext || isRecipientField(key))
+  ));
+}
+
+function blueprintHasRecipient(blueprint, recipient) {
+  const target = recipient.toLowerCase();
+  const visit = (node) => {
+    if (!node || typeof node !== 'object') return false;
+    if (isSendEmailModule(node) && valueContainsRecipient(node.mapper || {}, target)) return true;
+    return Object.values(node).some((value) => {
+      if (Array.isArray(value)) return value.some(visit);
+      return value && typeof value === 'object' ? visit(value) : false;
+    });
+  };
+  return visit(blueprint);
+}
+
+async function recipientStatus(config, scenarioId) {
+  try {
+    const response = await fetch(`https://${config.zone}/api/v2/scenarios/${scenarioId}/blueprint`, {
+      headers: { Authorization: `Token ${config.token}` },
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) return 'unavailable';
+    return blueprintHasRecipient(parseBlueprint(data), MONITORED_RECIPIENT) ? 'configured' : 'not_configured';
+  } catch {
+    return 'unavailable';
+  }
+}
+
+function scenarioSummary(scenario, fixedRecipientStatus = 'unavailable') {
   return {
     id: String(scenario.id),
     name: String(scenario.name || '未命名 Scenario'),
     isActive: !!scenario.isActive,
     isinvalid: !!scenario.isinvalid,
     dlqCount: Number(scenario.dlqCount || 0),
+    fixedRecipientStatus,
   };
 }
 
@@ -92,7 +150,10 @@ async function monitor(config) {
   const orgData = await orgResponse.json().catch(() => ({}));
   if (!orgResponse.ok) throw new Error(makeError(orgData, orgResponse, '讀取 Make 組織用量'));
 
-  const scenarioList = scenarios.map(scenarioSummary);
+  const recipientStatuses = await Promise.all(
+    scenarios.map((scenario) => recipientStatus(config, scenario.id)),
+  );
+  const scenarioList = scenarios.map((scenario, index) => scenarioSummary(scenario, recipientStatuses[index]));
   const problems = scenarioList
     .filter((scenario) => scenario.isinvalid || scenario.dlqCount > 0)
     .map(({ name, dlqCount, isinvalid }) => ({ name, dlqCount, isinvalid }));
@@ -105,6 +166,7 @@ async function monitor(config) {
     checkedAt: new Date().toISOString(),
     total: scenarioList.length,
     activeCount: scenarioList.filter((scenario) => scenario.isActive).length,
+    monitoredRecipient: MONITORED_RECIPIENT,
     scenarios: scenarioList,
     problems,
     usage: {

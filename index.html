@@ -259,6 +259,9 @@
   .scenario-state { display: block; margin-top: 2px; color: var(--surface-text-muted); font-size: 9px; }
   .scenario-state.is-on { color: #1E7B34; }
   .scenario-state.is-invalid { color: #C0392B; }
+  .scenario-recipient { display: block; margin-top: 3px; color: var(--surface-text-muted); font-size: 9px; line-height: 1.35; }
+  .scenario-recipient.is-configured { color: #1E7B34; }
+  .scenario-recipient.is-missing { color: #C0392B; }
   .scenario-switch {
     position: relative; width: 36px; height: 20px; padding: 0; border: 0; border-radius: 999px;
     background: var(--surface-border); cursor: pointer; transition: background .18s ease;
@@ -769,9 +772,16 @@ initTheme('my-agent-theme');
     var scenarioRows = scenarios.map(function (scenario) {
       var stateClass = scenario.isinvalid ? ' is-invalid' : (scenario.isActive ? ' is-on' : '');
       var stateText = scenario.isinvalid ? '設定異常' : (scenario.isActive ? '運作中' : '已關閉');
+      var recipientStatus = scenario.fixedRecipientStatus || 'unavailable';
+      var recipientClass = recipientStatus === 'configured' ? ' is-configured' : (recipientStatus === 'not_configured' ? ' is-missing' : '');
+      var recipientText = recipientStatus === 'configured'
+        ? '固定收件人：已設定'
+        : (recipientStatus === 'not_configured' ? '固定收件人：未設定' : '固定收件人：無法檢查');
       var nextState = !scenario.isActive;
       return '<div class="scenario-row"><div><span class="scenario-name" title="' + escapeHtml(scenario.name) + '">' +
-        escapeHtml(scenario.name) + '</span><span class="scenario-state' + stateClass + '">' + stateText + '</span></div>' +
+        escapeHtml(scenario.name) + '</span><span class="scenario-state' + stateClass + '">' + stateText + '</span>' +
+        '<span class="scenario-recipient' + recipientClass + '" title="' + escapeHtml(data.monitoredRecipient || 'bingyu.wu@compass.com') + '">' +
+          recipientText + ' · ' + escapeHtml(data.monitoredRecipient || 'bingyu.wu@compass.com') + '</span></div>' +
         '<button class="scenario-switch" type="button" role="switch" aria-checked="' + scenario.isActive + '"' +
           ' aria-label="' + (nextState ? '啟用 ' : '停用 ') + escapeHtml(scenario.name) + '" data-action="toggle-scenario"' +
           ' data-scenario-id="' + escapeHtml(scenario.id) + '" data-next-active="' + nextState + '"></button></div>';
@@ -812,7 +822,7 @@ initTheme('my-agent-theme');
       var data = await response.json().catch(function () { return {}; });
       if (!response.ok || !data.ok) throw new Error(data.error || 'Scenario 狀態更新失敗');
       makeMonitorData.scenarios = makeMonitorData.scenarios.map(function (item) {
-        return String(item.id) === scenarioId ? data.scenario : item;
+        return String(item.id) === scenarioId ? Object.assign({}, item, data.scenario) : item;
       });
       makeMonitorData.activeCount = makeMonitorData.scenarios.filter(function (item) { return item.isActive; }).length;
       makeMonitorData.checkedAt = new Date().toISOString();
