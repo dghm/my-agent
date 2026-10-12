@@ -1318,6 +1318,7 @@ var _handoffApplied = false;
 
 (function () {
   var KEY = 'dghm-quote-to-invoice';
+  if (new URLSearchParams(location.search).has('incomePreview')) return;
   var raw = null;
   try { raw = localStorage.getItem(KEY); } catch (error) { return; }
   if (!raw) return;

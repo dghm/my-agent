@@ -356,6 +356,7 @@
 <script>
 const API_BASE = "";
 let records = [];
+let incomeInvoiceDraft = null;
 
 initTheme('dghm-income-tracker-theme');
 
@@ -435,6 +436,7 @@ function validIncomeDates() {
 }
 
 function clearForm() {
+  incomeInvoiceDraft = null;
   document.getElementById('f_id').value = '';
   document.getElementById('f_project').value = '';
   document.getElementById('f_client').value = '';
@@ -580,7 +582,7 @@ function renderTable() {
   }
 
   tbody.innerHTML = filtered.map((r) => `
-    <tr>
+    <tr data-preview-id="${esc(r.id)}" tabindex="0" role="button" aria-label="預覽 ${esc(r.project)}">
       <td>${esc(displayIncomeDate(r.date))}</td>
       <td>${esc(r.project)}</td>
       <td>${esc(r.client)}</td>
@@ -592,7 +594,6 @@ function renderTable() {
       <td>
         <div class="row-actions">
           <button type="button" class="secondary" aria-label="編輯" title="編輯${r.attachments && r.attachments.length ? '（附件 ' + r.attachments.length + ' 份）' : ''}" onclick="editRecord('${r.id}')">${renderActionIcon('edit')}</button>
-          <button type="button" class="secondary" aria-label="產生請款單" title="產生請款單" onclick="openInvoice('${r.id}')">${renderActionIcon('export')}</button>
           <button type="button" class="secondary" aria-label="刪除" title="刪除" onclick="deleteRecord('${r.id}')">${renderActionIcon('delete')}</button>
         </div>
       </td>
@@ -604,6 +605,7 @@ function editRecord(id) {
   const r = records.find((x) => x.id === id);
   if (!r) return;
   document.getElementById('f_id').value = r.id;
+  incomeInvoiceDraft = r.invoiceDraft || null;
   document.getElementById('f_project').value = r.project;
   document.getElementById('f_client').value = r.client;
   document.getElementById('f_project_code').value = r.projectCode || '';
@@ -768,6 +770,7 @@ async function saveRecord() {
     paymentStatus: v('f_payment_status'),
     invoiceStatus: v('f_invoice_status'),
     note: v('f_note').trim(),
+    invoiceDraft: incomeInvoiceDraft,
   };
 
   if (!payload.project || !payload.client || !payload.date || !payload.amount) {
@@ -851,6 +854,7 @@ function importInvoiceJson(json) {
   const items = Array.isArray(json.items) ? json.items : [];
   const total = items.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
   clearForm();
+  incomeInvoiceDraft = JSON.parse(JSON.stringify(json));
   document.getElementById('f_project').value = f.f_project_name || '';
   document.getElementById('f_client').value = f.f_company_name || '';
   document.getElementById('f_project_code').value = f.f_proj_code || '';
@@ -929,5 +933,6 @@ document.getElementById('filter-month').addEventListener('change', renderTable);
 
 loadRecords();
 </script>
+<script src="income-preview.js"></script>
 </body>
 </html>

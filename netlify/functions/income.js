@@ -22,6 +22,14 @@ async function writeRecords(store, records) {
   await store.setJSON('records', records);
 }
 
+function invoiceDraft(value) {
+  if (value == null) return null;
+  if (typeof value !== 'object' || Array.isArray(value) || !value.fields || typeof value.fields !== 'object' || Array.isArray(value.fields) || !Array.isArray(value.items) || value.items.some(item => !item || typeof item !== 'object') || value.terms && (!Array.isArray(value.terms) || value.terms.some(term => typeof term !== 'string')) || JSON.stringify(value).length > 200000) {
+    throw new Error('請款單 JSON 格式不正確或過大');
+  }
+  return value;
+}
+
 export default async (req, context) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
@@ -90,6 +98,7 @@ export default async (req, context) => {
         paymentStatus: parsed.paymentStatus === 'paid' ? 'paid' : 'unpaid',
         invoiceStatus: parsed.invoiceStatus === 'issued' ? 'issued' : 'not_issued',
         note: String(parsed.note || '').trim(),
+        invoiceDraft: invoiceDraft(parsed.invoiceDraft),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -132,6 +141,7 @@ export default async (req, context) => {
             ? (parsed.invoiceStatus === 'issued' ? 'issued' : 'not_issued')
             : existing.invoiceStatus,
         note: parsed.note !== undefined ? String(parsed.note).trim() : existing.note,
+        invoiceDraft: parsed.invoiceDraft !== undefined ? invoiceDraft(parsed.invoiceDraft) : existing.invoiceDraft,
         updatedAt: new Date().toISOString(),
       };
 
