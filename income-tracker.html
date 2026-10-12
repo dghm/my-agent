@@ -101,16 +101,18 @@
 
   .table-wrap { width: 100%; overflow-x: auto; border-radius: 10px; box-shadow: var(--shadow-sm); }
   table { width: 100%; min-width: 860px; border-collapse: collapse; font-size: 13px; background: var(--surface-panel-bg); overflow: hidden; }
-  th { background: var(--navy); color: #fff; padding: 8px 10px; text-align: left; font-size: 12px; }
+  th { background: var(--navy); color: #fff; padding: 8px 10px; text-align: center; font-size: 12px; }
   td { padding: 8px 10px; border-bottom: 1px solid var(--surface-border); vertical-align: middle; }
   tr:last-child td { border-bottom: none; }
   .status-icon { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; }
-  .status-icon svg { width: 24px; height: 24px; color: #E8ECF5; opacity: .4; }
+  .status-icon svg { width: 18px; height: 18px; color: #E8ECF5; opacity: .4; }
   .status-icon.is-active svg { color: #E5622A; opacity: 1; }
   .status-icon:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; }
   .row-actions { display: flex; gap: 6px; }
-  .row-actions button { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 5px; }
-  .row-actions svg { width: 22px; height: 22px; }
+  .row-actions button { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 3px; border: 0; border-radius: 0; background: transparent; box-shadow: none; color: var(--surface-text); }
+  .row-actions svg { width: 18px; height: 18px; }
+  .row-actions button:hover { background: transparent; }
+  .row-actions button:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
   .row-actions button:hover { color: #E5622A; }
   .income-page.is-editor-collapsed > .income-editor-column,
   .income-page.is-editor-collapsed > .split-handle { display: none; }
@@ -204,11 +206,11 @@
         <div class="row2">
           <div>
             <label>開立日期</label>
-            <input type="date" id="f_date">
+            <input type="text" id="f_date" placeholder="YYYY/MM/DD" inputmode="numeric" maxlength="10" aria-label="開立日期 YYYY/MM/DD">
           </div>
           <div>
             <label>付款期限</label>
-            <input type="date" id="f_due_date">
+            <input type="text" id="f_due_date" placeholder="YYYY/MM/DD" inputmode="numeric" maxlength="10" aria-label="付款期限 YYYY/MM/DD">
           </div>
         </div>
         <label>付款條件</label>
@@ -395,7 +397,18 @@ function esc(s) {
 }
 
 function v(id) {
-  return (document.getElementById(id) || {}).value || '';
+  const value = (document.getElementById(id) || {}).value || '';
+  return id === 'f_date' || id === 'f_due_date' ? value.trim().replace(/\//g, '-') : value;
+}
+function displayIncomeDate(value) {
+  return String(value || '').replace(/-/g, '/');
+}
+function validIncomeDates() {
+  return ['f_date', 'f_due_date'].every(id => {
+    const date = v(id);
+    return !date || /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+      !isNaN(Date.parse(date)) && new Date(date).toISOString().slice(0, 10) === date;
+  });
 }
 
 function clearForm() {
@@ -471,25 +484,24 @@ function getFilteredRecords() {
   });
 }
 
-// Reicon outline glyphs, embedded to avoid a runtime CDN dependency.
+// Lucide icons (ISC license), embedded without a runtime CDN dependency.
 const incomeStatusIcons = {
-  payment: "<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M14.3251 3.75017C14.2209 3.75002 14.1126 3.75 14.0001 3.75L10.0001 3.75C9.88748 3.75 9.77921 3.75002 9.67501 3.75017C9.37671 5.21938 8.21944 6.37665 6.75022 6.67496C6.75008 6.77915 6.75006 6.88742 6.75006 7C6.75006 7.11259 6.75008 7.22086 6.75022 7.32505C8.21944 7.62335 9.37671 8.78062 9.67501 10.2498C9.77921 10.25 9.88748 10.25 10.0001 10.25H14.0001C14.1126 10.25 14.2209 10.25 14.3251 10.2498C14.6234 8.78062 15.7807 7.62336 17.2499 7.32505C17.25 7.22086 17.2501 7.11259 17.2501 7C17.2501 6.88742 17.25 6.77915 17.2499 6.67496C15.7807 6.37665 14.6234 5.21938 14.3251 3.75017ZM14.9296 2.25327C14.655 2.24998 14.3625 2.24999 14.0521 2.25L9.94806 2.25C9.63767 2.24999 9.34509 2.24998 9.07054 2.25327C9.04734 2.25111 9.02383 2.25 9.00006 2.25C8.96867 2.25 8.93772 2.25193 8.90734 2.25568C8.45456 2.26372 8.05363 2.28312 7.70558 2.32991C7.07779 2.41432 6.51099 2.59999 6.05552 3.05546C5.60005 3.51093 5.41438 4.07773 5.32997 4.70552C5.28318 5.05357 5.26377 5.45451 5.25573 5.90728C5.25199 5.93767 5.25006 5.96861 5.25006 6C5.25006 6.02377 5.25117 6.04728 5.25333 6.07048C5.25004 6.34503 5.25005 6.63761 5.25006 6.948V7.052C5.25005 7.36239 5.25004 7.65497 5.25333 7.92952C5.25117 7.95273 5.25006 7.97624 5.25006 8C5.25006 8.0314 5.25199 8.06234 5.25573 8.09272C5.26377 8.5455 5.28318 8.94643 5.32997 9.29448C5.41438 9.92228 5.60005 10.4891 6.05552 10.9445C6.51099 11.4 7.07779 11.5857 7.70558 11.6701C8.05363 11.7169 8.45456 11.7363 8.90734 11.7443C8.93772 11.7481 8.96867 11.75 9.00006 11.75C9.02383 11.75 9.04733 11.7489 9.07054 11.7467C9.34509 11.75 9.63767 11.75 9.94807 11.75H14.0521C14.3625 11.75 14.655 11.75 14.9296 11.7467C14.9528 11.7489 14.9763 11.75 15.0001 11.75C15.0315 11.75 15.0624 11.7481 15.0928 11.7443C15.5456 11.7363 15.9465 11.7169 16.2945 11.6701C16.9223 11.5857 17.4891 11.4 17.9446 10.9445C18.4001 10.4891 18.5857 9.92228 18.6701 9.29448C18.7169 8.94643 18.7363 8.5455 18.7444 8.09272C18.7481 8.06234 18.7501 8.0314 18.7501 8C18.7501 7.97624 18.749 7.95273 18.7468 7.92953C18.7501 7.65497 18.7501 7.36239 18.7501 7.052V6.94801C18.7501 6.63761 18.7501 6.34503 18.7468 6.07048C18.749 6.04728 18.7501 6.02377 18.7501 6C18.7501 5.96861 18.7481 5.93767 18.7444 5.90729C18.7363 5.45451 18.7169 5.05357 18.6701 4.70552C18.5857 4.07773 18.4001 3.51093 17.9446 3.05546C17.4891 2.59999 16.9223 2.41432 16.2945 2.32991C15.9465 2.28312 15.5456 2.26372 15.0928 2.25568C15.0624 2.25193 15.0315 2.25 15.0001 2.25C14.9763 2.25 14.9528 2.25111 14.9296 2.25327ZM15.8941 3.79396C16.122 4.39792 16.6021 4.8781 17.2061 5.10591C17.1996 5.03597 17.1921 4.96924 17.1835 4.90539C17.1215 4.44393 17.0143 4.24644 16.8839 4.11612C16.7536 3.9858 16.5561 3.87858 16.0947 3.81654C16.0308 3.80795 15.9641 3.80048 15.8941 3.79396ZM17.2061 8.89409C16.6021 9.12191 16.122 9.60208 15.8941 10.206C15.9641 10.1995 16.0308 10.1921 16.0947 10.1835C16.5561 10.1214 16.7536 10.0142 16.8839 9.88388C17.0143 9.75357 17.1215 9.55607 17.1835 9.09461C17.1921 9.03076 17.1996 8.96404 17.2061 8.89409ZM8.10597 10.206C7.87816 9.60208 7.39798 9.12191 6.79402 8.89409C6.80053 8.96404 6.80801 9.03076 6.8166 9.09461C6.87864 9.55607 6.98586 9.75357 7.11618 9.88389C7.24649 10.0142 7.44399 10.1214 7.90545 10.1835C7.9693 10.1921 8.03602 10.1995 8.10597 10.206ZM6.79402 5.10591C7.39798 4.8781 7.87816 4.39792 8.10597 3.79396C8.03602 3.80048 7.9693 3.80795 7.90545 3.81654C7.44399 3.87858 7.24649 3.9858 7.11618 4.11612C6.98586 4.24644 6.87864 4.44393 6.8166 4.90539C6.80801 4.96924 6.80053 5.03597 6.79402 5.10591ZM12.0001 6.75C11.862 6.75 11.7501 6.86193 11.7501 7C11.7501 7.13807 11.862 7.25 12.0001 7.25C12.1381 7.25 12.2501 7.13807 12.2501 7C12.2501 6.86193 12.1381 6.75 12.0001 6.75ZM10.2501 7C10.2501 6.0335 11.0336 5.25 12.0001 5.25C12.9666 5.25 13.7501 6.0335 13.7501 7C13.7501 7.9665 12.9666 8.75 12.0001 8.75C11.0336 8.75 10.2501 7.9665 10.2501 7ZM8.68397 14.4482C10.5498 14.0867 12.5471 14.1678 14.1633 15.1318C14.3903 15.2672 14.6031 15.4359 14.7888 15.6444C15.1646 16.0666 15.3588 16.5913 15.3679 17.1174C15.5592 16.994 15.7508 16.857 15.9454 16.71L17.7526 15.3448C18.6572 14.6615 19.9718 14.6614 20.8765 15.3445C21.7125 15.9757 22.0457 17.1085 21.4473 18.0677C21.022 18.7495 20.3815 19.6925 19.7296 20.2962C19.0707 20.9065 18.1329 21.4196 17.4236 21.762C16.5621 22.1778 15.6316 22.4077 14.7269 22.5541C12.8777 22.8535 10.9535 22.8077 9.12505 22.431C8.19064 22.2384 7.21961 22.1384 6.25999 22.1384H4.00006C3.58585 22.1384 3.25006 21.8026 3.25006 21.3884C3.25006 20.9742 3.58585 20.6384 4.00006 20.6384H6.25999C7.3221 20.6384 8.39454 20.749 9.42772 20.9618C11.0798 21.3022 12.8202 21.3432 14.4872 21.0734C15.3161 20.9392 16.0901 20.74 16.7715 20.4111C17.4549 20.0812 18.2233 19.6468 18.7104 19.1957C19.2029 18.7395 19.7541 17.9479 20.1747 17.2738C20.3016 17.0703 20.284 16.7767 19.9727 16.5416C19.6029 16.2624 19.0264 16.2625 18.6567 16.5417L16.8496 17.9069C16.1281 18.4518 15.2402 19.0349 14.1388 19.2106C14.0276 19.2283 13.9119 19.2445 13.7918 19.2588C13.7345 19.2692 13.6749 19.276 13.6133 19.2783C13.051 19.3342 12.3998 19.3472 11.6813 19.2793C11.2689 19.2404 10.9662 18.8745 11.0051 18.4621C11.0441 18.0497 11.41 17.747 11.8223 17.786C12.4498 17.8452 13.0127 17.8321 13.4903 17.7831C13.5 17.7821 13.5096 17.7811 13.5192 17.7801C13.5392 17.7685 13.5696 17.7474 13.6096 17.7125C13.9291 17.4336 13.9576 16.9667 13.6684 16.6418C13.5951 16.5595 13.5049 16.4856 13.3949 16.42C12.2138 15.7155 10.6363 15.5978 8.96927 15.9208C7.31174 16.2419 5.66497 16.9817 4.43392 17.8547C4.09604 18.0943 3.6279 18.0146 3.38828 17.6768C3.14867 17.3389 3.22833 16.8708 3.5662 16.6311C4.96457 15.6395 6.80866 14.8115 8.68397 14.4482Z\" fill=\"currentColor\"/>",
-  invoice: "<path d=\"M22 6V8.42C22 10 21 11 19.42 11H16V4.01C16 2.9 16.91 2 18.02 2C19.11 2.01 20.11 2.45 20.83 3.17C21.55 3.9 22 4.9 22 6Z\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-miterlimit=\"10\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M2 7V21C2 21.83 2.94 22.3 3.6 21.8L5.31 20.52C5.71 20.22 6.27 20.26 6.63 20.62L8.29 22.29C8.68 22.68 9.32 22.68 9.71 22.29L11.39 20.61C11.74 20.26 12.3 20.22 12.69 20.52L14.4 21.8C15.06 22.29 16 21.82 16 21V4C16 2.9 16.9 2 18 2H7H6C3 2 2 3.79 2 6V7Z\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-miterlimit=\"10\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M9 13.01H12\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M9 9.01001H12\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M5.99561 13H6.00459\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M5.99561 9H6.00459\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  payment: "<path d=\"M11.748 18H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4.875\" /> <path d=\"m16 19 2 2 4-4\" /> <path d=\"M18 12h.01\" /> <path d=\"M6 12h.01\" /> <circle cx=\"12\" cy=\"12\" r=\"2\" />",
+  invoice: "<path d=\"M13 16H8\" /> <path d=\"M14 8H8\" /> <path d=\"M16 12H8\" /> <path d=\"M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z\" />"
 };
 function renderStatusIcon(type, active) {
   const label = type === 'payment' ? (active ? '已收款' : '未收款') : (active ? '已開立發票' : '未開立發票');
-  return `<span class="status-icon ${active ? 'is-active' : ''}" role="img" aria-label="${label}" title="${label}" tabindex="0"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true">${incomeStatusIcons[type]}</svg></span>`;
+  return `<span class="status-icon ${active ? 'is-active' : ''}" role="img" aria-label="${label}" title="${label}" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${incomeStatusIcons[type]}</svg></span>`;
 }
 
 const incomeActionIcons = {
-  edit: "<path d=\"M11 2H9C4 2 2 4 2 9V15C2 20 4 22 9 22H15C20 22 22 20 22 15V13\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M16.04 3.02001L8.16 10.9C7.86 11.2 7.56 11.79 7.5 12.22L7.07 15.23C6.91 16.32 7.68 17.08 8.77 16.93L11.78 16.5C12.2 16.44 12.79 16.14 13.1 15.84L20.98 7.96001C22.34 6.60001 22.98 5.02001 20.98 3.02001C18.98 1.02001 17.4 1.66001 16.04 3.02001Z\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-miterlimit=\"10\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M14.91 4.1499C15.58 6.5399 17.45 8.4099 19.85 9.0899\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-miterlimit=\"10\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>",
-  export: "<path d=\"M13 11L21.2 2.80005\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M22 6.8V2H17.2\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M11 2H9C4 2 2 4 2 9V15C2 20 4 22 9 22H15C20 22 22 20 22 15V13\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>",
-  delete: "<path d=\"M12 2.75C11.0215 2.75 10.1871 3.37503 9.87787 4.24993C9.73983 4.64047 9.31134 4.84517 8.9208 4.70713C8.53026 4.56909 8.32557 4.1406 8.46361 3.75007C8.97804 2.29459 10.3661 1.25 12 1.25C13.634 1.25 15.022 2.29459 15.5365 3.75007C15.6745 4.1406 15.4698 4.56909 15.0793 4.70713C14.6887 4.84517 14.2602 4.64047 14.1222 4.24993C13.813 3.37503 12.9785 2.75 12 2.75Z\" fill=\"currentColor\"/><path d=\"M2.75 6C2.75 5.58579 3.08579 5.25 3.5 5.25H20.5001C20.9143 5.25 21.2501 5.58579 21.2501 6C21.2501 6.41421 20.9143 6.75 20.5001 6.75H3.5C3.08579 6.75 2.75 6.41421 2.75 6Z\" fill=\"currentColor\"/><path d=\"M5.91508 8.45011C5.88753 8.03681 5.53015 7.72411 5.11686 7.75166C4.70356 7.77921 4.39085 8.13659 4.41841 8.54989L4.88186 15.5016C4.96735 16.7844 5.03641 17.8205 5.19838 18.6336C5.36678 19.4789 5.6532 20.185 6.2448 20.7384C6.83639 21.2919 7.55994 21.5307 8.41459 21.6425C9.23663 21.75 10.2751 21.75 11.5607 21.75H12.4395C13.7251 21.75 14.7635 21.75 15.5856 21.6425C16.4402 21.5307 17.1638 21.2919 17.7554 20.7384C18.347 20.185 18.6334 19.4789 18.8018 18.6336C18.9637 17.8205 19.0328 16.7844 19.1183 15.5016L19.5818 8.54989C19.6093 8.13659 19.2966 7.77921 18.8833 7.75166C18.47 7.72411 18.1126 8.03681 18.0851 8.45011L17.6251 15.3492C17.5353 16.6971 17.4712 17.6349 17.3307 18.3405C17.1943 19.025 17.004 19.3873 16.7306 19.6431C16.4572 19.8988 16.083 20.0647 15.391 20.1552C14.6776 20.2485 13.7376 20.25 12.3868 20.25H11.6134C10.2626 20.25 9.32255 20.2485 8.60915 20.1552C7.91715 20.0647 7.54299 19.8988 7.26957 19.6431C6.99616 19.3873 6.80583 19.025 6.66948 18.3405C6.52891 17.6349 6.46488 16.6971 6.37503 15.3492L5.91508 8.45011Z\" fill=\"currentColor\"/><path d=\"M9.42546 10.2537C9.83762 10.2125 10.2051 10.5132 10.2464 10.9254L10.7464 15.9254C10.7876 16.3375 10.4869 16.7051 10.0747 16.7463C9.66256 16.7875 9.29502 16.4868 9.25381 16.0746L8.75381 11.0746C8.71259 10.6625 9.0133 10.2949 9.42546 10.2537Z\" fill=\"currentColor\"/><path d=\"M15.2464 11.0746C15.2876 10.6625 14.9869 10.2949 14.5747 10.2537C14.1626 10.2125 13.795 10.5132 13.7538 10.9254L13.2538 15.9254C13.2126 16.3375 13.5133 16.7051 13.9255 16.7463C14.3376 16.7875 14.7051 16.4868 14.7464 16.0746L15.2464 11.0746Z\" fill=\"currentColor\"/>"
+  edit: "<path d=\"M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7\" /> <path d=\"M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z\" />",
+  export: "<path d=\"M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z\" /> <path d=\"M14 2v5a1 1 0 0 0 1 1h5\" /> <path d=\"M12 18v-6\" /> <path d=\"m9 15 3 3 3-3\" />",
+  delete: "<path d=\"M10 11v6\" /> <path d=\"M14 11v6\" /> <path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6\" /> <path d=\"M3 6h18\" /> <path d=\"M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\" />"
 };
 function renderActionIcon(action) {
-  return `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">${incomeActionIcons[action]}</svg>`;
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${incomeActionIcons[action]}</svg>`;
 }
-const incomeEditorToggle = document.getElementById('income-editor-toggle');
 function setIncomeEditorOpen(open) {
   document.getElementById('tool-workspace').classList.toggle('is-editor-collapsed', !open);
   incomeEditorToggle.setAttribute('aria-expanded', String(open));
@@ -551,8 +563,8 @@ function editRecord(id) {
   document.getElementById('f_tax_rate').value = r.taxRate != null ? r.taxRate : 5;
   document.getElementById('f_notice_no').value = r.noticeNo || '';
   document.getElementById('f_invoice_no').value = r.invoiceNo || '';
-  document.getElementById('f_date').value = r.date;
-  document.getElementById('f_due_date').value = r.dueDate || '';
+  document.getElementById('f_date').value = displayIncomeDate(r.date);
+  document.getElementById('f_due_date').value = displayIncomeDate(r.dueDate);
   document.getElementById('f_payment_terms').value = r.paymentTerms || 'Net 30';
   document.getElementById('f_payment_status').value = r.paymentStatus;
   document.getElementById('f_invoice_status').value = r.invoiceStatus;
@@ -685,6 +697,10 @@ async function deleteRecord(id) {
 }
 
 async function saveRecord() {
+  if (!validIncomeDates()) {
+    setStatus('請輸入有效日期，格式為 YYYY/MM/DD');
+    return;
+  }
   const id = v('f_id');
   const payload = {
     project: v('f_project').trim(),
@@ -780,8 +796,8 @@ function importInvoiceJson(json) {
   document.getElementById('f_amount').value = total || '';
   document.getElementById('f_notice_no').value = f.f_inv_no || '';
   document.getElementById('f_invoice_no').value = f.f_inv_number || '';
-  document.getElementById('f_date').value = f.f_issue_date || '';
-  document.getElementById('f_due_date').value = f.f_due_date || '';
+  document.getElementById('f_date').value = displayIncomeDate(f.f_issue_date);
+  document.getElementById('f_due_date').value = displayIncomeDate(f.f_due_date);
   document.getElementById('f_payment_terms').value = f.f_payment_terms || 'Net 30';
   updateTotalWithTax();
 }
