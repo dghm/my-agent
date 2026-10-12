@@ -98,14 +98,15 @@
   .card .label { font-size: 12px; color: var(--surface-text-muted); margin-bottom: 6px; }
   .card .value { font-size: 20px; font-weight: 700; color: var(--surface-text); }
   .card.unpaid .value { color: var(--orange); }
-  .card .value { text-align: left; font-variant-numeric: tabular-nums; }
+  .card .value { text-align: right; font-variant-numeric: tabular-nums; }
 
   .table-wrap { width: 100%; overflow-x: auto; border-radius: 10px; box-shadow: var(--shadow-sm); }
   table { width: 100%; min-width: 860px; border-collapse: collapse; font-size: 13px; background: var(--surface-panel-bg); overflow: hidden; }
   th { background: var(--navy); color: #fff; padding: 8px 10px; text-align: center; font-size: 12px; }
   td { padding: 8px 10px; border-bottom: 1px solid var(--surface-border); vertical-align: middle; }
   .table-wrap td:nth-child(5) { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .table-wrap td:nth-child(6), .table-wrap td:nth-child(7), .table-wrap td:nth-child(8) { text-align: center; vertical-align: middle; }
+  .table-wrap td:nth-child(6) { white-space: nowrap; }
+  .table-wrap td:nth-child(7), .table-wrap td:nth-child(8), .table-wrap td:nth-child(9) { text-align: center; vertical-align: middle; }
   .table-wrap .row-actions { justify-content: center; align-items: center; }
   .table-wrap th:first-child, .table-wrap td:first-child { white-space: nowrap; }
   tr:last-child td { border-bottom: none; }
@@ -332,13 +333,14 @@
             <th>客戶</th>
             <th>專案代碼／期數</th>
             <th>金額（含稅）</th>
+            <th>發票號碼</th>
             <th>收款</th>
             <th>發票</th>
             <th>操作</th>
           </tr>
         </thead>
         <tbody id="list-tbody">
-          <tr class="empty-row"><td colspan="8">尚無登記紀錄</td></tr>
+          <tr class="empty-row"><td colspan="9">尚無登記紀錄</td></tr>
         </tbody>
       </table>
     </div>
@@ -573,7 +575,7 @@ function renderTable() {
   document.getElementById('sum-unpaid').textContent = fmtNT(total - paid);
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">尚無登記紀錄</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">尚無登記紀錄</td></tr>';
     return;
   }
 
@@ -584,6 +586,7 @@ function renderTable() {
       <td>${esc(r.client)}</td>
       <td>${esc(r.projectCode)}${r.projectCode && r.installment ? '／' : ''}${esc(r.installment)}</td>
       <td>${fmtNT((Number(r.amount) || 0) * (1 + (Number(r.taxRate) || 0) / 100))}</td>
+      <td>${esc(r.invoiceNo || '—')}</td>
       <td>${renderStatusIcon('payment', r.paymentStatus === 'paid')}</td>
       <td>${renderStatusIcon('invoice', r.invoiceStatus === 'issued')}</td>
       <td>
