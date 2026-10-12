@@ -738,14 +738,24 @@ async function saveRecord() {
     });
     const data = await res.json();
     if (!res.ok || !data.ok) throw new Error(data.error || '儲存失敗');
+    if (!data.record || !data.record.id || !data.record.date) throw new Error('儲存回應缺少紀錄，請重新讀取確認');
+    showSavedIncomeRecord(data.record);
     clearForm();
-    await loadRecords();
     setStatus('已儲存');
   } catch (err) {
     setStatus(`儲存失敗：${err.message}`);
   } finally {
     saveBtn.disabled = false;
   }
+}
+
+function showSavedIncomeRecord(record) {
+  records = records.filter(row => row.id !== record.id).concat(record);
+  populateFilterOptions();
+  const [year, month] = record.date.split('-');
+  document.getElementById('filter-year').value = year;
+  document.getElementById('filter-month').value = month;
+  renderTable();
 }
 
 function exportCsv() {
