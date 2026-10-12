@@ -98,11 +98,15 @@
   .card .label { font-size: 12px; color: var(--surface-text-muted); margin-bottom: 6px; }
   .card .value { font-size: 20px; font-weight: 700; color: var(--surface-text); }
   .card.unpaid .value { color: var(--orange); }
+  .card .value { text-align: left; font-variant-numeric: tabular-nums; }
 
   .table-wrap { width: 100%; overflow-x: auto; border-radius: 10px; box-shadow: var(--shadow-sm); }
   table { width: 100%; min-width: 860px; border-collapse: collapse; font-size: 13px; background: var(--surface-panel-bg); overflow: hidden; }
   th { background: var(--navy); color: #fff; padding: 8px 10px; text-align: center; font-size: 12px; }
   td { padding: 8px 10px; border-bottom: 1px solid var(--surface-border); vertical-align: middle; }
+  .table-wrap td:nth-child(5) { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .table-wrap td:nth-child(6), .table-wrap td:nth-child(7), .table-wrap td:nth-child(8) { text-align: center; vertical-align: middle; }
+  .table-wrap .row-actions { justify-content: center; align-items: center; }
   .table-wrap th:first-child, .table-wrap td:first-child { white-space: nowrap; }
   tr:last-child td { border-bottom: none; }
   .status-icon { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; }
@@ -147,7 +151,11 @@
   .income-backdrop { position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, .3); }
   .income-page > .split-handle { display: none; }
   .drawer-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  #income-editor-close { padding: 6px 10px; }
+  .income-page-head { position: relative; padding-top: 38px; }
+  .drawer-icon-button { display: inline-flex; align-items: center; justify-content: center; padding: 5px; width: 30px; height: 30px; border: 0; background: transparent; color: var(--surface-text); box-shadow: none; }
+  .drawer-icon-button:hover { background: transparent; color: var(--orange); }
+  .drawer-icon-button svg { width: 18px; height: 18px; }
+  #income-editor-close { position: absolute; top: 8px; right: 10px; }
   @media (max-width: 760px) {
     .income-editor-column { width: 100%; }
     .income-editor-column .form-panel { overflow-y: auto; }
@@ -163,8 +171,9 @@
       <p class="income-eyebrow">BUSINESS WORKSPACE</p>
       <div class="drawer-heading">
         <h1 id="income-editor-title">新增收入</h1>
-        <button type="button" class="secondary" id="income-editor-close" aria-label="關閉收入表單">關閉</button>
+        <button type="button" class="drawer-icon-button" id="save-btn" aria-label="儲存收入" title="儲存收入"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg></button>
       </div>
+      <button type="button" class="drawer-icon-button" id="income-editor-close" aria-label="關閉收入表單" title="關閉"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
       <p class="hint">匯入請款單 JSON 或手動填寫，確認後儲存到列表。</p>
     </header>
 
@@ -265,7 +274,6 @@
         <button type="button" class="full secondary" id="upload-attachment-btn" disabled>上傳附件</button>
       </fieldset>
 
-      <button type="button" class="full" id="save-btn">儲存登記</button>
       <button type="button" class="full secondary" id="reset-btn">清空表單</button>
     </form>
     </div>
