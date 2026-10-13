@@ -49,6 +49,7 @@
   th { background: var(--navy); color: #fff; font-size: 12px; border-color: var(--navy); }
   td.slot-label { font-size: 11px; color: var(--surface-text-muted); white-space: nowrap; }
   tr.fixed-row td:not(.slot-label) { background: var(--surface-bg); }
+  tr.reading-row td:not(.slot-label) { background: color-mix(in srgb, var(--orange) 8%, var(--surface-panel-bg)); }
   textarea#output {
     width: 100%; min-height: 280px; font-family: ui-monospace, monospace; font-size: 13px;
     padding: 10px; border: 1px solid var(--surface-input-border); border-radius: 6px;
@@ -58,6 +59,11 @@
   .status { font-size: 12px; color: var(--surface-text-muted); margin-top: 6px; }
   .draft-actions { display: flex; align-items: center; gap: 8px; margin: 0 0 16px; flex-wrap: wrap; }
   .draft-actions .draft-status { font-size: 12px; color: var(--surface-text-muted); white-space: nowrap; }
+  .reading-toggle { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 13px; }
+  .reading-toggle input { width: auto; margin: 0; }
+  .reading-settings { display: grid; grid-template-columns: 1fr 112px 112px; gap: 8px; }
+  .reading-settings input { margin-bottom: 0; }
+  .reading-settings.is-disabled { opacity: .5; }
 
   /* ---- 專案標籤管理 ---- */
   .modal-backdrop {
@@ -128,10 +134,21 @@
     </fieldset>
 
     <fieldset>
-      <legend>DGHM 內部工作（固定區間 15:30–17:00，共 7.5h）</legend>
+      <legend id="dghm-legend">DGHM 內部工作（固定區間 15:30–16:00，共 2.5h）</legend>
       <div id="dghm-rows"></div>
       <button type="button" class="secondary small" id="add-dghm-row">+ 新增項目</button>
       <div class="pct-total" id="dghm-pct-total"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>工作日固定閱讀時間</legend>
+      <label class="reading-toggle"><input type="checkbox" id="reading-enabled" checked>週一至週五固定保留閱讀時段</label>
+      <div class="reading-settings" id="reading-settings">
+        <div><label for="reading-title">行事曆標題</label><input type="text" id="reading-title" value="閱讀時間"></div>
+        <div><label for="reading-start">開始</label><input type="time" id="reading-start" min="15:30" max="16:59" step="900" value="16:00"></div>
+        <div><label for="reading-end">結束</label><input type="time" id="reading-end" min="15:45" max="17:00" step="900" value="17:00"></div>
+      </div>
+      <p class="hint" style="margin:8px 0 0;">啟用後，15:30 到閱讀開始前仍分配給 DGHM 內部工作；閱讀時段不參與百分比分配。</p>
     </fieldset>
 
     <button type="button" class="full" id="generate-btn">產生本週排程</button>
@@ -265,11 +282,65 @@ function refreshAllCodeSelects() {
     select.innerHTML = codeOptionsHtml(current);
   });
 }
-const SLOTS = [
+const MAIN_SLOTS = [
   { key: 'A', label: '08:30–11:30', hours: 3, start: '08:30', end: '11:30' },
   { key: 'B', label: '13:00–15:30', hours: 2.5, start: '13:00', end: '15:30' },
-  { key: 'Fixed', label: '15:30–17:00', hours: 1.5, start: '15:30', end: '17:00' },
 ];
+const AFTERNOON_START = '15:30';
+const WORKDAY_END = '17:00';
+
+function timeToMinutes(value) {
+  const [hours, minutes] = String(value || '').split(':').map(Number);
+  return Number.isFinite(hours) && Number.isFinite(minutes) ? hours * 60 + minutes : NaN;
+}
+
+function hoursBetween(start, end) {
+  return (timeToMinutes(end) - timeToMinutes(start)) / 60;
+}
+
+function readingConfig() {
+  return {
+    enabled: document.getElementById('reading-enabled').checked,
+    title: document.getElementById('reading-title').value.trim() || '閱讀時間',
+    start: document.getElementById('reading-start').value || '16:00',
+    end: document.getElementById('reading-end').value || WORKDAY_END,
+  };
+}
+
+function scheduleSlots(config) {
+  const internalEnd = config.enabled ? config.start : WORKDAY_END;
+  const slots = [...MAIN_SLOTS];
+  if (timeToMinutes(internalEnd) > timeToMinutes(AFTERNOON_START)) {
+    slots.push({
+      key: 'Fixed',
+      label: `${AFTERNOON_START}–${internalEnd}`,
+      hours: hoursBetween(AFTERNOON_START, internalEnd),
+      start: AFTERNOON_START,
+      end: internalEnd,
+    });
+  }
+  if (config.enabled) {
+    slots.push({
+      key: 'Reading',
+      label: `${config.start}–${config.end}`,
+      hours: hoursBetween(config.start, config.end),
+      start: config.start,
+      end: config.end,
+    });
+  }
+  return slots;
+}
+
+function syncReadingSettings() {
+  const config = readingConfig();
+  const settings = document.getElementById('reading-settings');
+  settings.classList.toggle('is-disabled', !config.enabled);
+  settings.querySelectorAll('input').forEach((input) => { input.disabled = !config.enabled; });
+  const internalEnd = config.enabled ? config.start : WORKDAY_END;
+  const internalHours = Math.max(0, hoursBetween(AFTERNOON_START, internalEnd) * DAYS.length);
+  document.getElementById('dghm-legend').textContent =
+    `DGHM 內部工作（固定區間 ${AFTERNOON_START}–${internalEnd}，共 ${internalHours.toFixed(1)}h）`;
+}
 
 // 上次「產生本週排程」的結果，供「寫入 Google Calendar」按鈕使用
 let lastGenerated = null;
@@ -365,8 +436,9 @@ function collectDraft() {
   const projects = window.DGHMProjects ? window.DGHMProjects.list() : [];
   return {
     kind: 'dghm-schedule-draft',
-    version: 3,
+    version: 4,
     weekStart: document.getElementById('week-start').value || '',
+    reading: readingConfig(),
     clients: [...document.getElementById('client-rows').children].map((row) => ({
       code: row.querySelector('.code').value === '__new__' ? '' : row.querySelector('.code').value.trim(),
       desc: row.querySelector('.desc').value.trim(),
@@ -443,6 +515,13 @@ function applyDraft(draft) {
   refreshAllCodeSelects();
 
   if (draft.weekStart) document.getElementById('week-start').value = String(draft.weekStart).slice(0, 10);
+
+  const reading = draft.reading && typeof draft.reading === 'object' ? draft.reading : {};
+  document.getElementById('reading-enabled').checked = reading.enabled !== false;
+  document.getElementById('reading-title').value = reading.title || '閱讀時間';
+  document.getElementById('reading-start').value = reading.start || '16:00';
+  document.getElementById('reading-end').value = reading.end || WORKDAY_END;
+  syncReadingSettings();
 
   const clientHost = document.getElementById('client-rows');
   clientHost.innerHTML = '';
@@ -683,6 +762,13 @@ function localDateStr(d) {
 })();
 
 document.getElementById('week-start').addEventListener('change', persistSessionDraft);
+['reading-enabled', 'reading-title', 'reading-start', 'reading-end'].forEach((id) => {
+  const el = document.getElementById(id);
+  el.addEventListener(id === 'reading-enabled' ? 'change' : 'input', () => {
+    syncReadingSettings();
+    persistSessionDraft();
+  });
+});
 
 // 優先還原本機暫存；沒有則載入預設範例列
 (function restoreOrSeed() {
@@ -755,6 +841,23 @@ document.getElementById('generate-btn').addEventListener('click', () => {
     return;
   }
 
+  const reading = readingConfig();
+  if (reading.enabled) {
+    const startMinutes = timeToMinutes(reading.start);
+    const endMinutes = timeToMinutes(reading.end);
+    if (
+      !Number.isFinite(startMinutes) || !Number.isFinite(endMinutes) ||
+      startMinutes < timeToMinutes(AFTERNOON_START) ||
+      endMinutes > timeToMinutes(WORKDAY_END) ||
+      startMinutes >= endMinutes
+    ) {
+      document.getElementById('status').textContent = '閱讀時間需介於 15:30–17:00，且結束時間必須晚於開始時間';
+      return;
+    }
+  }
+  const slots = scheduleSlots(reading);
+  const internalSlot = slots.find((slot) => slot.key === 'Fixed');
+
   const clientItems = [...document.getElementById('client-rows').children].map((row) => ({
     code: row.querySelector('.code').value.trim(),
     desc: row.querySelector('.desc').value.trim(),
@@ -767,8 +870,10 @@ document.getElementById('generate-btn').addEventListener('click', () => {
     pct: Number(row.querySelector('.pct').value) || 0,
   })).filter((it) => it.desc && it.pct > 0);
 
-  if (!clientItems.length || !dghmItems.length) {
-    document.getElementById('status').textContent = '請至少各填一筆客戶專案與 DGHM 內部工作';
+  if (!clientItems.length || (internalSlot && !dghmItems.length)) {
+    document.getElementById('status').textContent = internalSlot
+      ? '請至少各填一筆客戶專案與 DGHM 內部工作'
+      : '請至少填一筆客戶專案';
     return;
   }
 
@@ -794,11 +899,15 @@ document.getElementById('generate-btn').addEventListener('click', () => {
     mainAssignment.push({ day: '週五', type: 'B', label: `${adminItem.isFocus ? '⭐' : ''}【${adminItem.code}】${adminItem.desc}`, code: adminItem.code, kind: 'client' });
   }
 
-  const fixedSlotList = DAYS.map((day) => ({ day, type: 'Fixed' }));
+  const fixedSlotList = internalSlot ? DAYS.map((day) => ({ day, type: 'Fixed' })) : [];
   const dghmLabeled = dghmItems.map((it) => ({ ...it, label: `【DGHM】${it.desc}`, kind: 'internal' }));
-  const fixedAssignment = assignSlots(dghmLabeled, fixedSlotList);
+  const fixedAssignment = fixedSlotList.length ? assignSlots(dghmLabeled, fixedSlotList) : [];
 
-  const all = [...mainAssignment, ...fixedAssignment];
+  const readingAssignment = reading.enabled
+    ? DAYS.map((day) => ({ day, type: 'Reading', label: reading.title, kind: 'reading' }))
+    : [];
+
+  const all = [...mainAssignment, ...fixedAssignment, ...readingAssignment];
   const grid = {};
   DAYS.forEach((day) => { grid[day] = {}; });
   all.forEach((a) => { grid[a.day][a.type] = { label: a.label, code: a.code, kind: a.kind }; });
@@ -806,14 +915,17 @@ document.getElementById('generate-btn').addEventListener('click', () => {
   // 預覽表格
   const tbody = document.querySelector('#preview-table tbody');
   tbody.innerHTML = '';
-  SLOTS.forEach((slot) => {
+  slots.forEach((slot) => {
     const tr = document.createElement('tr');
     if (slot.key === 'Fixed') tr.className = 'fixed-row';
+    if (slot.key === 'Reading') tr.className = 'reading-row';
     let html = `<td class="slot-label">${slot.label}</td>`;
     DAYS.forEach((day) => {
       const cell = grid[day][slot.key];
       if (!cell || cell.label == null) { html += '<td></td>'; return; }
-      const dotColor = cell.kind === 'internal' ? 'var(--series-internal)' : colorForCode(cell.code);
+      const dotColor = cell.kind === 'internal'
+        ? 'var(--series-internal)'
+        : cell.kind === 'reading' ? 'var(--orange)' : colorForCode(cell.code);
       html += `<td><span class="code-dot" style="background:${dotColor}"></span>${cell.label}</td>`;
     });
     tr.innerHTML = html;
@@ -828,7 +940,7 @@ document.getElementById('generate-btn').addEventListener('click', () => {
   DAYS.forEach((day, idx) => {
     const date = formatDate(weekStart, idx);
     lines.push(`${day} ${date}`);
-    SLOTS.forEach((slot) => {
+    slots.forEach((slot) => {
       const cell = grid[day][slot.key];
       if (cell && cell.label != null) {
         lines.push(`${slot.label}  ${cell.label}`);
@@ -847,7 +959,8 @@ document.getElementById('generate-btn').addEventListener('click', () => {
 
   // 本週摘要卡 + 時間分配長條
   const CLIENT_CAPACITY = 27.5;
-  const INTERNAL_CAPACITY = 7.5;
+  const INTERNAL_CAPACITY = internalSlot ? internalSlot.hours * DAYS.length : 0;
+  const READING_CAPACITY = reading.enabled ? hoursBetween(reading.start, reading.end) * DAYS.length : 0;
   const segments = clientItems.map((it) => ({
     label: `${it.isFocus ? '⭐' : ''}【${it.code}】${it.desc}`,
     hours: (it.pct / 100) * CLIENT_CAPACITY,
@@ -856,10 +969,15 @@ document.getElementById('generate-btn').addEventListener('click', () => {
   }));
   const internalPctSum = dghmItems.reduce((sum, it) => sum + it.pct, 0);
   const internalHours = (internalPctSum / 100) * INTERNAL_CAPACITY;
-  segments.push({ label: 'DGHM 內部工作', hours: internalHours, color: 'var(--series-internal)' });
+  if (internalHours > 0) {
+    segments.push({ label: 'DGHM 內部工作', hours: internalHours, color: 'var(--series-internal)' });
+  }
+  if (READING_CAPACITY > 0) {
+    segments.push({ label: reading.title, hours: READING_CAPACITY, color: 'var(--orange)' });
+  }
 
-  const clientHours = segments.slice(0, -1).reduce((sum, s) => sum + s.hours, 0);
-  const totalHours = clientHours + internalHours;
+  const clientHours = clientItems.reduce((sum, it) => sum + (it.pct / 100) * CLIENT_CAPACITY, 0);
+  const totalHours = clientHours + internalHours + READING_CAPACITY;
   const topSegment = segments.reduce((max, s) => (s.hours > max.hours ? s : max), segments[0]);
   const focusSegment = segments.find((s) => s.isFocus) || null;
 
@@ -867,6 +985,7 @@ document.getElementById('generate-btn').addEventListener('click', () => {
     <div class="card"><div class="label">本週總工時</div><div class="value">${totalHours.toFixed(1)}h</div></div>
     <div class="card"><div class="label">客戶專案</div><div class="value">${clientHours.toFixed(1)}h</div></div>
     <div class="card"><div class="label">DGHM 內部</div><div class="value">${internalHours.toFixed(1)}h</div></div>
+    <div class="card"><div class="label">固定閱讀</div><div class="value">${READING_CAPACITY.toFixed(1)}h</div></div>
     <div class="card"><div class="label">本週最大占比</div><div class="value" style="font-size:14px;">${topSegment.label}（${topSegment.hours.toFixed(1)}h）</div></div>
     <div class="card"><div class="label">⭐ 本週重點</div><div class="value" style="font-size:14px;">${focusSegment ? focusSegment.label : '尚未標記'}</div></div>
   `;
