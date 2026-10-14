@@ -90,6 +90,12 @@
   }
   .summary-bar label { font-size: 12px; color: var(--surface-text-muted); margin: 0 0 4px; }
   .summary-bar select, .summary-bar input { width: 140px; }
+  .month-control { display: flex; align-items: center; gap: 6px; }
+  .month-control select { width: 150px; }
+  .month-step { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 5px; border: 1px solid var(--surface-input-border); background: var(--surface-panel-bg); color: var(--navy-text); }
+  .month-step:hover { border-color: var(--orange); color: var(--orange); }
+  .month-step svg { width: 16px; height: 16px; }
+  .vat-note { margin: -10px 0 20px; color: var(--surface-text-muted); font-size: 12px; line-height: 1.55; }
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
   .card {
     background: var(--surface-panel-bg); border: 1px solid var(--surface-border);
@@ -245,11 +251,11 @@
         <div class="row2">
           <div>
             <label>開立日期</label>
-            <input type="text" id="f_date" placeholder="YYYY/MM/DD" inputmode="numeric" maxlength="10" aria-label="開立日期 YYYY/MM/DD">
+            <input type="date" id="f_date" aria-label="開立日期，可手動輸入或使用日期選擇器">
           </div>
           <div>
             <label>付款期限</label>
-            <input type="text" id="f_due_date" placeholder="YYYY/MM/DD" inputmode="numeric" maxlength="10" aria-label="付款期限 YYYY/MM/DD">
+            <input type="date" id="f_due_date" aria-label="付款期限，可手動輸入或使用日期選擇器">
           </div>
         </div>
         <label>付款條件</label>
@@ -278,7 +284,7 @@
         <div class="row2">
           <div>
             <label>實際收款日</label>
-            <input type="text" id="f_received_date" placeholder="YYYY/MM/DD" inputmode="numeric" maxlength="10" aria-label="實際收款日 YYYY/MM/DD">
+            <input type="date" id="f_received_date" aria-label="實際收款日，可手動輸入或使用日期選擇器">
           </div>
           <div>
             <label>實收金額（含稅）</label>
@@ -327,13 +333,17 @@
         <select id="filter-year"><option value="">全部</option></select>
       </div>
       <div>
-        <label>月份</label>
-        <select id="filter-month">
-          <option value="">全部</option>
-        </select>
+        <label>月份／營業稅期別</label>
+        <div class="month-control">
+          <button type="button" class="month-step" id="month-prev" aria-label="上一個月份" title="上一個月份"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+          <select id="filter-month"><option value="">全部</option></select>
+          <button type="button" class="month-step" id="month-next" aria-label="下一個月份" title="下一個月份"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+        </div>
       </div>
+      <button type="button" class="secondary" id="current-vat-period">本期營業稅</button>
       <button type="button" class="secondary" id="export-btn">匯出 CSV（報稅用）</button>
     </div>
+    <p class="vat-note" id="vat-period-note">營業稅卡顯示已開立發票的銷項稅額；實際應繳金額仍需扣除可扣抵的進項稅額。</p>
 
     <div class="cards">
       <div class="card">
@@ -499,6 +509,9 @@ function v(id) {
 function displayIncomeDate(value) {
   return String(value || '').replace(/-/g, '/');
 }
+function normalizeIncomeDate(value) {
+  return String(value || '').trim().replace(/\//g, '-');
+}
 function validIncomeDates() {
   return ['f_date', 'f_due_date', 'f_received_date'].every(id => {
     const date = v(id);
@@ -554,19 +567,33 @@ async function loadRecords() {
 
 function populateFilterOptions() {
   const dateField = selectedDateField();
-  const years = Array.from(new Set(records.map((r) => (r[dateField] || '').split('-')[0]).filter(Boolean))).sort().reverse();
   const yearSelect = document.getElementById('filter-year');
   const currentYear = yearSelect.value;
+  const thisYear = String(new Date().getFullYear());
+  const years = Array.from(new Set([
+    ...records.map((r) => (r[dateField] || '').split('-')[0]).filter(Boolean),
+    thisYear,
+    String(Number(thisYear) - 1),
+    String(Number(thisYear) + 1),
+    currentYear,
+  ].filter(Boolean))).sort().reverse();
   yearSelect.innerHTML = '<option value="">全部</option>' + years.map((y) => `<option value="${y}">${y}</option>`).join('');
   yearSelect.value = years.includes(currentYear) ? currentYear : '';
 
   const monthSelect = document.getElementById('filter-month');
   if (!monthSelect.dataset.init) {
-    let opts = '<option value="">全部</option>';
+    let opts = '<option value="">全部月份</option><optgroup label="單月">';
     for (let m = 1; m <= 12; m++) {
       const mm = String(m).padStart(2, '0');
       opts += `<option value="${mm}">${m} 月</option>`;
     }
+    opts += '</optgroup><optgroup label="雙月營業稅期">';
+    for (let m = 1; m <= 11; m += 2) {
+      const start = String(m).padStart(2, '0');
+      const end = String(m + 1).padStart(2, '0');
+      opts += `<option value="${start}-${end}">${m}–${m + 1} 月</option>`;
+    }
+    opts += '</optgroup>';
     monthSelect.innerHTML = opts;
     monthSelect.dataset.init = '1';
   }
@@ -580,9 +607,55 @@ function getFilteredRecords() {
     if (!r[dateField]) return false;
     const [y, m] = r[dateField].split('-');
     if (year && y !== year) return false;
-    if (month && m !== month) return false;
+    if (month && !month.split('-').includes(m)) return false;
     return true;
   });
+}
+
+function ensureFilterYear(year) {
+  const yearSelect = document.getElementById('filter-year');
+  const value = String(year);
+  if (!Array.from(yearSelect.options).some((option) => option.value === value)) {
+    yearSelect.add(new Option(value, value));
+  }
+  yearSelect.value = value;
+}
+
+function setMonthFilter(year, monthValue) {
+  ensureFilterYear(year);
+  document.getElementById('filter-month').value = monthValue;
+  renderTable();
+}
+
+function shiftFilterMonth(direction) {
+  const yearValue = Number(v('filter-year')) || new Date().getFullYear();
+  const monthValue = v('filter-month');
+  const isVatPeriod = /^\d{2}-\d{2}$/.test(monthValue);
+  const baseMonth = monthValue ? Number(monthValue.slice(0, 2)) : new Date().getMonth() + 1;
+  const step = isVatPeriod ? 2 : 1;
+  const target = new Date(yearValue, baseMonth - 1 + direction * step, 1);
+  const targetMonth = target.getMonth() + 1;
+  const nextValue = isVatPeriod
+    ? `${String(targetMonth).padStart(2, '0')}-${String(targetMonth + 1).padStart(2, '0')}`
+    : String(targetMonth).padStart(2, '0');
+  setMonthFilter(target.getFullYear(), nextValue);
+}
+
+function showCurrentVatPeriod() {
+  const now = new Date();
+  let periodEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+  if ((periodEnd.getMonth() + 1) % 2 === 1) {
+    periodEnd = new Date(periodEnd.getFullYear(), periodEnd.getMonth() - 1, 1);
+  }
+  const endMonth = periodEnd.getMonth() + 1;
+  const startMonth = endMonth - 1;
+  document.getElementById('filter-date-basis').value = 'invoice';
+  populateFilterOptions();
+  setMonthFilter(
+    periodEnd.getFullYear(),
+    `${String(startMonth).padStart(2, '0')}-${String(endMonth).padStart(2, '0')}`
+  );
+  setStatus(`已切換至 ${periodEnd.getFullYear()} 年 ${startMonth}–${endMonth} 月營業稅期`);
 }
 
 function selectedDateField() {
@@ -694,7 +767,7 @@ function syncPaymentFields(applyDefaults = true) {
     dateInput.value = '';
     amountInput.value = '';
   } else if (applyDefaults && status === 'paid') {
-    if (!dateInput.value) dateInput.value = displayIncomeDate(todayLocal());
+    if (!dateInput.value) dateInput.value = todayLocal();
     if (!amountInput.value) amountInput.value = Math.round((Number(v('f_amount')) || 0) * (1 + (Number(v('f_tax_rate')) || 0) / 100)) || '';
   }
   syncSaveButtonState();
@@ -729,6 +802,14 @@ function renderTable() {
   document.getElementById('sum-unpaid').textContent = fmtNT(outstanding);
   document.getElementById('sum-overdue').textContent = fmtNT(overdue);
   document.getElementById('sum-sales-tax').textContent = fmtNT(salesTax);
+  const monthFilter = v('filter-month');
+  const isVatPeriod = /^\d{2}-\d{2}$/.test(monthFilter) && v('filter-date-basis') === 'invoice';
+  document.querySelector('.card.tax .label').textContent = isVatPeriod
+    ? `預估營業稅（${Number(monthFilter.slice(0, 2))}–${Number(monthFilter.slice(3))} 月）`
+    : '預估營業稅（已開票）';
+  document.getElementById('vat-period-note').textContent = isVatPeriod
+    ? `${v('filter-year') ? `${v('filter-year')} 年` : '所選年度'} ${Number(monthFilter.slice(0, 2))}–${Number(monthFilter.slice(3))} 月已開立發票的銷項稅額為 ${fmtNT(salesTax)}；實際應繳仍需扣除可扣抵的進項稅額。`
+    : '營業稅卡顯示目前篩選資料中已開立發票的銷項稅額；實際應繳金額仍需扣除可扣抵的進項稅額。';
 
   if (filtered.length === 0) {
     tbody.innerHTML = '<tr class="empty-row"><td colspan="12">目前日期口徑與篩選範圍內沒有紀錄</td></tr>';
@@ -771,9 +852,9 @@ function editRecord(id) {
   document.getElementById('f_tax_rate').value = r.taxRate != null ? r.taxRate : 5;
   document.getElementById('f_notice_no').value = r.noticeNo || '';
   document.getElementById('f_invoice_no').value = r.invoiceNo || '';
-  document.getElementById('f_date').value = displayIncomeDate(r.date);
-  document.getElementById('f_due_date').value = displayIncomeDate(r.dueDate);
-  document.getElementById('f_received_date').value = displayIncomeDate(r.receivedDate);
+  document.getElementById('f_date').value = normalizeIncomeDate(r.date);
+  document.getElementById('f_due_date').value = normalizeIncomeDate(r.dueDate);
+  document.getElementById('f_received_date').value = normalizeIncomeDate(r.receivedDate);
   document.getElementById('f_received_amount').value = receivedAmount(r) || '';
   document.getElementById('f_payment_terms').value = r.paymentTerms || 'Net 30';
   document.getElementById('f_payment_status').value = ['partial', 'paid'].includes(r.paymentStatus) ? r.paymentStatus : 'unpaid';
@@ -1031,8 +1112,8 @@ function importInvoiceJson(json) {
   document.getElementById('f_amount').value = total || '';
   document.getElementById('f_notice_no').value = f.f_inv_no || '';
   document.getElementById('f_invoice_no').value = f.f_inv_number || '';
-  document.getElementById('f_date').value = displayIncomeDate(f.f_issue_date);
-  document.getElementById('f_due_date').value = displayIncomeDate(f.f_due_date);
+  document.getElementById('f_date').value = normalizeIncomeDate(f.f_issue_date);
+  document.getElementById('f_due_date').value = normalizeIncomeDate(f.f_due_date);
   document.getElementById('f_payment_terms').value = f.f_payment_terms || 'Net 30';
   updateTotalWithTax();
   syncPaymentFields(false);
@@ -1102,6 +1183,9 @@ document.getElementById('reset-btn').addEventListener('click', () => { clearForm
 document.getElementById('export-btn').addEventListener('click', exportCsv);
 document.getElementById('filter-year').addEventListener('change', renderTable);
 document.getElementById('filter-month').addEventListener('change', renderTable);
+document.getElementById('month-prev').addEventListener('click', () => shiftFilterMonth(-1));
+document.getElementById('month-next').addEventListener('click', () => shiftFilterMonth(1));
+document.getElementById('current-vat-period').addEventListener('click', showCurrentVatPeriod);
 document.getElementById('filter-date-basis').addEventListener('change', () => {
   populateFilterOptions();
   renderTable();
