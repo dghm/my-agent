@@ -1,15 +1,115 @@
 import { getStore } from '@netlify/blobs';
+import crypto from 'node:crypto';
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
+const SESSION_COOKIE = 'dghm_session';
+const DATE_PATTERN = /^(20\d{2}|2100)-(0[1-9]|1[0-2])-([012]\d|3[01])$/;
+const MAX_AMOUNT = 1000000000;
+
+class InputError extends Error {}
+
+function sessionFromRequest(req) {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) return null;
+
+  const match = (req.headers.get('cookie') || '').match(/(?:^|;\s*)dghm_session=([^;]*)/);
+  if (!match) return null;
+
+  let token;
+  try { token = decodeURIComponent(match[1]); } catch { return null; }
+
+  const [data, signature] = token.split('.');
+  if (!data || !signature) return null;
+
+  const expected = crypto.createHmac('sha256', secret).update(data).digest('base64url');
+  const actualBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expected);
+  if (actualBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(actualBuffer, expectedBuffer)) {
+    return null;
+  }
+
+  try {
+    const session = JSON.parse(Buffer.from(data, 'base64url').toString('utf8'));
+    return session.exp > Date.now() && session.uid ? session : null;
+  } catch {
+    return null;
+  }
+}
+
+export function canAccessIncome(session, allowedEmails = process.env.INCOME_ALLOWED_EMAILS) {
+  const allowed = String(allowedEmails || '')
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+  if (!allowed.length) return true;
+  return allowed.includes(String(session.email || '').trim().toLowerCase());
+}
+
+function validDate(value) {
+  if (!DATE_PATTERN.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+function text(value, field, maxLength, required = false) {
+  const normalized = String(value ?? '').trim();
+  if (required && !normalized) throw new InputError(`請填寫${field}`);
+  if (normalized.length > maxLength) throw new InputError(`${field}不可超過 ${maxLength} 字`);
+  return normalized;
+}
+
+export function normalizeIncomeInput(input) {
+  const project = text(input?.project, '案件名稱', 120, true);
+  const client = text(input?.client, '客戶名稱', 120, true);
+  const amount = Number(input?.amount);
+  const taxRate = input?.taxRate === undefined || input?.taxRate === '' ? 5 : Number(input.taxRate);
+  const date = text(input?.date, '開立日期', 10, true);
+  const dueDate = text(input?.dueDate, '付款期限', 10);
+  const receivedDate = text(input?.receivedDate, '實際收款日', 10);
+  const paymentStatus = ['unpaid', 'partial', 'paid'].includes(input?.paymentStatus) ? input.paymentStatus : 'unpaid';
+  const invoiceTotal = Math.round(amount * (1 + taxRate / 100));
+  let receivedAmount = input?.receivedAmount === undefined || input?.receivedAmount === ''
+    ? (paymentStatus === 'paid' ? invoiceTotal : 0)
+    : Number(input.receivedAmount);
+
+  if (!Number.isFinite(amount) || amount <= 0 || amount > MAX_AMOUNT) throw new InputError('請輸入有效金額');
+  if (!Number.isFinite(taxRate) || taxRate < 0 || taxRate > 100) throw new InputError('營業稅率必須介於 0 到 100');
+  if (!validDate(date)) throw new InputError('開立日期格式錯誤');
+  if (dueDate && !validDate(dueDate)) throw new InputError('付款期限格式錯誤');
+  if (receivedDate && !validDate(receivedDate)) throw new InputError('實際收款日格式錯誤');
+  if (!Number.isFinite(receivedAmount) || receivedAmount < 0 || receivedAmount > MAX_AMOUNT * 2) throw new InputError('請輸入有效實收金額');
+  if (paymentStatus === 'unpaid') receivedAmount = 0;
+  if (paymentStatus !== 'unpaid' && !receivedDate) throw new InputError('部分或全額收款時，請填寫實際收款日');
+  if (paymentStatus === 'partial' && (receivedAmount <= 0 || receivedAmount >= invoiceTotal)) throw new InputError('部分收款金額必須大於 0 且小於含稅總額');
+  if (paymentStatus === 'paid' && receivedAmount < invoiceTotal) throw new InputError('已收款的實收金額不可小於含稅總額');
+
+  return {
+    project,
+    client,
+    projectCode: text(input?.projectCode, '專案代碼', 80),
+    installment: text(input?.installment, '期數說明', 120),
+    amount,
+    taxRate,
+    noticeNo: text(input?.noticeNo, '通知單號', 80),
+    invoiceNo: text(input?.invoiceNo, '發票號碼', 80),
+    date,
+    dueDate,
+    paymentTerms: text(input?.paymentTerms, '付款條件', 120),
+    paymentStatus,
+    receivedDate: paymentStatus === 'unpaid' ? '' : receivedDate,
+    receivedAmount,
+    invoiceStatus: input?.invoiceStatus === 'issued' ? 'issued' : 'not_issued',
+    note: text(input?.note, '備註', 2000),
+    invoiceDraft: invoiceDraft(input?.invoiceDraft),
+  };
+}
 
 function json(status, payload) {
   return new Response(JSON.stringify(payload), {
     status,
-    headers: { 'Content-Type': 'application/json; charset=utf-8', ...CORS_HEADERS },
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store',
+    },
   });
 }
 
@@ -22,6 +122,39 @@ async function writeRecords(store, records) {
   await store.setJSON('records', records);
 }
 
+export function summarizeIncomeRecords(records) {
+  const total = records.reduce((sum, record) => sum + (Number(record.amount) || 0), 0);
+  const paid = records
+    .filter((record) => record.paymentStatus === 'paid')
+    .reduce((sum, record) => sum + (Number(record.amount) || 0), 0);
+  const salesTax = records
+    .filter((record) => record.invoiceStatus === 'issued')
+    .reduce((sum, record) => {
+      const amount = Number(record.amount) || 0;
+      const taxRate = Number(record.taxRate) || 0;
+      return sum + Math.round(amount * taxRate / 100);
+    }, 0);
+  const invoiceTotal = records.reduce((sum, record) => {
+    const amount = Number(record.amount) || 0;
+    const taxRate = Number(record.taxRate) || 0;
+    return sum + Math.round(amount * (1 + taxRate / 100));
+  }, 0);
+  const received = records.reduce((sum, record) => {
+    const fallback = record.paymentStatus === 'paid'
+      ? Math.round((Number(record.amount) || 0) * (1 + (Number(record.taxRate) || 0) / 100))
+      : 0;
+    const value = record.receivedAmount === undefined || record.receivedAmount === '' ? fallback : Number(record.receivedAmount);
+    return sum + (Number.isFinite(value) ? value : 0);
+  }, 0);
+  const outstanding = records.reduce((sum, record) => {
+    const gross = Math.round((Number(record.amount) || 0) * (1 + (Number(record.taxRate) || 0) / 100));
+    const fallback = record.paymentStatus === 'paid' ? gross : 0;
+    const value = record.receivedAmount === undefined || record.receivedAmount === '' ? fallback : Number(record.receivedAmount);
+    return sum + Math.max(0, gross - (Number.isFinite(value) ? value : 0));
+  }, 0);
+  return { count: records.length, total, paid, unpaid: total - paid, salesTax, invoiceTotal, received, outstanding };
+}
+
 function invoiceDraft(value) {
   if (value == null) return null;
   if (typeof value !== 'object' || Array.isArray(value) || !value.fields || typeof value.fields !== 'object' || Array.isArray(value.fields) || !Array.isArray(value.items) || value.items.some(item => !item || typeof item !== 'object') || value.terms && (!Array.isArray(value.terms) || value.terms.some(term => typeof term !== 'string')) || JSON.stringify(value).length > 200000) {
@@ -31,8 +164,12 @@ function invoiceDraft(value) {
 }
 
 export default async (req, context) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  const session = sessionFromRequest(req);
+  if (!session) {
+    return json(401, { ok: false, error: '請先登入工作台', code: 'unauthenticated' });
+  }
+  if (!canAccessIncome(session)) {
+    return json(403, { ok: false, error: '此帳號沒有收入登記權限', code: 'forbidden' });
   }
 
   const store = getStore('income');
@@ -48,58 +185,36 @@ export default async (req, context) => {
       const url = new URL(req.url);
       const year = url.searchParams.get('year');
       const month = url.searchParams.get('month');
+      const basis = ['due', 'received'].includes(url.searchParams.get('basis')) ? url.searchParams.get('basis') : 'invoice';
+      const dateField = basis === 'due' ? 'dueDate' : basis === 'received' ? 'receivedDate' : 'date';
       const records = (await readRecords(store)).filter((r) => {
-        if (!r.date) return false;
-        const [y, m] = r.date.split('-');
+        if (!r[dateField]) return false;
+        const [y, m] = r[dateField].split('-');
         if (year && y !== String(year)) return false;
         if (month && m !== String(month).padStart(2, '0')) return false;
         return true;
       });
-      const total = records.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
-      const paid = records
-        .filter((r) => r.paymentStatus === 'paid')
-        .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+      const summary = summarizeIncomeRecords(records);
       return json(200, {
         ok: true,
         year: year || null,
         month: month || null,
-        count: records.length,
-        total,
-        paid,
-        unpaid: total - paid,
+        basis,
+        ...summary,
         records,
       });
     }
 
     if (req.method === 'POST' && action === 'create') {
       const parsed = await req.json();
-      const project = String(parsed.project || '').trim();
-      const client = String(parsed.client || '').trim();
-      const amount = Number(parsed.amount);
-      const date = String(parsed.date || '').trim();
-
-      if (!project || !client || !date || !Number.isFinite(amount) || amount <= 0) {
-        return json(400, { ok: false, error: '請完整填寫案件名稱、客戶、日期與有效金額' });
-      }
+      const normalized = normalizeIncomeInput(parsed);
 
       const record = {
         id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
-        project,
-        client,
-        projectCode: String(parsed.projectCode || '').trim(),
-        installment: String(parsed.installment || '').trim(),
-        amount,
-        taxRate: Number.isFinite(Number(parsed.taxRate)) ? Number(parsed.taxRate) : 5,
-        noticeNo: String(parsed.noticeNo || '').trim(),
-        invoiceNo: String(parsed.invoiceNo || '').trim(),
-        date,
-        dueDate: String(parsed.dueDate || '').trim(),
-        paymentTerms: String(parsed.paymentTerms || '').trim(),
-        paymentStatus: parsed.paymentStatus === 'paid' ? 'paid' : 'unpaid',
-        invoiceStatus: parsed.invoiceStatus === 'issued' ? 'issued' : 'not_issued',
-        note: String(parsed.note || '').trim(),
-        invoiceDraft: invoiceDraft(parsed.invoiceDraft),
+        ...normalized,
+        createdBy: session.email || session.name || session.uid,
         createdAt: new Date().toISOString(),
+        updatedBy: session.email || session.name || session.uid,
         updatedAt: new Date().toISOString(),
       };
 
@@ -119,29 +234,11 @@ export default async (req, context) => {
       if (index === -1) return json(404, { ok: false, error: '找不到對應的登記紀錄' });
 
       const existing = records[index];
+      const normalized = normalizeIncomeInput({ ...existing, ...parsed });
       const updated = {
         ...existing,
-        project: parsed.project !== undefined ? String(parsed.project).trim() : existing.project,
-        client: parsed.client !== undefined ? String(parsed.client).trim() : existing.client,
-        projectCode: parsed.projectCode !== undefined ? String(parsed.projectCode).trim() : existing.projectCode,
-        installment: parsed.installment !== undefined ? String(parsed.installment).trim() : existing.installment,
-        amount: parsed.amount !== undefined ? Number(parsed.amount) : existing.amount,
-        taxRate: parsed.taxRate !== undefined ? Number(parsed.taxRate) : existing.taxRate,
-        noticeNo: parsed.noticeNo !== undefined ? String(parsed.noticeNo).trim() : existing.noticeNo,
-        invoiceNo: parsed.invoiceNo !== undefined ? String(parsed.invoiceNo).trim() : existing.invoiceNo,
-        date: parsed.date !== undefined ? String(parsed.date).trim() : existing.date,
-        dueDate: parsed.dueDate !== undefined ? String(parsed.dueDate).trim() : existing.dueDate,
-        paymentTerms: parsed.paymentTerms !== undefined ? String(parsed.paymentTerms).trim() : existing.paymentTerms,
-        paymentStatus:
-          parsed.paymentStatus !== undefined
-            ? (parsed.paymentStatus === 'paid' ? 'paid' : 'unpaid')
-            : existing.paymentStatus,
-        invoiceStatus:
-          parsed.invoiceStatus !== undefined
-            ? (parsed.invoiceStatus === 'issued' ? 'issued' : 'not_issued')
-            : existing.invoiceStatus,
-        note: parsed.note !== undefined ? String(parsed.note).trim() : existing.note,
-        invoiceDraft: parsed.invoiceDraft !== undefined ? invoiceDraft(parsed.invoiceDraft) : existing.invoiceDraft,
+        ...normalized,
+        updatedBy: session.email || session.name || session.uid,
         updatedAt: new Date().toISOString(),
       };
 
@@ -185,6 +282,7 @@ export default async (req, context) => {
       const record = records[index];
       record.attachments = Array.isArray(record.attachments) ? record.attachments : [];
       record.attachments.push(attachment);
+      record.updatedBy = session.email || session.name || session.uid;
       record.updatedAt = new Date().toISOString();
       await writeRecords(store, records);
 
@@ -210,8 +308,10 @@ export default async (req, context) => {
         status: 200,
         headers: {
           'Content-Type': mimeType,
-          'Content-Disposition': `inline; filename="${encodeURIComponent(filename)}"`,
-          ...CORS_HEADERS,
+          'Content-Disposition': `inline; filename*=UTF-8''${encodeURIComponent(filename)}`,
+          'Cache-Control': 'private, no-store',
+          'Content-Security-Policy': "sandbox; default-src 'none'; img-src data:; style-src 'unsafe-inline'",
+          'X-Content-Type-Options': 'nosniff',
         },
       });
     }
@@ -228,6 +328,7 @@ export default async (req, context) => {
 
       const record = records[index];
       record.attachments = (record.attachments || []).filter((a) => a.id !== id);
+      record.updatedBy = session.email || session.name || session.uid;
       record.updatedAt = new Date().toISOString();
       await writeRecords(store, records);
 
@@ -249,11 +350,22 @@ export default async (req, context) => {
       }
 
       await writeRecords(store, next);
+
+      try {
+        const attachmentsStore = getStore('income-attachments');
+        const attachments = await attachmentsStore.list({ prefix: `${id}/` });
+        await Promise.all(attachments.blobs.map((blob) => attachmentsStore.delete(blob.key)));
+      } catch (cleanupError) {
+        console.warn(`Income attachment cleanup failed for ${id}`, cleanupError);
+      }
       return json(200, { ok: true });
     }
 
     return json(404, { ok: false, error: 'Not Found' });
   } catch (err) {
+    if (err instanceof InputError || err instanceof SyntaxError) {
+      return json(400, { ok: false, error: err.message || '請求資料格式錯誤' });
+    }
     return json(500, { ok: false, error: err instanceof Error ? err.message : '未知錯誤' });
   }
 };

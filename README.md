@@ -42,8 +42,8 @@
     工具 id 定義於 `tool-registry.js`。
   - 目前已套用的頁面：`index`、`skill-toolbox`、`client-brief`、`design-system`、
     `work-schedule`、`Quote-Generator`、`Contract-Generator`、`Invoice-Generator`、
-    `user-guide-generator`。
-    其餘頁面（`income-tracker`、`meeting-notes`、`clear-todo`、`qr-generator`、
+    `income-tracker`、`user-guide-generator`。
+    其餘頁面（`meeting-notes`、`clear-todo`、`qr-generator`、
     `wechat-h5-card`、`brand-guideline-generator`、
     `social-ui`、`breakdance-section-generator`）尚未掛殼，側欄以橘色小圓點標示。
 
@@ -63,8 +63,12 @@
   - 接案收入登記系統的後端 API，以 Netlify Functions（v2，path-based routing）實作。
   - 路由：`/api/income/list`、`/api/income/summary`、`/api/income/create`、`/api/income/update`、`/api/income/delete`。
   - 資料存放於 Netlify Blobs（key-value 儲存，跟著網站走、不需要額外資料庫），**不會進入 git 版控**。
+  - 所有收入與附件 API 都需要工作台登入；新建與修改紀錄會留下登入帳號與時間。
+  - 部署環境必須設定 `SESSION_SECRET`，且與工作台登入 API 使用同一個值；未設定時收入 API 會拒絕存取。
+  - 單人使用時，可在 Netlify 設定 `INCOME_ALLOWED_EMAILS=你的登入信箱`，只允許該帳號存取；若要允許多個帳號，以逗號分隔。未設定時，任何已登入工作台的會員都可存取同一份收入帳本。
   - 本機測試：執行 `npx netlify dev`，會在 `http://localhost:8888` 同時跑靜態頁面與這支 Function。
   - 正式環境：推到 GitHub 後 Netlify 會自動部署 Function，跟靜態網站同網域、同 origin。
+  - 跨電腦使用必須從同一個正式部署網址進入並登入；直接用 `file://` 開啟 HTML 無法呼叫雲端 API。
 
 - `client-brief.html`
   - 客戶網站需求訪談表單工具（可在 Dashboard 內使用）。
@@ -72,10 +76,13 @@
 
 - `income-tracker.html`
   - 接案收入登記系統前端。
-  - 登記案件名稱、客戶、專案代碼、期數、金額（未稅／含稅）、通知單號、發票號碼、付款條件與期限、收款／發票狀態，依年／月篩選彙整，支援匯出 CSV（報稅用）。
+  - 登記案件名稱、客戶、專案代碼、期數、金額（未稅／含稅）、通知單號、發票號碼、付款條件與期限、實際收款日、實收金額、收款／發票狀態，依年／月篩選彙整，支援匯出 CSV（報稅用）。
+  - 「應收與收款總覽」可切換開立日期、預計收款日與實際收款日三種日期口徑；待收、部分收款與已收款可手動登記，已逾期則依付款期限自動判斷。
+  - 收入總覽會依目前篩選範圍顯示已開立發票的預估營業稅（未稅金額 × 各筆稅率，逐筆四捨五入）；此為銷項稅額，尚未扣除進項稅額。
   - 「產生請款單」按鈕會帶資料開啟 `Invoice-Generator.html`（透過 URL 參數預填）。
   - 「匯入請款單 JSON」按鈕可讀取 `Invoice-Generator.html` 匯出的請款單 JSON，自動帶入案件、客戶、專案代碼、期數說明、金額（項目加總）、通知單號、發票號碼、開立日期、付款期限、付款條件，確認金額與狀態後按「儲存登記」即完成登記。
   - 資料透過 `netlify/functions/income.js` 的 `/api/income/*` 讀寫，存於 Netlify Blobs。
+  - 未登入或登入帳號不在收入工具允許名單時，頁面會顯示登入／權限提示，不會載入歷史資料。
   - 儲存登記後可在「附件」區上傳請款單／發票掃描檔（單檔上限 10MB），附件附加於該筆收入登記紀錄，可點擊檢視或刪除，存於獨立的 Netlify Blobs store（`income-attachments`）。
 
 - 預覽即時更新，不重載、不跳動

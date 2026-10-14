@@ -98,15 +98,16 @@
   .card .label { font-size: 12px; color: var(--surface-text-muted); margin-bottom: 6px; }
   .card .value { font-size: 20px; font-weight: 700; color: var(--surface-text); }
   .card.unpaid .value { color: var(--orange); }
+  .card.overdue .value { color: #b42318; }
   .card .value { text-align: right; font-variant-numeric: tabular-nums; }
 
   .table-wrap { width: 100%; overflow-x: auto; border-radius: 10px; box-shadow: var(--shadow-sm); }
-  table { width: 100%; min-width: 860px; border-collapse: collapse; font-size: 13px; background: var(--surface-panel-bg); overflow: hidden; }
+  table { width: 100%; min-width: 1380px; border-collapse: collapse; font-size: 13px; background: var(--surface-panel-bg); overflow: hidden; }
   th { background: var(--navy); color: #fff; padding: 8px 10px; text-align: center; font-size: 12px; }
   td { padding: 8px 10px; border-bottom: 1px solid var(--surface-border); vertical-align: middle; }
-  .table-wrap td:nth-child(5) { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .table-wrap td:nth-child(6) { white-space: nowrap; }
-  .table-wrap td:nth-child(7), .table-wrap td:nth-child(8), .table-wrap td:nth-child(9) { text-align: center; vertical-align: middle; }
+  .table-wrap td:nth-child(7), .table-wrap td:nth-child(9) { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .table-wrap td:nth-child(8) { white-space: nowrap; }
+  .table-wrap td:nth-child(10), .table-wrap td:nth-child(11), .table-wrap td:nth-child(12) { text-align: center; vertical-align: middle; }
   .table-wrap .row-actions { justify-content: center; align-items: center; }
   .table-wrap th:first-child, .table-wrap td:first-child { white-space: nowrap; }
   tr:last-child td { border-bottom: none; }
@@ -114,6 +115,10 @@
   .status-icon svg { width: 18px; height: 18px; color: #E8ECF5; opacity: .4; }
   .status-icon.is-active svg { color: #E5622A; opacity: 1; }
   .status-icon:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; }
+  .payment-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 58px; padding: 3px 7px; border: 1px solid var(--surface-border); border-radius: 999px; color: var(--surface-text-muted); font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .payment-badge.is-partial { border-color: #d6a756; background: #fff8e8; color: #875b00; }
+  .payment-badge.is-paid { border-color: #65a881; background: #edf9f1; color: #247044; }
+  .payment-badge.is-overdue { border-color: #d9827c; background: #fff0ef; color: #b42318; }
   .row-actions { display: flex; gap: 6px; }
   .row-actions button { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 3px; border: 0; border-radius: 0; background: transparent; box-shadow: none; color: var(--surface-text); }
   .row-actions svg { width: 18px; height: 18px; }
@@ -156,6 +161,11 @@
   .drawer-icon-button { display: inline-flex; align-items: center; justify-content: center; padding: 5px; width: 30px; height: 30px; border: 0; background: transparent; color: var(--surface-text); box-shadow: none; }
   .drawer-icon-button:hover { background: transparent; color: var(--orange); }
   .drawer-icon-button svg { width: 18px; height: 18px; }
+  #save-btn { border: 1px solid var(--navy); background: #fff; color: var(--navy); }
+  #save-btn:hover { border-color: var(--orange); background: #fff; color: var(--orange); }
+  #save-btn.is-dirty { border-color: var(--orange); background: var(--orange); color: #fff; }
+  #save-btn.is-dirty:hover { filter: brightness(.94); color: #fff; }
+  #save-btn:disabled { cursor: wait; opacity: .6; }
   #income-editor-close { position: absolute; top: 8px; right: 10px; }
   @media (max-width: 760px) {
     .income-editor-column { width: 100%; }
@@ -252,7 +262,8 @@
           <div>
             <label>收款狀態</label>
             <select id="f_payment_status">
-              <option value="unpaid">未收款</option>
+              <option value="unpaid">待收款</option>
+              <option value="partial">部分收款</option>
               <option value="paid">已收款</option>
             </select>
           </div>
@@ -264,6 +275,17 @@
             </select>
           </div>
         </div>
+        <div class="row2">
+          <div>
+            <label>實際收款日</label>
+            <input type="text" id="f_received_date" placeholder="YYYY/MM/DD" inputmode="numeric" maxlength="10" aria-label="實際收款日 YYYY/MM/DD">
+          </div>
+          <div>
+            <label>實收金額（含稅）</label>
+            <input type="number" id="f_received_amount" placeholder="44100" min="0" step="1">
+          </div>
+        </div>
+        <p class="hint">「已逾期」會依付款期限自動判斷，不需要手動選擇。</p>
         <label>備註</label>
         <textarea id="f_note" placeholder="付款方式、合約期間等備註"></textarea>
       </fieldset>
@@ -285,13 +307,21 @@
   <section class="main-panel" aria-label="收入紀錄與摘要">
     <header class="records-head">
       <div class="records-title-row">
-        <h2>收入總覽</h2>
+        <h2>應收與收款總覽</h2>
         <button type="button" id="income-editor-toggle" aria-controls="income-editor" aria-expanded="false">新增收入</button>
       </div>
-      <p class="hint">依年度與月份篩選，查看收款進度或匯出報稅用 CSV。</p>
+      <p class="hint">分別依開票、預計收款或實際收款月份查看應收與現金流。</p>
       <div class="status" id="status" role="status" aria-live="polite">狀態：待命中</div>
     </header>
     <div class="summary-bar">
+      <div>
+        <label>日期口徑</label>
+        <select id="filter-date-basis">
+          <option value="invoice">開立日期</option>
+          <option value="due">預計收款日</option>
+          <option value="received">實際收款日</option>
+        </select>
+      </div>
       <div>
         <label>年度</label>
         <select id="filter-year"><option value="">全部</option></select>
@@ -311,16 +341,24 @@
         <div class="value" id="sum-count">0</div>
       </div>
       <div class="card">
-        <div class="label">總收入</div>
+        <div class="label">開票金額（含稅）</div>
         <div class="value" id="sum-total">NT$ 0</div>
       </div>
       <div class="card">
-        <div class="label">已收款</div>
+        <div class="label">實收金額</div>
         <div class="value" id="sum-paid">NT$ 0</div>
       </div>
       <div class="card unpaid">
-        <div class="label">未收款</div>
+        <div class="label">未收金額</div>
         <div class="value" id="sum-unpaid">NT$ 0</div>
+      </div>
+      <div class="card overdue">
+        <div class="label">已逾期</div>
+        <div class="value" id="sum-overdue">NT$ 0</div>
+      </div>
+      <div class="card tax">
+        <div class="label" title="已開立發票的銷項稅額，尚未扣除進項稅額">預估營業稅（已開票）</div>
+        <div class="value" id="sum-sales-tax">NT$ 0</div>
       </div>
     </div>
 
@@ -329,18 +367,21 @@
         <thead>
           <tr>
             <th>開立日期</th>
+            <th>預計收款日</th>
+            <th>實際收款日</th>
             <th>案件名稱</th>
             <th>客戶</th>
             <th>專案代碼／期數</th>
             <th>金額（含稅）</th>
             <th>發票號碼</th>
+            <th>實收金額</th>
             <th>收款</th>
             <th>發票</th>
             <th>操作</th>
           </tr>
         </thead>
         <tbody id="list-tbody">
-          <tr class="empty-row"><td colspan="9">尚無登記紀錄</td></tr>
+          <tr class="empty-row"><td colspan="12">尚無登記紀錄</td></tr>
         </tbody>
       </table>
     </div>
@@ -412,6 +453,37 @@ function setStatus(text) {
   document.getElementById('status').textContent = `狀態：${text}`;
 }
 
+function showLoginRequired() {
+  document.getElementById('status').innerHTML = '狀態：請先 <a href="login.html">登入工作台</a>，再查看或編輯收入資料。';
+}
+
+async function readApiResponse(res) {
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error(`伺服器回應格式錯誤（HTTP ${res.status}）`);
+  }
+  if (!res.ok || !data.ok) {
+    const error = new Error(data.error || `請求失敗（HTTP ${res.status}）`);
+    error.code = data.code || '';
+    throw error;
+  }
+  return data;
+}
+
+function handleApiError(prefix, error, extraHint) {
+  if (error.code === 'unauthenticated') {
+    showLoginRequired();
+    return;
+  }
+  if (error.code === 'forbidden') {
+    setStatus('目前登入的帳號沒有收入登記權限');
+    return;
+  }
+  setStatus(`${prefix}：${error.message}${extraHint || ''}`);
+}
+
 function fmtNT(n) {
   return 'NT$ ' + Math.round(n || 0).toLocaleString('zh-TW');
 }
@@ -422,13 +494,13 @@ function esc(s) {
 
 function v(id) {
   const value = (document.getElementById(id) || {}).value || '';
-  return id === 'f_date' || id === 'f_due_date' ? value.trim().replace(/\//g, '-') : value;
+  return ['f_date', 'f_due_date', 'f_received_date'].includes(id) ? value.trim().replace(/\//g, '-') : value;
 }
 function displayIncomeDate(value) {
   return String(value || '').replace(/-/g, '/');
 }
 function validIncomeDates() {
-  return ['f_date', 'f_due_date'].every(id => {
+  return ['f_date', 'f_due_date', 'f_received_date'].every(id => {
     const date = v(id);
     return !date || /^\d{4}-\d{2}-\d{2}$/.test(date) &&
       !isNaN(Date.parse(date)) && new Date(date).toISOString().slice(0, 10) === date;
@@ -449,10 +521,13 @@ function clearForm() {
   document.getElementById('f_invoice_no').value = '';
   document.getElementById('f_date').value = '';
   document.getElementById('f_due_date').value = '';
+  document.getElementById('f_received_date').value = '';
+  document.getElementById('f_received_amount').value = '';
   document.getElementById('f_payment_terms').value = 'Net 30';
   document.getElementById('f_payment_status').value = 'unpaid';
   document.getElementById('f_invoice_status').value = 'not_issued';
   document.getElementById('f_note').value = '';
+  syncPaymentFields(false);
   renderAttachments(null);
 }
 
@@ -467,19 +542,19 @@ async function loadRecords() {
   setStatus('讀取中...');
   try {
     const res = await fetch(`${API_BASE}/api/income/list`);
-    const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.error || '讀取失敗');
+    const data = await readApiResponse(res);
     records = data.records || [];
     populateFilterOptions();
     renderTable();
     setStatus('就緒');
   } catch (err) {
-    setStatus(`讀取失敗：${err.message}（請確認是用 netlify dev 啟動，或已部署到 Netlify）`);
+    handleApiError('讀取失敗', err, '（請確認是用 netlify dev 啟動，或已部署到 Netlify）');
   }
 }
 
 function populateFilterOptions() {
-  const years = Array.from(new Set(records.map((r) => (r.date || '').split('-')[0]).filter(Boolean))).sort().reverse();
+  const dateField = selectedDateField();
+  const years = Array.from(new Set(records.map((r) => (r[dateField] || '').split('-')[0]).filter(Boolean))).sort().reverse();
   const yearSelect = document.getElementById('filter-year');
   const currentYear = yearSelect.value;
   yearSelect.innerHTML = '<option value="">全部</option>' + years.map((y) => `<option value="${y}">${y}</option>`).join('');
@@ -500,13 +575,42 @@ function populateFilterOptions() {
 function getFilteredRecords() {
   const year = v('filter-year');
   const month = v('filter-month');
+  const dateField = selectedDateField();
   return records.filter((r) => {
-    if (!r.date) return false;
-    const [y, m] = r.date.split('-');
+    if (!r[dateField]) return false;
+    const [y, m] = r[dateField].split('-');
     if (year && y !== year) return false;
     if (month && m !== month) return false;
     return true;
   });
+}
+
+function selectedDateField() {
+  const basis = v('filter-date-basis');
+  return basis === 'due' ? 'dueDate' : basis === 'received' ? 'receivedDate' : 'date';
+}
+
+function invoiceTotal(record) {
+  return Math.round((Number(record.amount) || 0) * (1 + (Number(record.taxRate) || 0) / 100));
+}
+
+function receivedAmount(record) {
+  if (record.receivedAmount !== undefined && record.receivedAmount !== '') {
+    const value = Number(record.receivedAmount);
+    return Number.isFinite(value) ? value : 0;
+  }
+  return record.paymentStatus === 'paid' ? invoiceTotal(record) : 0;
+}
+
+function todayLocal() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function effectivePaymentStatus(record) {
+  if (record.paymentStatus === 'paid') return 'paid';
+  if (record.dueDate && record.dueDate < todayLocal()) return 'overdue';
+  return record.paymentStatus === 'partial' ? 'partial' : 'unpaid';
 }
 
 // Lucide icons (ISC license), embedded without a runtime CDN dependency.
@@ -517,6 +621,13 @@ const incomeStatusIcons = {
 function renderStatusIcon(type, active) {
   const label = type === 'payment' ? (active ? '已收款' : '未收款') : (active ? '已開立發票' : '未開立發票');
   return `<span class="status-icon ${active ? 'is-active' : ''}" role="img" aria-label="${label}" title="${label}" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${incomeStatusIcons[type]}</svg></span>`;
+}
+
+function renderPaymentStatus(record) {
+  const status = effectivePaymentStatus(record);
+  const labels = { unpaid: '待收款', partial: '部分收款', paid: '已收款', overdue: '已逾期' };
+  const detail = receivedAmount(record) ? `，已收 ${fmtNT(receivedAmount(record))}` : '';
+  return `<span class="payment-badge is-${status}" title="${labels[status]}${detail}">${labels[status]}</span>`;
 }
 
 const incomeActionIcons = {
@@ -534,6 +645,13 @@ let incomeReturnFocus = null;
 function incomeFormSnapshot() {
   return JSON.stringify(Array.from(document.querySelectorAll('#form input:not([type="file"]), #form select, #form textarea')).map(el => [el.id, el.value]));
 }
+function syncSaveButtonState() {
+  const dirty = !incomeEditor.hidden && incomeFormSnapshot() !== incomeEditorBaseline;
+  const saveButton = document.getElementById('save-btn');
+  saveButton.classList.toggle('is-dirty', dirty);
+  saveButton.title = dirty ? '儲存異動' : '目前沒有異動';
+  saveButton.setAttribute('aria-label', saveButton.title);
+}
 function setIncomeEditorOpen(open, force = false) {
   if (!open && !force && !incomeEditor.hidden && incomeFormSnapshot() !== incomeEditorBaseline && !confirm('表單有未儲存的修改，確定關閉？')) return;
   if (open && incomeEditor.hidden) incomeReturnFocus = document.activeElement;
@@ -545,6 +663,7 @@ function setIncomeEditorOpen(open, force = false) {
     incomeEditorBaseline = incomeFormSnapshot();
     document.getElementById('income-editor-close').focus();
   } else if (incomeReturnFocus) incomeReturnFocus.focus();
+  syncSaveButtonState();
 }
 incomeEditorToggle.addEventListener('click', () => {
   clearForm();
@@ -561,35 +680,73 @@ incomeEditor.addEventListener('keydown', e => {
   if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
   else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
 });
+document.getElementById('form').addEventListener('input', syncSaveButtonState);
+document.getElementById('form').addEventListener('change', syncSaveButtonState);
+
+function syncPaymentFields(applyDefaults = true) {
+  const status = v('f_payment_status');
+  const dateInput = document.getElementById('f_received_date');
+  const amountInput = document.getElementById('f_received_amount');
+  const isUnpaid = status === 'unpaid';
+  dateInput.disabled = isUnpaid;
+  amountInput.disabled = isUnpaid;
+  if (isUnpaid) {
+    dateInput.value = '';
+    amountInput.value = '';
+  } else if (applyDefaults && status === 'paid') {
+    if (!dateInput.value) dateInput.value = displayIncomeDate(todayLocal());
+    if (!amountInput.value) amountInput.value = Math.round((Number(v('f_amount')) || 0) * (1 + (Number(v('f_tax_rate')) || 0) / 100)) || '';
+  }
+  syncSaveButtonState();
+}
+
+function issuedSalesTax(record) {
+  if (record.invoiceStatus !== 'issued') return 0;
+  const amount = Number(record.amount) || 0;
+  const taxRate = Number(record.taxRate) || 0;
+  return Math.round(amount * taxRate / 100);
+}
 
 function renderTable() {
-  const filtered = getFilteredRecords().slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const dateField = selectedDateField();
+  const filtered = getFilteredRecords().slice().sort((a, b) => (b[dateField] || '').localeCompare(a[dateField] || ''));
   const tbody = document.getElementById('list-tbody');
 
-  let total = 0, paid = 0;
+  let total = 0, paid = 0, outstanding = 0, overdue = 0, salesTax = 0;
   filtered.forEach((r) => {
-    total += Number(r.amount) || 0;
-    if (r.paymentStatus === 'paid') paid += Number(r.amount) || 0;
+    const gross = invoiceTotal(r);
+    const received = receivedAmount(r);
+    const due = Math.max(0, gross - received);
+    total += gross;
+    paid += received;
+    outstanding += due;
+    if (effectivePaymentStatus(r) === 'overdue') overdue += due;
+    salesTax += issuedSalesTax(r);
   });
   document.getElementById('sum-count').textContent = filtered.length;
   document.getElementById('sum-total').textContent = fmtNT(total);
   document.getElementById('sum-paid').textContent = fmtNT(paid);
-  document.getElementById('sum-unpaid').textContent = fmtNT(total - paid);
+  document.getElementById('sum-unpaid').textContent = fmtNT(outstanding);
+  document.getElementById('sum-overdue').textContent = fmtNT(overdue);
+  document.getElementById('sum-sales-tax').textContent = fmtNT(salesTax);
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">尚無登記紀錄</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="12">目前日期口徑與篩選範圍內沒有紀錄</td></tr>';
     return;
   }
 
   tbody.innerHTML = filtered.map((r) => `
     <tr data-preview-id="${esc(r.id)}" tabindex="0" role="button" aria-label="預覽 ${esc(r.project)}">
       <td>${esc(displayIncomeDate(r.date))}</td>
+      <td>${esc(displayIncomeDate(r.dueDate) || '—')}</td>
+      <td>${esc(displayIncomeDate(r.receivedDate) || '—')}</td>
       <td>${esc(r.project)}</td>
       <td>${esc(r.client)}</td>
       <td>${esc(r.projectCode)}${r.projectCode && r.installment ? '／' : ''}${esc(r.installment)}</td>
-      <td>${fmtNT((Number(r.amount) || 0) * (1 + (Number(r.taxRate) || 0) / 100))}</td>
+      <td>${fmtNT(invoiceTotal(r))}</td>
       <td>${esc(r.invoiceNo || '—')}</td>
-      <td>${renderStatusIcon('payment', r.paymentStatus === 'paid')}</td>
+      <td>${fmtNT(receivedAmount(r))}</td>
+      <td>${renderPaymentStatus(r)}</td>
       <td>${renderStatusIcon('invoice', r.invoiceStatus === 'issued')}</td>
       <td>
         <div class="row-actions">
@@ -616,10 +773,13 @@ function editRecord(id) {
   document.getElementById('f_invoice_no').value = r.invoiceNo || '';
   document.getElementById('f_date').value = displayIncomeDate(r.date);
   document.getElementById('f_due_date').value = displayIncomeDate(r.dueDate);
+  document.getElementById('f_received_date').value = displayIncomeDate(r.receivedDate);
+  document.getElementById('f_received_amount').value = receivedAmount(r) || '';
   document.getElementById('f_payment_terms').value = r.paymentTerms || 'Net 30';
-  document.getElementById('f_payment_status').value = r.paymentStatus;
+  document.getElementById('f_payment_status').value = ['partial', 'paid'].includes(r.paymentStatus) ? r.paymentStatus : 'unpaid';
   document.getElementById('f_invoice_status').value = r.invoiceStatus;
   document.getElementById('f_note').value = r.note || '';
+  syncPaymentFields(false);
   updateTotalWithTax();
   renderAttachments(r);
   document.getElementById('income-editor-title').textContent = '編輯收入';
@@ -676,8 +836,7 @@ async function uploadAttachment() {
       method: 'POST',
       body: formData,
     });
-    const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.error || '上傳失敗');
+    const data = await readApiResponse(res);
 
     const index = records.findIndex((r) => r.id === id);
     if (index !== -1) records[index] = data.record;
@@ -685,7 +844,7 @@ async function uploadAttachment() {
     renderAttachments(data.record);
     setStatus('已上傳附件');
   } catch (err) {
-    setStatus(`上傳失敗：${err.message}`);
+    handleApiError('上傳失敗', err);
   } finally {
     uploadBtn.disabled = false;
   }
@@ -700,15 +859,14 @@ async function deleteAttachment(recordId, attachmentId) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ recordId, id: attachmentId }),
     });
-    const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.error || '刪除失敗');
+    const data = await readApiResponse(res);
 
     const index = records.findIndex((r) => r.id === recordId);
     if (index !== -1) records[index] = data.record;
     if (v('f_id') === recordId) renderAttachments(data.record);
     setStatus('已刪除附件');
   } catch (err) {
-    setStatus(`刪除失敗：${err.message}`);
+    handleApiError('刪除失敗', err);
   }
 }
 
@@ -740,12 +898,11 @@ async function deleteRecord(id) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
     });
-    const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.error || '刪除失敗');
+    await readApiResponse(res);
     await loadRecords();
     setStatus('已刪除');
   } catch (err) {
-    setStatus(`刪除失敗：${err.message}`);
+    handleApiError('刪除失敗', err);
   }
 }
 
@@ -766,6 +923,8 @@ async function saveRecord() {
     invoiceNo: v('f_invoice_no').trim(),
     date: v('f_date'),
     dueDate: v('f_due_date'),
+    receivedDate: v('f_received_date'),
+    receivedAmount: Number(v('f_received_amount')) || 0,
     paymentTerms: v('f_payment_terms').trim(),
     paymentStatus: v('f_payment_status'),
     invoiceStatus: v('f_invoice_status'),
@@ -775,6 +934,10 @@ async function saveRecord() {
 
   if (!payload.project || !payload.client || !payload.date || !payload.amount) {
     setStatus('請完整填寫案件名稱、客戶、日期與金額');
+    return;
+  }
+  if (payload.paymentStatus !== 'unpaid' && (!payload.receivedDate || !payload.receivedAmount)) {
+    setStatus('部分或全額收款時，請填寫實際收款日與實收金額');
     return;
   }
 
@@ -789,15 +952,14 @@ async function saveRecord() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.error || '儲存失敗');
+    const data = await readApiResponse(res);
     if (!data.record || !data.record.id || !data.record.date) throw new Error('儲存回應缺少紀錄，請重新讀取確認');
     showSavedIncomeRecord(data.record);
     clearForm();
     setIncomeEditorOpen(false, true);
     setStatus('已儲存');
   } catch (err) {
-    setStatus(`儲存失敗：${err.message}`);
+    handleApiError('儲存失敗', err);
   } finally {
     saveBtn.disabled = false;
   }
@@ -805,22 +967,28 @@ async function saveRecord() {
 
 function showSavedIncomeRecord(record) {
   records = records.filter(row => row.id !== record.id).concat(record);
+  const dateField = selectedDateField();
+  if (!record[dateField]) document.getElementById('filter-date-basis').value = 'invoice';
   populateFilterOptions();
-  const [year, month] = record.date.split('-');
+  const savedDate = record[selectedDateField()] || record.date;
+  const [year, month] = savedDate.split('-');
   document.getElementById('filter-year').value = year;
   document.getElementById('filter-month').value = month;
   renderTable();
 }
 
 function exportCsv() {
-  const filtered = getFilteredRecords().slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const dateField = selectedDateField();
+  const filtered = getFilteredRecords().slice().sort((a, b) => (a[dateField] || '').localeCompare(b[dateField] || ''));
   if (filtered.length === 0) {
     setStatus('目前篩選範圍內沒有資料可匯出');
     return;
   }
-  const header = ['日期', '案件名稱', '客戶', '專案代碼', '期數說明', '金額（未稅）', '稅率(%)', '金額（含稅）', '通知單號', '發票號碼', '付款條件', '付款期限', '收款狀態', '發票狀態', '備註'];
+  const header = ['開立日期', '預計收款日', '實際收款日', '案件名稱', '客戶', '專案代碼', '期數說明', '金額（未稅）', '稅率(%)', '金額（含稅）', '實收金額', '通知單號', '發票號碼', '付款條件', '收款狀態', '發票狀態', '備註'];
   const rows = filtered.map((r) => [
     r.date,
+    r.dueDate || '',
+    r.receivedDate || '',
     r.project,
     r.client,
     r.projectCode || '',
@@ -828,11 +996,11 @@ function exportCsv() {
     r.amount,
     r.taxRate != null ? r.taxRate : '',
     Math.round((Number(r.amount) || 0) * (1 + (Number(r.taxRate) || 0) / 100)),
+    receivedAmount(r),
     r.noticeNo || '',
     r.invoiceNo || '',
     r.paymentTerms || '',
-    r.dueDate || '',
-    r.paymentStatus === 'paid' ? '已收款' : '未收款',
+    ({ unpaid: '待收款', partial: '部分收款', paid: '已收款', overdue: '已逾期' })[effectivePaymentStatus(r)],
     r.invoiceStatus === 'issued' ? '已開立' : '未開立',
     r.note || '',
   ]);
@@ -844,7 +1012,8 @@ function exportCsv() {
   a.href = URL.createObjectURL(blob);
   const year = v('filter-year') || '全部年度';
   const month = v('filter-month') ? `-${v('filter-month')}月` : '';
-  a.download = `接案收入登記-${year}${month}.csv`;
+  const basisLabel = document.getElementById('filter-date-basis').selectedOptions[0].textContent;
+  a.download = `應收與收款-${basisLabel}-${year}${month}.csv`;
   a.click();
   setStatus('已匯出 CSV');
 }
@@ -866,6 +1035,8 @@ function importInvoiceJson(json) {
   document.getElementById('f_due_date').value = displayIncomeDate(f.f_due_date);
   document.getElementById('f_payment_terms').value = f.f_payment_terms || 'Net 30';
   updateTotalWithTax();
+  syncPaymentFields(false);
+  syncSaveButtonState();
 }
 
 document.getElementById('import-btn').addEventListener('click', () => {
@@ -924,12 +1095,17 @@ incomeDropZone.addEventListener('drop', (e) => {
 
 document.getElementById('f_amount').addEventListener('input', updateTotalWithTax);
 document.getElementById('f_tax_rate').addEventListener('input', updateTotalWithTax);
+document.getElementById('f_payment_status').addEventListener('change', () => syncPaymentFields(true));
 document.getElementById('save-btn').addEventListener('click', saveRecord);
 document.getElementById('upload-attachment-btn').addEventListener('click', uploadAttachment);
 document.getElementById('reset-btn').addEventListener('click', () => { clearForm(); setStatus('已清空表單'); });
 document.getElementById('export-btn').addEventListener('click', exportCsv);
 document.getElementById('filter-year').addEventListener('change', renderTable);
 document.getElementById('filter-month').addEventListener('change', renderTable);
+document.getElementById('filter-date-basis').addEventListener('change', () => {
+  populateFilterOptions();
+  renderTable();
+});
 
 loadRecords();
 </script>
