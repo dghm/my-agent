@@ -54,8 +54,9 @@
       label: '交付文件',
       icon: 'file-check',
       description: '專案資產、操作手冊與驗收準備',
-      defaultTool: 'design-system',
+      defaultTool: 'assets',
       tools: [
+        { id: 'assets',        label: '設計素材庫',      href: 'asset-library.html',               status: 'integrated', keywords: ['素材','圖庫','asset','icon','圖示','Adobe Stock','Google Drive'] },
         { id: 'design-system', label: '客戶設計系統',    href: 'design-system.html',              status: 'integrated', keywords: ['設計系統','design system','tokens'] },
         { id: 'style',         label: 'Style Guideline', href: 'brand-guideline-generator.html',  status: 'legacy', keywords: ['品牌','指南','style','guideline','ci'] },
         { id: 'guide',         label: 'User Guide 骨架', href: 'user-guide-generator.html',       status: 'integrated', keywords: ['手冊','操作','user guide','sop','教學'] },

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>設計素材庫 · DGHM 工作台</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="dghm-ui.css?v=20261015-1">
+  <link rel="stylesheet" href="app-shell.css?v=20261015-1">
+  <link rel="stylesheet" href="asset-library.css?v=20261015-1">
+</head>
+<body data-tool="assets">
+  <div id="tool-workspace" class="asset-page">
+    <header class="asset-head">
+      <div>
+        <p class="asset-eyebrow">Design Resources · Google Drive</p>
+        <h1>設計素材庫</h1>
+        <p class="asset-intro">從公司 Google Drive 搜尋、預覽並下載已授權的設計素材。</p>
+      </div>
+      <div class="asset-head-actions">
+        <span id="asset-sync-state" class="asset-sync-state" role="status">尚未同步</span>
+        <button id="asset-refresh" type="button" class="asset-button-secondary" hidden>重新同步</button>
+      </div>
+    </header>
+
+    <section id="asset-gate" class="asset-gate" hidden aria-live="polite">
+      <div class="asset-gate-icon" aria-hidden="true">GD</div>
+      <div>
+        <h2 id="asset-gate-title">連接 Google Drive 素材庫</h2>
+        <p id="asset-gate-message">僅要求唯讀權限；my-agent 不會移動、重新命名或刪除 Drive 檔案。</p>
+      </div>
+      <a id="asset-authorize" class="asset-authorize" href="/api/auth/login/google?grant=assets">授權唯讀存取</a>
+    </section>
+
+    <section id="asset-browser" class="asset-browser" hidden>
+      <div class="asset-stats" aria-label="素材庫摘要">
+        <div><strong id="asset-count">—</strong><span>組素材</span></div>
+        <div><strong id="asset-file-count">—</strong><span>原始檔案</span></div>
+        <div><strong id="asset-category-count">—</strong><span>主要分類</span></div>
+        <div><strong id="asset-updated">—</strong><span>最近索引</span></div>
+      </div>
+
+      <div class="asset-toolbar">
+        <label class="asset-search">
+          <span class="sr-only">搜尋素材</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+          <input id="asset-search" type="search" placeholder="搜尋名稱、Adobe Stock ID、資料夾…" autocomplete="off">
+        </label>
+        <label class="asset-select-wrap">
+          <span>格式</span>
+          <select id="asset-format"><option value="">全部格式</option></select>
+        </label>
+        <label class="asset-select-wrap">
+          <span>排序</span>
+          <select id="asset-sort">
+            <option value="name">名稱</option>
+            <option value="modified">最近修改</option>
+            <option value="size">檔案大小</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="asset-layout">
+        <aside class="asset-facets" aria-label="素材分類">
+          <div class="asset-facet-head">
+            <strong>分類</strong>
+            <button id="asset-clear-filters" type="button">清除</button>
+          </div>
+          <div id="asset-categories" class="asset-category-list"></div>
+          <div class="asset-source-head">來源資料夾</div>
+          <label class="asset-source-select">
+            <span class="sr-only">來源資料夾</span>
+            <select id="asset-source"><option value="">全部來源</option></select>
+          </label>
+          <p class="asset-safety-note">唯讀模式<br>刪除與搬移功能不開放</p>
+        </aside>
+
+        <main class="asset-results" aria-labelledby="asset-results-title">
+          <div class="asset-results-head">
+            <div>
+              <h2 id="asset-results-title">全部素材</h2>
+              <p id="asset-result-count">正在讀取…</p>
+            </div>
+            <button id="asset-density" type="button" class="asset-density" aria-pressed="false">緊密排列</button>
+          </div>
+          <div id="asset-loading" class="asset-loading">
+            <span></span><span></span><span></span>
+            <p>正在建立 Google Drive 索引…</p>
+          </div>
+          <div id="asset-grid" class="asset-grid" aria-live="polite"></div>
+          <button id="asset-load-more" type="button" class="asset-load-more" hidden>載入更多素材</button>
+          <div id="asset-empty" class="asset-empty" hidden>
+            <strong>找不到符合條件的素材</strong>
+            <span>調整關鍵字、分類或格式後再試一次。</span>
+          </div>
+        </main>
+      </div>
+    </section>
+  </div>
+
+  <dialog id="asset-dialog" class="asset-dialog">
+    <button id="asset-dialog-close" type="button" class="asset-dialog-close" aria-label="關閉">×</button>
+    <div id="asset-dialog-preview" class="asset-dialog-preview"></div>
+    <div class="asset-dialog-body">
+      <p id="asset-dialog-category" class="asset-dialog-category"></p>
+      <h2 id="asset-dialog-title"></h2>
+      <p id="asset-dialog-path" class="asset-dialog-path"></p>
+      <dl class="asset-dialog-meta">
+        <div><dt>Adobe Stock</dt><dd id="asset-dialog-stock">—</dd></div>
+        <div><dt>檔案總量</dt><dd id="asset-dialog-size">—</dd></div>
+      </dl>
+      <h3>可用格式</h3>
+      <div id="asset-dialog-variants" class="asset-variant-list"></div>
+    </div>
+  </dialog>
+
+  <script src="tool-registry.js?v=20261015-1"></script>
+  <script src="project-context.js?v=20261015-1"></script>
+  <script src="app-shell.js?v=20261015-1"></script>
+  <script>mountAppShell({ activeTool: 'assets' });</script>
+  <script src="dghm-ui.js?v=20261015-1"></script>
+  <script>initTheme('my-agent-theme');</script>
+  <script src="asset-library.js?v=20261015-1"></script>
+</body>
+</html>

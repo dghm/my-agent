@@ -133,9 +133,13 @@ function googleLogin(req) {
   const secure = origin.startsWith('https');
   const state = crypto.randomBytes(16).toString('hex');
 
-  const docsGrant = new URL(req.url).searchParams.get('grant') === 'docs';
+  const grant = new URL(req.url).searchParams.get('grant');
+  const docsGrant = grant === 'docs';
+  const assetsGrant = grant === 'assets';
+  const returnPath = docsGrant ? '/Quote-Generator.html' : assetsGrant ? '/asset-library.html' : '';
   const scopes = ['openid', 'email', 'profile', 'https://www.googleapis.com/auth/calendar.events'];
   if (docsGrant) scopes.push('https://www.googleapis.com/auth/drive.file');
+  if (assetsGrant) scopes.push('https://www.googleapis.com/auth/drive.readonly');
 
   const params = new URLSearchParams({
     client_id: clientId,
@@ -151,7 +155,7 @@ function googleLogin(req) {
 
   return redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`, [
     buildCookie(STATE_COOKIE, state, STATE_MAX_AGE, secure),
-    buildCookie(RETURN_COOKIE, docsGrant ? '/Quote-Generator.html' : '', docsGrant ? STATE_MAX_AGE : 0, secure),
+    buildCookie(RETURN_COOKIE, returnPath, returnPath ? STATE_MAX_AGE : 0, secure),
   ]);
 }
 
@@ -163,9 +167,20 @@ async function googleCallback(req) {
   const state = url.searchParams.get('state');
   const cookieState = getCookie(req, STATE_COOKIE);
 
-  const returnToQuote = getCookie(req, RETURN_COOKIE) === '/Quote-Generator.html';
+  const requestedReturn = getCookie(req, RETURN_COOKIE);
+  const allowedReturns = new Set(['/Quote-Generator.html', '/asset-library.html']);
+  const returnPath = allowedReturns.has(requestedReturn) ? requestedReturn : '';
+  const returnToQuote = returnPath === '/Quote-Generator.html';
+  const returnToAssets = returnPath === '/asset-library.html';
   const clearOAuth = [buildCookie(STATE_COOKIE, '', 0, secure), buildCookie(RETURN_COOKIE, '', 0, secure)];
-  const fail = (error) => redirect(returnToQuote ? `/Quote-Generator.html?docsAuth=${error}` : `/login.html?error=${error}`, clearOAuth);
+  const fail = (error) => redirect(
+    returnToQuote
+      ? `/Quote-Generator.html?docsAuth=${error}`
+      : returnToAssets
+        ? `/asset-library.html?driveAuth=${error}`
+        : `/login.html?error=${error}`,
+    clearOAuth
+  );
 
   if (url.searchParams.get('error')) {
     return fail('denied');
@@ -214,7 +229,12 @@ async function googleCallback(req) {
   });
 
   // 4) 發登入 cookie，清除 state，導回首頁
-  return redirect(returnToQuote ? '/Quote-Generator.html?docsAuth=ready' : '/index.html', [
+  return redirect(
+    returnToQuote
+      ? '/Quote-Generator.html?docsAuth=ready'
+      : returnToAssets
+        ? '/asset-library.html?driveAuth=ready'
+        : '/index.html', [
     buildCookie(SESSION_COOKIE, createSession(user), SESSION_MAX_AGE, secure),
     ...clearOAuth,
   ]);
