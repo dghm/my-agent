@@ -108,23 +108,31 @@
   .card .value { text-align: right; font-variant-numeric: tabular-nums; }
 
   .table-wrap { width: 100%; overflow-x: auto; border-radius: 10px; box-shadow: var(--shadow-sm); }
-  table { width: 100%; min-width: 1380px; border-collapse: collapse; font-size: 13px; background: var(--surface-panel-bg); overflow: hidden; }
+  table { width: 100%; min-width: 1120px; border-collapse: collapse; font-size: 13px; background: var(--surface-panel-bg); overflow: hidden; }
   th { background: var(--navy); color: #fff; padding: 8px 10px; text-align: center; font-size: 12px; }
   td { padding: 8px 10px; border-bottom: 1px solid var(--surface-border); vertical-align: middle; }
-  .table-wrap td:nth-child(7), .table-wrap td:nth-child(9) { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .table-wrap td:nth-child(8) { white-space: nowrap; }
-  .table-wrap td:nth-child(10), .table-wrap td:nth-child(11), .table-wrap td:nth-child(12) { text-align: center; vertical-align: middle; }
+  .table-wrap td:nth-child(1), .table-wrap td:nth-child(2), .table-wrap td:nth-child(4) { white-space: nowrap; }
+  .table-wrap td:nth-child(3) { min-width: 230px; }
+  .table-wrap td:nth-child(5), .table-wrap td:nth-child(6) { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .table-wrap td:nth-child(7), .table-wrap td:nth-child(8), .table-wrap td:nth-child(9) { text-align: center; vertical-align: middle; }
   .table-wrap .row-actions { justify-content: center; align-items: center; }
   .table-wrap th:first-child, .table-wrap td:first-child { white-space: nowrap; }
+  .cell-stack, .cell-single { min-height: 42px; }
+  .cell-stack { display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+  .cell-single { display: flex; align-items: center; }
+  .table-wrap td:nth-child(5) .cell-stack { align-items: flex-end; }
+  .table-wrap td:nth-child(5) .cell-single, .table-wrap td:nth-child(6) .cell-single { justify-content: flex-end; }
+  .cell-primary { color: var(--surface-text); font-weight: 600; }
+  .cell-secondary { color: var(--surface-text-muted); font-size: 12px; }
+  .cell-secondary.client-name { color: #1A4494; font-weight: 600; }
   tr:last-child td { border-bottom: none; }
   .status-icon { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; }
-  .status-icon svg { width: 18px; height: 18px; color: #E8ECF5; opacity: .4; }
-  .status-icon.is-active svg { color: #E5622A; opacity: 1; }
+  .status-icon svg { width: 20px; height: 20px; color: #A8B0C0; opacity: .65; }
+  .status-icon.is-invoice.is-active svg { color: #E5622A; opacity: 1; }
+  .status-icon.is-payment.is-paid svg { color: #2E9D5B; opacity: 1; }
+  .status-icon.is-payment.is-partial svg { color: #C88719; opacity: 1; }
+  .status-icon.is-payment.is-overdue svg { color: #B42318; opacity: 1; }
   .status-icon:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; }
-  .payment-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 58px; padding: 3px 7px; border: 1px solid var(--surface-border); border-radius: 999px; color: var(--surface-text-muted); font-size: 11px; font-weight: 700; white-space: nowrap; }
-  .payment-badge.is-partial { border-color: #d6a756; background: #fff8e8; color: #875b00; }
-  .payment-badge.is-paid { border-color: #65a881; background: #edf9f1; color: #247044; }
-  .payment-badge.is-overdue { border-color: #d9827c; background: #fff0ef; color: #b42318; }
   .row-actions { display: flex; gap: 6px; }
   .row-actions button { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 3px; border: 0; border-radius: 0; background: transparent; box-shadow: none; color: var(--surface-text); }
   .row-actions svg { width: 18px; height: 18px; }
@@ -377,13 +385,10 @@
         <thead>
           <tr>
             <th>開立日期</th>
-            <th>預計收款日</th>
-            <th>實際收款日</th>
-            <th>案件名稱</th>
-            <th>客戶</th>
-            <th>專案代碼／期數</th>
-            <th>金額（含稅）</th>
-            <th>發票號碼</th>
+            <th>預計收款日／實際收款日</th>
+            <th>案件名稱／客戶</th>
+            <th>專案代碼</th>
+            <th>發票金額／發票號碼</th>
             <th>實收金額</th>
             <th>收款</th>
             <th>發票</th>
@@ -391,7 +396,7 @@
           </tr>
         </thead>
         <tbody id="list-tbody">
-          <tr class="empty-row"><td colspan="12">尚無登記紀錄</td></tr>
+          <tr class="empty-row"><td colspan="9">尚無登記紀錄</td></tr>
         </tbody>
       </table>
     </div>
@@ -688,19 +693,28 @@ function effectivePaymentStatus(record) {
 
 // Lucide icons (ISC license), embedded without a runtime CDN dependency.
 const incomeStatusIcons = {
-  payment: "<path d=\"M11.748 18H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4.875\" /> <path d=\"m16 19 2 2 4-4\" /> <path d=\"M18 12h.01\" /> <path d=\"M6 12h.01\" /> <circle cx=\"12\" cy=\"12\" r=\"2\" />",
+  paid: "<path d=\"M21.801 10A10 10 0 1 1 17 3.335\"/><path d=\"m9 11 3 3L22 4\"/>",
+  partial: "<circle cx=\"12\" cy=\"12\" r=\"10\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/>",
+  unpaid: "<circle cx=\"12\" cy=\"12\" r=\"10\"/>",
+  overdue: "<circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 8v4\"/><path d=\"M12 16h.01\"/>",
   invoice: "<path d=\"M13 16H8\" /> <path d=\"M14 8H8\" /> <path d=\"M16 12H8\" /> <path d=\"M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z\" />"
 };
 function renderStatusIcon(type, active) {
-  const label = type === 'payment' ? (active ? '已收款' : '未收款') : (active ? '已開立發票' : '未開立發票');
-  return `<span class="status-icon ${active ? 'is-active' : ''}" role="img" aria-label="${label}" title="${label}" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${incomeStatusIcons[type]}</svg></span>`;
+  const label = active ? '已開立發票' : '未開立發票';
+  return `<span class="status-icon is-invoice ${active ? 'is-active' : ''}" role="img" aria-label="${label}" title="${label}" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${incomeStatusIcons[type]}</svg></span>`;
 }
 
 function renderPaymentStatus(record) {
   const status = effectivePaymentStatus(record);
   const labels = { unpaid: '待收款', partial: '部分收款', paid: '已收款', overdue: '已逾期' };
   const detail = receivedAmount(record) ? `，已收 ${fmtNT(receivedAmount(record))}` : '';
-  return `<span class="payment-badge is-${status}" title="${labels[status]}${detail}">${labels[status]}</span>`;
+  return `<span class="status-icon is-payment is-${status}" role="img" aria-label="${labels[status]}${detail}" title="${labels[status]}${detail}" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${incomeStatusIcons[status]}</svg></span>`;
+}
+
+function renderStackedCell(primary, secondary = '', secondaryClass = '') {
+  const first = primary || '—';
+  if (!secondary) return `<div class="cell-single"><span class="cell-primary">${esc(first)}</span></div>`;
+  return `<div class="cell-stack"><span class="cell-primary">${esc(first)}</span><span class="cell-secondary ${secondaryClass}">${esc(secondary)}</span></div>`;
 }
 
 const incomeActionIcons = {
@@ -812,21 +826,18 @@ function renderTable() {
     : '營業稅卡顯示目前篩選資料中已開立發票的銷項稅額；實際應繳金額仍需扣除可扣抵的進項稅額。';
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="12">目前日期口徑與篩選範圍內沒有紀錄</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">目前日期口徑與篩選範圍內沒有紀錄</td></tr>';
     return;
   }
 
   tbody.innerHTML = filtered.map((r) => `
     <tr data-preview-id="${esc(r.id)}" tabindex="0" role="button" aria-label="預覽 ${esc(r.project)}">
-      <td>${esc(displayIncomeDate(r.date))}</td>
-      <td>${esc(displayIncomeDate(r.dueDate) || '—')}</td>
-      <td>${esc(displayIncomeDate(r.receivedDate) || '—')}</td>
-      <td>${esc(r.project)}</td>
-      <td>${esc(r.client)}</td>
-      <td>${esc(r.projectCode)}${r.projectCode && r.installment ? '／' : ''}${esc(r.installment)}</td>
-      <td>${fmtNT(invoiceTotal(r))}</td>
-      <td>${esc(r.invoiceNo || '—')}</td>
-      <td>${fmtNT(receivedAmount(r))}</td>
+      <td>${renderStackedCell(displayIncomeDate(r.date))}</td>
+      <td>${renderStackedCell(displayIncomeDate(r.dueDate), displayIncomeDate(r.receivedDate))}</td>
+      <td>${renderStackedCell(r.project, r.client, 'client-name')}</td>
+      <td>${renderStackedCell(r.projectCode)}</td>
+      <td>${renderStackedCell(fmtNT(invoiceTotal(r)), r.invoiceNo)}</td>
+      <td>${renderStackedCell(receivedAmount(r) ? fmtNT(receivedAmount(r)) : '—')}</td>
       <td>${renderPaymentStatus(r)}</td>
       <td>${renderStatusIcon('invoice', r.invoiceStatus === 'issued')}</td>
       <td>
@@ -1035,10 +1046,10 @@ async function saveRecord() {
     });
     const data = await readApiResponse(res);
     if (!data.record || !data.record.id || !data.record.date) throw new Error('儲存回應缺少紀錄，請重新讀取確認');
-    showSavedIncomeRecord(data.record);
+    const remainsVisible = showSavedIncomeRecord(data.record);
     clearForm();
     setIncomeEditorOpen(false, true);
-    setStatus('已儲存');
+    setStatus(remainsVisible ? '已儲存' : '已儲存；該筆資料已不在目前篩選區間');
   } catch (err) {
     handleApiError('儲存失敗', err);
   } finally {
@@ -1047,15 +1058,19 @@ async function saveRecord() {
 }
 
 function showSavedIncomeRecord(record) {
+  const filters = {
+    basis: v('filter-date-basis'),
+    year: v('filter-year'),
+    month: v('filter-month'),
+  };
   records = records.filter(row => row.id !== record.id).concat(record);
-  const dateField = selectedDateField();
-  if (!record[dateField]) document.getElementById('filter-date-basis').value = 'invoice';
   populateFilterOptions();
-  const savedDate = record[selectedDateField()] || record.date;
-  const [year, month] = savedDate.split('-');
-  document.getElementById('filter-year').value = year;
-  document.getElementById('filter-month').value = month;
+  document.getElementById('filter-date-basis').value = filters.basis;
+  if (filters.year) ensureFilterYear(filters.year);
+  else document.getElementById('filter-year').value = '';
+  document.getElementById('filter-month').value = filters.month;
   renderTable();
+  return getFilteredRecords().some((row) => row.id === record.id);
 }
 
 function exportCsv() {
