@@ -4,10 +4,13 @@ import {
   buildAssetIndex,
   categoryFor,
   hasDriveReadScope,
+  hasDriveWriteScope,
+  isPendingDeletionPath,
   meaningfulPath,
   shouldIgnoreFile,
 } from '../netlify/functions/assets-core.js';
 import authHandler from '../netlify/functions/auth.js';
+import assetsHandler from '../netlify/functions/assets.js';
 
 test('asset grant requests Drive readonly and returns to the asset library', async () => {
   const originalClientId = process.env.GOOGLE_CLIENT_ID;
@@ -22,16 +25,62 @@ test('asset grant requests Drive readonly and returns to the asset library', asy
     assert.equal(scopes.has('https://www.googleapis.com/auth/drive.readonly'), true);
     assert.equal(scopes.has('https://www.googleapis.com/auth/drive'), false);
     assert.equal(location.searchParams.get('redirect_uri'), 'https://my-agent.dghm.tw/api/auth/callback/google');
-  assert.match(response.headers.get('set-cookie') || '', /dghm_oauth_return=%2Fasset-library\.html/);
+    assert.match(response.headers.get('set-cookie') || '', /dghm_oauth_return=%2Fasset-library\.html/);
   } finally {
     if (originalClientId === undefined) delete process.env.GOOGLE_CLIENT_ID;
     else process.env.GOOGLE_CLIENT_ID = originalClientId;
   }
 });
+
+test('asset management grant requests full Drive access', async () => {
+  const originalClientId = process.env.GOOGLE_CLIENT_ID;
+  process.env.GOOGLE_CLIENT_ID = 'test-client.apps.googleusercontent.com';
+  try {
+    const response = await authHandler(
+      new Request('https://my-agent.dghm.tw/api/auth/login/google?grant=assets-manage')
+    );
+    const location = new URL(response.headers.get('location'));
+    const scopes = new Set((location.searchParams.get('scope') || '').split(' '));
+    assert.equal(scopes.has('https://www.googleapis.com/auth/drive'), true);
+    assert.equal(scopes.has('https://www.googleapis.com/auth/drive.readonly'), false);
+    assert.match(response.headers.get('set-cookie') || '', /dghm_oauth_return=%2Fasset-library\.html/);
+  } finally {
+    if (originalClientId === undefined) delete process.env.GOOGLE_CLIENT_ID;
+    else process.env.GOOGLE_CLIENT_ID = originalClientId;
+  }
+});
+
 test('Drive scopes accept readonly and reject drive.file', () => {
   assert.equal(hasDriveReadScope('openid https://www.googleapis.com/auth/drive.readonly'), true);
   assert.equal(hasDriveReadScope('openid https://www.googleapis.com/auth/drive'), true);
   assert.equal(hasDriveReadScope('openid https://www.googleapis.com/auth/drive.file'), false);
+  assert.equal(hasDriveWriteScope('openid https://www.googleapis.com/auth/drive.readonly'), false);
+  assert.equal(hasDriveWriteScope('openid https://www.googleapis.com/auth/drive'), true);
+});
+
+test('pending deletion paths are excluded from the asset index', () => {
+  assert.equal(isPendingDeletionPath(['ICONs', '_待刪除']), true);
+  assert.equal(isPendingDeletionPath(['ICONs']), false);
+  const index = buildAssetIndex([
+    { id: 'archived', name: 'old.svg', mimeType: 'image/svg+xml', path: ['_待刪除'] },
+    { id: 'active', name: 'active.svg', mimeType: 'image/svg+xml', path: ['ICONs'], parentId: 'icons' },
+  ]);
+  assert.equal(index.version, 2);
+  assert.equal(index.stats.assets, 1);
+  assert.equal(index.assets[0].variants[0].parentId, 'icons');
+});
+
+test('asset write endpoints reject foreign origins before accessing Drive', async () => {
+  const response = await assetsHandler(
+    new Request('https://my-agent.dghm.tw/api/assets/archive', {
+      method: 'POST',
+      headers: { Origin: 'https://attacker.example', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: ['file-1'] }),
+    }),
+    { params: { action: 'archive' } }
+  );
+  assert.equal(response.status, 403);
+  assert.match(await response.text(), /無效的操作來源/);
 });
 
 test('staging wrapper folders do not become categories', () => {

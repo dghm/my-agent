@@ -1,10 +1,15 @@
 import { getStore } from '@netlify/blobs';
 import crypto from 'node:crypto';
 import {
+  DRIVE_FULL_SCOPE,
   DRIVE_FOLDER_MIME,
   DRIVE_READONLY_SCOPE,
+  PENDING_DELETION_FOLDER,
   buildAssetIndex,
   hasDriveReadScope,
+  hasDriveWriteScope,
+  isPendingDeletionPath,
+  meaningfulPath,
 } from './assets-core.js';
 
 const SESSION_COOKIE = 'dghm_session';
@@ -12,6 +17,8 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'insecure-dev-secret-please
 const CACHE_KEY = 'drive-index-v1';
 const CACHE_MAX_AGE = 15 * 60 * 1000;
 const MAX_DRIVE_ITEMS = 15000;
+const MAX_UPLOAD_SIZE = 2 * 1024 * 1024 * 1024;
+const MAX_ARCHIVE_FILES = 24;
 
 function json(status, payload, extraHeaders = {}) {
   return new Response(JSON.stringify(payload), {
@@ -78,8 +85,10 @@ async function getAccessToken(refreshToken) {
   return { ok: true, accessToken: data.access_token };
 }
 
-async function driveJson(url, accessToken) {
-  const response = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+async function driveJson(url, accessToken, options = {}) {
+  const headers = new Headers(options.headers || {});
+  headers.set('Authorization', `Bearer ${accessToken}`);
+  const response = await fetch(url, { ...options, headers });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = new Error(data.error?.message || `Google Drive API HTTP ${response.status}`);
@@ -123,6 +132,7 @@ async function listFolder(folderId, accessToken) {
 async function crawlDrive(rootFolderId, accessToken) {
   const queue = [{ id: rootFolderId, path: [] }];
   const files = [];
+  const folders = [{ id: rootFolderId, name: '素材庫根目錄', path: [] }];
 
   while (queue.length) {
     const batch = queue.splice(0, 8);
@@ -133,20 +143,35 @@ async function crawlDrive(rootFolderId, accessToken) {
       for (const child of children) {
         if (files.length >= MAX_DRIVE_ITEMS) throw new Error(`素材數超過安全上限 ${MAX_DRIVE_ITEMS}`);
         if (child.mimeType === DRIVE_FOLDER_MIME) {
-          queue.push({ id: child.id, path: [...folder.path, child.name] });
+          const path = [...folder.path, child.name];
+          if (isPendingDeletionPath(path)) continue;
+          folders.push({ id: child.id, name: child.name, path });
+          queue.push({ id: child.id, path });
         } else {
-          files.push({ ...child, path: folder.path });
+          files.push({ ...child, path: folder.path, parentId: folder.id });
         }
       }
     }
   }
-  return files;
+  return { files, folders };
+}
+
+function uploadDestinations(folders, rootFolderId) {
+  const destinations = [{ id: rootFolderId, label: '素材庫根目錄', path: '' }];
+  for (const folder of folders) {
+    if (folder.id === rootFolderId || isPendingDeletionPath(folder.path)) continue;
+    const clean = meaningfulPath(folder.path);
+    if (clean.length !== 1) continue;
+    destinations.push({ id: folder.id, label: clean[0], path: folder.path.join('/') });
+  }
+  destinations.sort((a, b) => a.label.localeCompare(b.label, 'zh-Hant', { numeric: true }));
+  return destinations;
 }
 
 async function readCachedIndex(rootFolderId) {
   const store = getStore('asset-library');
   const cached = await store.get(CACHE_KEY, { type: 'json' });
-  if (!cached || cached.rootFolderId !== rootFolderId || !cached.generatedAt) return null;
+  if (!cached || cached.version !== 2 || cached.rootFolderId !== rootFolderId || !cached.generatedAt) return null;
   if (Date.now() - new Date(cached.generatedAt).getTime() > CACHE_MAX_AGE) return null;
   return cached;
 }
@@ -156,14 +181,15 @@ async function getIndex(rootFolderId, accessToken, refresh = false) {
     const cached = await readCachedIndex(rootFolderId);
     if (cached) return { index: cached, cached: true };
   }
-  const files = await crawlDrive(rootFolderId, accessToken);
+  const { files, folders } = await crawlDrive(rootFolderId, accessToken);
   const index = buildAssetIndex(files, { rootFolderId });
+  index.destinations = uploadDestinations(folders, rootFolderId);
   const store = getStore('asset-library');
   await store.setJSON(CACHE_KEY, index);
   return { index, cached: false };
 }
 
-async function authorize(req) {
+async function authorize(req, options = {}) {
   const session = verifySession(getCookie(req, SESSION_COOKIE));
   if (!session) return { response: json(401, { ok: false, code: 'unauthenticated', error: '請先登入 my-agent' }) };
   const user = await getGoogleUser(session.uid);
@@ -174,6 +200,16 @@ async function authorize(req) {
         code: 'drive_grant_required',
         error: '尚未授權 Google Drive 唯讀權限',
         authorizeUrl: '/api/auth/login/google?grant=assets',
+      }),
+    };
+  }
+  if (options.write && !hasDriveWriteScope(user.googleScopes)) {
+    return {
+      response: json(409, {
+        ok: false,
+        code: 'drive_write_grant_required',
+        error: '需要啟用 Google Drive 素材管理權限',
+        authorizeUrl: '/api/auth/login/google?grant=assets-manage',
       }),
     };
   }
@@ -191,27 +227,82 @@ async function authorize(req) {
   return { session, user, accessToken: token.accessToken };
 }
 
+function assertSameOrigin(req) {
+  const origin = req.headers.get('origin');
+  if (!origin || origin !== new URL(req.url).origin) {
+    const error = new Error('無效的操作來源');
+    error.status = 403;
+    throw error;
+  }
+}
+
+async function readJsonBody(req) {
+  const size = Number(req.headers.get('content-length') || 0);
+  if (size > 32768) throw Object.assign(new Error('請求內容過大'), { status: 413 });
+  return req.json().catch(() => {
+    throw Object.assign(new Error('請求格式錯誤'), { status: 400 });
+  });
+}
+
+async function clearIndexCache() {
+  const store = getStore('asset-library');
+  await store.delete(CACHE_KEY).catch(() => {});
+}
+
+async function ensurePendingFolder(rootFolderId, accessToken) {
+  const rootChildren = await listFolder(rootFolderId, accessToken);
+  const existing = rootChildren.find((item) =>
+    item.mimeType === DRIVE_FOLDER_MIME && item.name === PENDING_DELETION_FOLDER
+  );
+  if (existing) return existing.id;
+
+  const created = await driveJson(
+    'https://www.googleapis.com/drive/v3/files?fields=id&supportsAllDrives=true',
+    accessToken,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: PENDING_DELETION_FOLDER,
+        mimeType: DRIVE_FOLDER_MIME,
+        parents: [rootFolderId],
+      }),
+    }
+  );
+  return created.id;
+}
+
+async function mapInBatches(items, limit, callback) {
+  for (let index = 0; index < items.length; index += limit) {
+    await Promise.all(items.slice(index, index + limit).map(callback));
+  }
+}
+
 function safeFilename(name) {
   return String(name || 'asset').replace(/[\r\n]/g, ' ').slice(0, 240);
 }
 
 export default async (req, context) => {
-  if (req.method !== 'GET') return json(405, { ok: false, error: 'Method Not Allowed' });
+  if (!['GET', 'POST'].includes(req.method)) return json(405, { ok: false, error: 'Method Not Allowed' });
 
   try {
+    const action = context.params.action;
+    const writeAction = req.method === 'POST' && (action === 'upload-session' || action === 'archive');
+    if (writeAction) assertSameOrigin(req);
     const rootFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
     if (!rootFolderId) return json(503, { ok: false, code: 'root_not_configured', error: '尚未設定素材庫根資料夾' });
 
-    const auth = await authorize(req);
+    const auth = await authorize(req, { write: writeAction });
     if (auth.response) return auth.response;
     const root = await assertRootAccess(rootFolderId, auth.accessToken);
-    const action = context.params.action;
 
     if (action === 'status') {
       return json(200, {
         ok: true,
         granted: true,
-        scope: DRIVE_READONLY_SCOPE,
+        scope: hasDriveWriteScope(auth.user.googleScopes) ? DRIVE_FULL_SCOPE : DRIVE_READONLY_SCOPE,
+        writable: hasDriveWriteScope(auth.user.googleScopes),
+        manageAuthorizeUrl: '/api/auth/login/google?grant=assets-manage',
         root: { id: root.id, name: root.name },
       });
     }
@@ -250,13 +341,85 @@ export default async (req, context) => {
       });
     }
 
+    if (action === 'upload-session' && req.method === 'POST') {
+      const body = await readJsonBody(req);
+      const filename = safeFilename(body.name).replace(/[\\/\0]/g, ' ').trim();
+      const mimeType = String(body.mimeType || 'application/octet-stream').slice(0, 160);
+      const size = Number(body.size);
+      const parentId = String(body.parentId || '');
+      if (!filename) return json(400, { ok: false, error: '檔名不可空白' });
+      if (!Number.isSafeInteger(size) || size < 0 || size > MAX_UPLOAD_SIZE) {
+        return json(400, { ok: false, error: '單一檔案大小需小於 2 GB' });
+      }
+
+      const { index } = await getIndex(rootFolderId, auth.accessToken, false);
+      const destinations = new Set((index.destinations || []).map((item) => item.id));
+      if (!destinations.has(parentId)) return json(403, { ok: false, error: '上傳目標不在素材庫允許範圍內' });
+
+      const response = await fetch(
+        'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true&fields=id,name,webViewLink',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${auth.accessToken}`,
+            'Content-Type': 'application/json; charset=utf-8',
+            'X-Upload-Content-Type': mimeType,
+            'X-Upload-Content-Length': String(size),
+            Origin: new URL(req.url).origin,
+          },
+          body: JSON.stringify({ name: filename, mimeType, parents: [parentId] }),
+        }
+      );
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw Object.assign(new Error(detail.error?.message || '無法建立 Google Drive 上傳工作'), { status: response.status });
+      }
+      const uploadUrl = response.headers.get('location');
+      if (!uploadUrl) throw new Error('Google Drive 未回傳上傳網址');
+      return json(200, { ok: true, uploadUrl });
+    }
+
+    if (action === 'archive' && req.method === 'POST') {
+      const body = await readJsonBody(req);
+      const ids = [...new Set(Array.isArray(body.ids) ? body.ids.map(String) : [])];
+      if (!ids.length || ids.length > MAX_ARCHIVE_FILES) {
+        return json(400, { ok: false, error: `一次可移動 1–${MAX_ARCHIVE_FILES} 個檔案` });
+      }
+
+      const { index } = await getIndex(rootFolderId, auth.accessToken, false);
+      const variants = index.assets.flatMap((asset) => asset.variants);
+      const allowed = new Map(variants.map((item) => [item.id, item]));
+      const targets = ids.map((id) => allowed.get(id));
+      if (targets.some((item) => !item || !item.parentId)) {
+        return json(403, { ok: false, error: '包含不在素材庫範圍內的檔案' });
+      }
+
+      const pendingFolderId = await ensurePendingFolder(rootFolderId, auth.accessToken);
+      await mapInBatches(targets, 6, async (item) => {
+        const params = new URLSearchParams({
+          addParents: pendingFolderId,
+          removeParents: item.parentId,
+          fields: 'id,parents',
+          supportsAllDrives: 'true',
+        });
+        await driveJson(
+          `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(item.id)}?${params}`,
+          auth.accessToken,
+          { method: 'PATCH' }
+        );
+      });
+      await clearIndexCache();
+      return json(200, { ok: true, archived: targets.length, folderName: PENDING_DELETION_FOLDER });
+    }
+
     return json(404, { ok: false, error: 'Not Found' });
   } catch (error) {
-    const status = error?.status === 403 || error?.status === 404 ? 403 : 500;
+    const rawStatus = Number(error?.status || 0);
+    const status = [400, 401, 403, 409, 413].includes(rawStatus) ? rawStatus : rawStatus === 404 ? 403 : 500;
     return json(status, {
       ok: false,
       code: status === 403 ? 'root_access_denied' : 'drive_error',
-      error: error instanceof Error ? error.message : 'Google Drive 讀取失敗',
+      error: error instanceof Error ? error.message : 'Google Drive 操作失敗',
     });
   }
 };

@@ -1,6 +1,7 @@
 export const DRIVE_READONLY_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
 export const DRIVE_FULL_SCOPE = 'https://www.googleapis.com/auth/drive';
 export const DRIVE_FOLDER_MIME = 'application/vnd.google-apps.folder';
+export const PENDING_DELETION_FOLDER = '_待刪除';
 
 const HELPER_NAMES = new Set(['.DS_Store', 'adobe-stock.png']);
 const HELPER_EXTENSIONS = new Set(['command']);
@@ -34,6 +35,15 @@ const CATEGORY_GROUPS = new Map([
 export function hasDriveReadScope(scopes) {
   const granted = new Set(String(scopes || '').split(/\s+/).filter(Boolean));
   return granted.has(DRIVE_READONLY_SCOPE) || granted.has(DRIVE_FULL_SCOPE);
+}
+
+export function hasDriveWriteScope(scopes) {
+  const granted = new Set(String(scopes || '').split(/\s+/).filter(Boolean));
+  return granted.has(DRIVE_FULL_SCOPE);
+}
+
+export function isPendingDeletionPath(path = []) {
+  return path.some((part) => String(part).trim() === PENDING_DELETION_FOLDER);
 }
 export function extensionOf(name) {
   const match = /\.([^.]+)$/.exec(String(name || ''));
@@ -86,6 +96,7 @@ export function buildAssetIndex(files, options = {}) {
 
   for (const file of files || []) {
     if (!file || file.mimeType === DRIVE_FOLDER_MIME) continue;
+    if (isPendingDeletionPath(file.path)) continue;
     if (shouldIgnoreFile(file)) {
       ignoredFiles += 1;
       continue;
@@ -107,6 +118,7 @@ export function buildAssetIndex(files, options = {}) {
       md5Checksum: file.md5Checksum || '',
       thumbnailLink: file.thumbnailLink || '',
       webViewLink: file.webViewLink || `https://drive.google.com/open?id=${encodeURIComponent(file.id)}`,
+      parentId: file.parentId || '',
     };
 
     if (!groups.has(key)) {
@@ -153,7 +165,7 @@ export function buildAssetIndex(files, options = {}) {
   for (const asset of assets) categoryCounts[asset.category] = (categoryCounts[asset.category] || 0) + 1;
 
   return {
-    version: 1,
+    version: 2,
     generatedAt: options.generatedAt || new Date().toISOString(),
     rootFolderId: options.rootFolderId || '',
     stats: {

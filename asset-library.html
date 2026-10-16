@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="dghm-ui.css?v=20261015-1">
   <link rel="stylesheet" href="app-shell.css?v=20261015-1">
-  <link rel="stylesheet" href="asset-library.css?v=20261015-1">
+  <link rel="stylesheet" href="asset-library.css?v=20261016-1">
 </head>
 <body data-tool="assets">
   <div id="tool-workspace" class="asset-page">
@@ -20,6 +20,8 @@
       </div>
       <div class="asset-head-actions">
         <span id="asset-sync-state" class="asset-sync-state" role="status">尚未同步</span>
+        <a id="asset-manage-authorize" class="asset-button-secondary" href="/api/auth/login/google?grant=assets-manage" hidden>啟用管理</a>
+        <button id="asset-upload-open" type="button" class="asset-button-primary" hidden>＋ 上傳素材</button>
         <button id="asset-refresh" type="button" class="asset-button-secondary" hidden>重新同步</button>
       </div>
     </header>
@@ -73,7 +75,7 @@
             <span class="sr-only">來源資料夾</span>
             <select id="asset-source"><option value="">全部來源</option></select>
           </label>
-          <p class="asset-safety-note">唯讀模式<br>刪除與搬移功能不開放</p>
+          <p id="asset-access-note" class="asset-safety-note">唯讀模式<br>刪除與搬移功能不開放</p>
         </aside>
 
         <main class="asset-results" aria-labelledby="asset-results-title">
@@ -112,6 +114,46 @@
       </dl>
       <h3>可用格式</h3>
       <div id="asset-dialog-variants" class="asset-variant-list"></div>
+      <div class="asset-dialog-actions">
+        <button id="asset-archive-open" type="button" class="asset-danger-button" hidden>移到待刪除區</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="asset-upload-dialog" class="asset-manage-dialog">
+    <form id="asset-upload-form" method="dialog">
+      <div class="asset-manage-dialog-head">
+        <div>
+          <p class="asset-dialog-category">Google Drive</p>
+          <h2>上傳素材</h2>
+        </div>
+        <button id="asset-upload-close" type="button" class="asset-dialog-close" aria-label="關閉">×</button>
+      </div>
+      <label class="asset-upload-destination">
+        <span>放入資料夾</span>
+        <select id="asset-upload-destination" required></select>
+      </label>
+      <label id="asset-dropzone" class="asset-dropzone">
+        <input id="asset-upload-input" type="file" multiple>
+        <strong>拖曳檔案到這裡</strong>
+        <span>或點一下選擇檔案；同名 PNG、SVG、AI 會自動合併為同組素材</span>
+      </label>
+      <div id="asset-upload-list" class="asset-upload-list" aria-live="polite"></div>
+      <p id="asset-upload-status" class="asset-upload-status" role="status"></p>
+      <div class="asset-manage-dialog-actions">
+        <button id="asset-upload-cancel" type="button" class="asset-button-secondary">取消</button>
+        <button id="asset-upload-submit" type="submit" class="asset-button-primary" disabled>開始上傳</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="asset-archive-dialog" class="asset-confirm-dialog">
+    <p class="asset-dialog-category">可復原操作</p>
+    <h2>移到待刪除區？</h2>
+    <p>這組素材的所有格式會移到 Google Drive 的 <strong>_待刪除</strong> 資料夾，不會永久刪除。</p>
+    <div class="asset-manage-dialog-actions">
+      <button id="asset-archive-cancel" type="button" class="asset-button-secondary">先保留</button>
+      <button id="asset-archive-confirm" type="button" class="asset-danger-button">移到待刪除區</button>
     </div>
   </dialog>
 
@@ -121,6 +163,6 @@
   <script>mountAppShell({ activeTool: 'assets' });</script>
   <script src="dghm-ui.js?v=20261015-1"></script>
   <script>initTheme('my-agent-theme');</script>
-  <script src="asset-library.js?v=20261015-1"></script>
+  <script src="asset-library.js?v=20261016-1"></script>
 </body>
 </html>

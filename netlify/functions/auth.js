@@ -136,10 +136,12 @@ function googleLogin(req) {
   const grant = new URL(req.url).searchParams.get('grant');
   const docsGrant = grant === 'docs';
   const assetsGrant = grant === 'assets';
-  const returnPath = docsGrant ? '/Quote-Generator.html' : assetsGrant ? '/asset-library.html' : '';
+  const assetsManageGrant = grant === 'assets-manage';
+  const returnPath = docsGrant ? '/Quote-Generator.html' : assetsGrant || assetsManageGrant ? '/asset-library.html' : '';
   const scopes = ['openid', 'email', 'profile', 'https://www.googleapis.com/auth/calendar.events'];
   if (docsGrant) scopes.push('https://www.googleapis.com/auth/drive.file');
   if (assetsGrant) scopes.push('https://www.googleapis.com/auth/drive.readonly');
+  if (assetsManageGrant) scopes.push('https://www.googleapis.com/auth/drive');
 
   const params = new URLSearchParams({
     client_id: clientId,

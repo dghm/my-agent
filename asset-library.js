@@ -11,6 +11,10 @@
     sort: 'name',
     compact: false,
     limit: 120,
+    writable: false,
+    destinations: [],
+    uploadFiles: [],
+    activeAsset: null,
   };
 
   var els = {
@@ -20,6 +24,9 @@
     authorize: document.getElementById('asset-authorize'),
     browser: document.getElementById('asset-browser'),
     refresh: document.getElementById('asset-refresh'),
+    manageAuthorize: document.getElementById('asset-manage-authorize'),
+    uploadOpen: document.getElementById('asset-upload-open'),
+    accessNote: document.getElementById('asset-access-note'),
     syncState: document.getElementById('asset-sync-state'),
     search: document.getElementById('asset-search'),
     format: document.getElementById('asset-format'),
@@ -47,6 +54,20 @@
     dialogStock: document.getElementById('asset-dialog-stock'),
     dialogSize: document.getElementById('asset-dialog-size'),
     dialogVariants: document.getElementById('asset-dialog-variants'),
+    archiveOpen: document.getElementById('asset-archive-open'),
+    uploadDialog: document.getElementById('asset-upload-dialog'),
+    uploadForm: document.getElementById('asset-upload-form'),
+    uploadClose: document.getElementById('asset-upload-close'),
+    uploadCancel: document.getElementById('asset-upload-cancel'),
+    uploadSubmit: document.getElementById('asset-upload-submit'),
+    uploadDestination: document.getElementById('asset-upload-destination'),
+    uploadInput: document.getElementById('asset-upload-input'),
+    uploadList: document.getElementById('asset-upload-list'),
+    uploadStatus: document.getElementById('asset-upload-status'),
+    dropzone: document.getElementById('asset-dropzone'),
+    archiveDialog: document.getElementById('asset-archive-dialog'),
+    archiveCancel: document.getElementById('asset-archive-cancel'),
+    archiveConfirm: document.getElementById('asset-archive-confirm'),
   };
 
   function formatNumber(value) {
@@ -76,8 +97,11 @@
     els.syncState.textContent = '需要授權';
   }
 
-  async function fetchJson(url) {
-    var response = await fetch(url, { headers: { Accept: 'application/json' } });
+  async function fetchJson(url, options) {
+    var settings = options || {};
+    var headers = new Headers(settings.headers || {});
+    headers.set('Accept', 'application/json');
+    var response = await fetch(url, Object.assign({}, settings, { headers: headers }));
     var data = await response.json().catch(function () { return {}; });
     if (!response.ok) {
       var error = new Error(data.error || '讀取失敗');
@@ -86,6 +110,26 @@
       throw error;
     }
     return data;
+  }
+
+  function setWritableUI(writable, authorizeUrl) {
+    state.writable = Boolean(writable);
+    els.manageAuthorize.href = authorizeUrl || '/api/auth/login/google?grant=assets-manage';
+    els.manageAuthorize.hidden = state.writable;
+    els.uploadOpen.hidden = !state.writable;
+    els.accessNote.innerHTML = state.writable
+      ? '管理模式<br>移除素材會先送到 _待刪除'
+      : '唯讀模式<br>啟用管理後可上傳與移到待刪除區';
+  }
+
+  function fillUploadDestinations() {
+    clearNode(els.uploadDestination);
+    state.destinations.forEach(function (destination) {
+      var option = document.createElement('option');
+      option.value = destination.id;
+      option.textContent = destination.label + (destination.path && destination.path !== destination.label ? ' · ' + destination.path : '');
+      els.uploadDestination.appendChild(option);
+    });
   }
 
   function fillFilters() {
@@ -225,6 +269,7 @@
   }
 
   function openAsset(asset) {
+    state.activeAsset = asset;
     clearNode(els.dialogPreview);
     if (asset.preview && asset.preview.thumbnailLink) {
       var image = document.createElement('img');
@@ -270,7 +315,106 @@
       els.dialogVariants.appendChild(row);
     });
 
+    els.archiveOpen.hidden = !state.writable;
+
     els.dialog.showModal();
+  }
+
+  function renderUploadFiles(states) {
+    clearNode(els.uploadList);
+    state.uploadFiles.forEach(function (file, index) {
+      var row = document.createElement('div');
+      row.className = 'asset-upload-row' + (states && states[index] ? ' is-' + states[index].kind : '');
+      var name = document.createElement('span');
+      name.textContent = file.name;
+      var detail = document.createElement('span');
+      detail.textContent = states && states[index] ? states[index].label : formatBytes(file.size);
+      row.append(name, detail);
+      els.uploadList.appendChild(row);
+    });
+    els.uploadSubmit.disabled = !state.uploadFiles.length || !els.uploadDestination.value;
+  }
+
+  function chooseUploadFiles(files) {
+    state.uploadFiles = Array.from(files || []).filter(function (file) { return file && file.name; });
+    els.uploadStatus.textContent = '';
+    renderUploadFiles();
+  }
+
+  function openUploadDialog() {
+    state.uploadFiles = [];
+    els.uploadInput.value = '';
+    els.uploadStatus.textContent = '';
+    fillUploadDestinations();
+    renderUploadFiles();
+    els.uploadDialog.showModal();
+  }
+
+  async function uploadOne(file, parentId) {
+    var session = await fetchJson('/api/assets/upload-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: file.name,
+        mimeType: file.type || 'application/octet-stream',
+        size: file.size,
+        parentId: parentId,
+      }),
+    });
+    var response = await fetch(session.uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      body: file,
+    });
+    if (!response.ok) throw new Error('Google Drive 上傳失敗（HTTP ' + response.status + '）');
+  }
+
+  async function uploadSelectedFiles() {
+    if (!state.uploadFiles.length || !els.uploadDestination.value) return;
+    var states = state.uploadFiles.map(function () { return { kind: 'pending', label: '等待中' }; });
+    var completed = 0;
+    var failed = 0;
+    els.uploadSubmit.disabled = true;
+    els.uploadCancel.disabled = true;
+    for (var index = 0; index < state.uploadFiles.length; index += 1) {
+      states[index] = { kind: 'pending', label: '上傳中…' };
+      renderUploadFiles(states);
+      try {
+        await uploadOne(state.uploadFiles[index], els.uploadDestination.value);
+        completed += 1;
+        states[index] = { kind: 'done', label: '完成' };
+      } catch (error) {
+        failed += 1;
+        states[index] = { kind: 'error', label: '失敗' };
+      }
+      els.uploadStatus.textContent = '已完成 ' + completed + '／' + state.uploadFiles.length + (failed ? '，失敗 ' + failed : '');
+      renderUploadFiles(states);
+    }
+    els.uploadCancel.disabled = false;
+    await loadIndex(true);
+    if (!failed) els.uploadDialog.close();
+    else els.uploadSubmit.disabled = false;
+  }
+
+  async function archiveActiveAsset() {
+    if (!state.activeAsset || !state.writable) return;
+    els.archiveConfirm.disabled = true;
+    els.archiveConfirm.textContent = '移動中…';
+    try {
+      await fetchJson('/api/assets/archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: state.activeAsset.variants.map(function (variant) { return variant.id; }) }),
+      });
+      els.archiveDialog.close();
+      state.activeAsset = null;
+      await loadIndex(true);
+    } catch (error) {
+      els.archiveConfirm.textContent = error.message;
+    } finally {
+      els.archiveConfirm.disabled = false;
+      setTimeout(function () { els.archiveConfirm.textContent = '移到待刪除區'; }, 1800);
+    }
   }
 
   async function loadIndex(refresh) {
@@ -285,6 +429,7 @@
       var data = await fetchJson('/api/assets/index' + (refresh ? '?refresh=1' : ''));
       state.assets = data.assets || [];
       state.stats = data.stats || {};
+      state.destinations = data.destinations || [];
       els.count.textContent = formatNumber(state.stats.assets);
       els.fileCount.textContent = formatNumber(state.stats.files);
       els.categoryCount.textContent = formatNumber(Object.keys(state.stats.categories || {}).length);
@@ -315,6 +460,7 @@
     try {
       var status = await fetchJson('/api/assets/status');
       els.syncState.textContent = '已連接 ' + (status.root && status.root.name ? status.root.name : 'Google Drive');
+      setWritableUI(status.writable, status.manageAuthorizeUrl);
       await loadIndex(false);
     } catch (error) {
       var info = error.data || {};
@@ -355,6 +501,31 @@
     render();
   });
   els.refresh.addEventListener('click', function () { loadIndex(true); });
+  els.uploadOpen.addEventListener('click', openUploadDialog);
+  els.uploadClose.addEventListener('click', function () { els.uploadDialog.close(); });
+  els.uploadCancel.addEventListener('click', function () { els.uploadDialog.close(); });
+  els.uploadInput.addEventListener('change', function () { chooseUploadFiles(els.uploadInput.files); });
+  els.uploadDestination.addEventListener('change', function () { renderUploadFiles(); });
+  els.uploadForm.addEventListener('submit', function (event) { event.preventDefault(); uploadSelectedFiles(); });
+  ['dragenter', 'dragover'].forEach(function (name) {
+    els.dropzone.addEventListener(name, function (event) {
+      event.preventDefault();
+      els.dropzone.classList.add('is-dragging');
+    });
+  });
+  ['dragleave', 'drop'].forEach(function (name) {
+    els.dropzone.addEventListener(name, function (event) {
+      event.preventDefault();
+      els.dropzone.classList.remove('is-dragging');
+    });
+  });
+  els.dropzone.addEventListener('drop', function (event) { chooseUploadFiles(event.dataTransfer.files); });
+  els.archiveOpen.addEventListener('click', function () {
+    els.dialog.close();
+    els.archiveDialog.showModal();
+  });
+  els.archiveCancel.addEventListener('click', function () { els.archiveDialog.close(); });
+  els.archiveConfirm.addEventListener('click', archiveActiveAsset);
   els.loadMore.addEventListener('click', function () { state.limit += 120; render(); });
   els.grid.addEventListener('click', function (event) {
     var card = event.target.closest('[data-asset-id]');
