@@ -50,6 +50,12 @@
   td.slot-label { font-size: 11px; color: var(--surface-text-muted); white-space: nowrap; }
   tr.fixed-row td:not(.slot-label) { background: var(--surface-bg); }
   tr.reading-row td:not(.slot-label) { background: color-mix(in srgb, var(--orange) 8%, var(--surface-panel-bg)); }
+  th.free-day-column, td.free-day-cell {
+    background: color-mix(in srgb, var(--surface-text-muted) 10%, var(--surface-panel-bg));
+    color: var(--surface-text-muted);
+  }
+  th.free-day-column { background: color-mix(in srgb, var(--navy) 78%, var(--surface-text-muted)); color: #fff; }
+  td.free-day-cell { text-align: center; vertical-align: middle; }
   textarea#output {
     width: 100%; min-height: 280px; font-family: ui-monospace, monospace; font-size: 13px;
     padding: 10px; border: 1px solid var(--surface-input-border); border-radius: 6px;
@@ -64,6 +70,8 @@
   .reading-settings { display: grid; grid-template-columns: 1fr 112px 112px; gap: 8px; }
   .reading-settings input { margin-bottom: 0; }
   .reading-settings.is-disabled { opacity: .5; }
+  .week-setting { margin: 12px 0 16px; }
+  .week-setting select { margin-bottom: 4px; }
 
   /* ---- 專案標籤管理 ---- */
   .modal-backdrop {
@@ -125,8 +133,21 @@
     <label>週次起始日（週一）</label>
     <input type="date" id="week-start">
 
+    <div class="week-setting">
+      <label for="free-day">本週自由日</label>
+      <select id="free-day">
+        <option value="">本週不設定</option>
+        <option value="週一">週一</option>
+        <option value="週二">週二</option>
+        <option value="週三">週三</option>
+        <option value="週四">週四</option>
+        <option value="週五">週五</option>
+      </select>
+      <p class="hint" style="margin:4px 0 0;">選定日不安排客戶、內部工作或閱讀，也不建立 Calendar 事件。</p>
+    </div>
+
     <fieldset>
-      <legend>客戶專案（主工作 08:30–11:30 / 13:00–15:30，共 27.5h）</legend>
+      <legend id="client-legend">客戶專案（主工作 08:30–11:30 / 13:00–15:30，共 27.5h）</legend>
       <button type="button" class="secondary small" id="manage-tags-link" style="margin-bottom:10px;">🏷️ 管理專案標籤</button>
       <div id="client-rows"></div>
       <button type="button" class="secondary small" id="add-client-row">+ 新增專案</button>
@@ -142,7 +163,7 @@
 
     <fieldset>
       <legend>工作日固定閱讀時間</legend>
-      <label class="reading-toggle"><input type="checkbox" id="reading-enabled" checked>週一至週五固定保留閱讀時段</label>
+      <label class="reading-toggle"><input type="checkbox" id="reading-enabled" checked>每個排程工作日固定保留閱讀時段</label>
       <div class="reading-settings" id="reading-settings">
         <div><label for="reading-title">行事曆標題</label><input type="text" id="reading-title" value="閱讀時間"></div>
         <div><label for="reading-start">開始</label><input type="time" id="reading-start" min="15:30" max="16:59" step="900" value="16:00"></div>
@@ -307,6 +328,15 @@ function readingConfig() {
   };
 }
 
+function selectedFreeDay() {
+  return document.getElementById('free-day').value || '';
+}
+
+function activeScheduleDays() {
+  const freeDay = selectedFreeDay();
+  return freeDay ? DAYS.filter((day) => day !== freeDay) : [...DAYS];
+}
+
 function scheduleSlots(config) {
   const internalEnd = config.enabled ? config.start : WORKDAY_END;
   const slots = [...MAIN_SLOTS];
@@ -337,7 +367,10 @@ function syncReadingSettings() {
   settings.classList.toggle('is-disabled', !config.enabled);
   settings.querySelectorAll('input').forEach((input) => { input.disabled = !config.enabled; });
   const internalEnd = config.enabled ? config.start : WORKDAY_END;
-  const internalHours = Math.max(0, hoursBetween(AFTERNOON_START, internalEnd) * DAYS.length);
+  const dayCount = activeScheduleDays().length;
+  const internalHours = Math.max(0, hoursBetween(AFTERNOON_START, internalEnd) * dayCount);
+  document.getElementById('client-legend').textContent =
+    `客戶專案（主工作 08:30–11:30 / 13:00–15:30，共 ${(5.5 * dayCount).toFixed(1)}h）`;
   document.getElementById('dghm-legend').textContent =
     `DGHM 內部工作（固定區間 ${AFTERNOON_START}–${internalEnd}，共 ${internalHours.toFixed(1)}h）`;
 }
@@ -436,8 +469,9 @@ function collectDraft() {
   const projects = window.DGHMProjects ? window.DGHMProjects.list() : [];
   return {
     kind: 'dghm-schedule-draft',
-    version: 4,
+    version: 5,
     weekStart: document.getElementById('week-start').value || '',
+    freeDay: selectedFreeDay(),
     reading: readingConfig(),
     clients: [...document.getElementById('client-rows').children].map((row) => ({
       code: row.querySelector('.code').value === '__new__' ? '' : row.querySelector('.code').value.trim(),
@@ -515,6 +549,7 @@ function applyDraft(draft) {
   refreshAllCodeSelects();
 
   if (draft.weekStart) document.getElementById('week-start').value = String(draft.weekStart).slice(0, 10);
+  document.getElementById('free-day').value = DAYS.includes(draft.freeDay) ? draft.freeDay : '';
 
   const reading = draft.reading && typeof draft.reading === 'object' ? draft.reading : {};
   document.getElementById('reading-enabled').checked = reading.enabled !== false;
@@ -762,6 +797,10 @@ function localDateStr(d) {
 })();
 
 document.getElementById('week-start').addEventListener('change', persistSessionDraft);
+document.getElementById('free-day').addEventListener('change', () => {
+  syncReadingSettings();
+  persistSessionDraft();
+});
 ['reading-enabled', 'reading-title', 'reading-start', 'reading-end'].forEach((id) => {
   const el = document.getElementById(id);
   el.addEventListener(id === 'reading-enabled' ? 'change' : 'input', () => {
@@ -857,6 +896,8 @@ document.getElementById('generate-btn').addEventListener('click', () => {
   }
   const slots = scheduleSlots(reading);
   const internalSlot = slots.find((slot) => slot.key === 'Fixed');
+  const freeDay = selectedFreeDay();
+  const activeDays = activeScheduleDays();
 
   const clientItems = [...document.getElementById('client-rows').children].map((row) => ({
     code: row.querySelector('.code').value.trim(),
@@ -877,7 +918,7 @@ document.getElementById('generate-btn').addEventListener('click', () => {
     return;
   }
 
-  // 固定行政事務在週五 13:00-15:30
+  // 行政事務優先放週五；若週五是自由日，移到本週最後一個可工作的下午。
   const adminIdx = clientItems.findIndex((it) => it.desc.includes('行政事務') || it.code.includes('行政事務'));
   let adminItem = null;
   let mainItems = clientItems;
@@ -885,26 +926,29 @@ document.getElementById('generate-btn').addEventListener('click', () => {
     adminItem = clientItems[adminIdx];
     mainItems = clientItems.filter((_, i) => i !== adminIdx);
   }
+  const adminDay = adminItem
+    ? (activeDays.includes('週五') ? '週五' : activeDays[activeDays.length - 1])
+    : null;
 
   const mainSlotList = [];
-  DAYS.forEach((day) => {
+  activeDays.forEach((day) => {
     mainSlotList.push({ day, type: 'A' });
-    if (!(day === '週五' && adminItem)) mainSlotList.push({ day, type: 'B' });
+    if (!(day === adminDay && adminItem)) mainSlotList.push({ day, type: 'B' });
   });
 
   const mainLabeled = mainItems.map((it) => ({ ...it, label: `${it.isFocus ? '⭐' : ''}【${it.code}】${it.desc}`, kind: 'client' }));
   const mainAssignment = mainItems.length ? assignSlots(mainLabeled, mainSlotList) : [];
 
   if (adminItem) {
-    mainAssignment.push({ day: '週五', type: 'B', label: `${adminItem.isFocus ? '⭐' : ''}【${adminItem.code}】${adminItem.desc}`, code: adminItem.code, kind: 'client' });
+    mainAssignment.push({ day: adminDay, type: 'B', label: `${adminItem.isFocus ? '⭐' : ''}【${adminItem.code}】${adminItem.desc}`, code: adminItem.code, kind: 'client' });
   }
 
-  const fixedSlotList = internalSlot ? DAYS.map((day) => ({ day, type: 'Fixed' })) : [];
+  const fixedSlotList = internalSlot ? activeDays.map((day) => ({ day, type: 'Fixed' })) : [];
   const dghmLabeled = dghmItems.map((it) => ({ ...it, label: `【DGHM】${it.desc}`, kind: 'internal' }));
   const fixedAssignment = fixedSlotList.length ? assignSlots(dghmLabeled, fixedSlotList) : [];
 
   const readingAssignment = reading.enabled
-    ? DAYS.map((day) => ({ day, type: 'Reading', label: reading.title, kind: 'reading' }))
+    ? activeDays.map((day) => ({ day, type: 'Reading', label: reading.title, kind: 'reading' }))
     : [];
 
   const all = [...mainAssignment, ...fixedAssignment, ...readingAssignment];
@@ -915,12 +959,19 @@ document.getElementById('generate-btn').addEventListener('click', () => {
   // 預覽表格
   const tbody = document.querySelector('#preview-table tbody');
   tbody.innerHTML = '';
+  document.querySelectorAll('#preview-table thead th').forEach((th, index) => {
+    if (index === 0) return;
+    const day = DAYS[index - 1];
+    th.textContent = day === freeDay ? `${day}（自由日）` : day;
+    th.classList.toggle('free-day-column', day === freeDay);
+  });
   slots.forEach((slot) => {
     const tr = document.createElement('tr');
     if (slot.key === 'Fixed') tr.className = 'fixed-row';
     if (slot.key === 'Reading') tr.className = 'reading-row';
     let html = `<td class="slot-label">${slot.label}</td>`;
     DAYS.forEach((day) => {
+      if (day === freeDay) { html += '<td class="free-day-cell">—</td>'; return; }
       const cell = grid[day][slot.key];
       if (!cell || cell.label == null) { html += '<td></td>'; return; }
       const dotColor = cell.kind === 'internal'
@@ -940,6 +991,11 @@ document.getElementById('generate-btn').addEventListener('click', () => {
   DAYS.forEach((day, idx) => {
     const date = formatDate(weekStart, idx);
     lines.push(`${day} ${date}`);
+    if (day === freeDay) {
+      lines.push('自由發揮日（不安排事項）');
+      lines.push('');
+      return;
+    }
     slots.forEach((slot) => {
       const cell = grid[day][slot.key];
       if (cell && cell.label != null) {
@@ -958,9 +1014,9 @@ document.getElementById('generate-btn').addEventListener('click', () => {
   persistSessionDraft();
 
   // 本週摘要卡 + 時間分配長條
-  const CLIENT_CAPACITY = 27.5;
-  const INTERNAL_CAPACITY = internalSlot ? internalSlot.hours * DAYS.length : 0;
-  const READING_CAPACITY = reading.enabled ? hoursBetween(reading.start, reading.end) * DAYS.length : 0;
+  const CLIENT_CAPACITY = 5.5 * activeDays.length;
+  const INTERNAL_CAPACITY = internalSlot ? internalSlot.hours * activeDays.length : 0;
+  const READING_CAPACITY = reading.enabled ? hoursBetween(reading.start, reading.end) * activeDays.length : 0;
   const segments = clientItems.map((it) => ({
     label: `${it.isFocus ? '⭐' : ''}【${it.code}】${it.desc}`,
     hours: (it.pct / 100) * CLIENT_CAPACITY,
@@ -986,6 +1042,7 @@ document.getElementById('generate-btn').addEventListener('click', () => {
     <div class="card"><div class="label">客戶專案</div><div class="value">${clientHours.toFixed(1)}h</div></div>
     <div class="card"><div class="label">DGHM 內部</div><div class="value">${internalHours.toFixed(1)}h</div></div>
     <div class="card"><div class="label">固定閱讀</div><div class="value">${READING_CAPACITY.toFixed(1)}h</div></div>
+    <div class="card"><div class="label">本週自由日</div><div class="value" style="font-size:16px;">${freeDay || '未設定'}</div></div>
     <div class="card"><div class="label">本週最大占比</div><div class="value" style="font-size:14px;">${topSegment.label}（${topSegment.hours.toFixed(1)}h）</div></div>
     <div class="card"><div class="label">⭐ 本週重點</div><div class="value" style="font-size:14px;">${focusSegment ? focusSegment.label : '尚未標記'}</div></div>
   `;
