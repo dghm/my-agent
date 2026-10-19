@@ -8,6 +8,12 @@ const HELPER_EXTENSIONS = new Set(['command']);
 const PREVIEW_ORDER = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'];
 
 const CATEGORY_GROUPS = new Map([
+  ['01_圖示', '圖示'],
+  ['02_介面素材', 'UI 素材'],
+  ['03_行銷節慶', '行銷節慶'],
+  ['04_印刷版型', '印刷版型'],
+  ['05_圖片', '圖片'],
+  ['06_動態素材', '動態素材'],
   ['icons', '圖示'],
   ['icon', '圖示'],
   ['logistic icon', '圖示'],
@@ -74,8 +80,10 @@ export function meaningfulPath(path = []) {
 
 export function categoryFor(path = []) {
   const clean = meaningfulPath(path);
-  const sourceCategory = clean[0] || '未分類';
-  const category = CATEGORY_GROUPS.get(sourceCategory.toLowerCase()) || '其他';
+  const topLevel = clean[0] || '未分類';
+  const organized = /^\d{2}_/.test(topLevel);
+  const sourceCategory = organized ? (clean[1] || topLevel.replace(/^\d{2}_/, '')) : topLevel;
+  const category = CATEGORY_GROUPS.get(topLevel.toLowerCase()) || '其他';
   return { category, sourceCategory };
 }
 

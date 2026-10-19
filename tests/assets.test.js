@@ -94,6 +94,17 @@ test('staging wrapper folders do not become categories', () => {
   });
 });
 
+test('organized Chinese folders use the top level as category and child as source', () => {
+  assert.deepEqual(categoryFor(['01_圖示', '一般圖示', 'AdobeStock_1']), {
+    category: '圖示',
+    sourceCategory: '一般圖示',
+  });
+  assert.deepEqual(categoryFor(['03_行銷節慶', '生日卡片']), {
+    category: '行銷節慶',
+    sourceCategory: '生日卡片',
+  });
+});
+
 test('helper files are excluded from the library', () => {
   assert.equal(shouldIgnoreFile({ name: '.DS_Store' }), true);
   assert.equal(shouldIgnoreFile({ name: 'ai_to_svg_and_png_export.command' }), true);
