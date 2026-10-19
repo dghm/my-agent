@@ -3,7 +3,9 @@ export const DRIVE_FULL_SCOPE = 'https://www.googleapis.com/auth/drive';
 export const DRIVE_FOLDER_MIME = 'application/vnd.google-apps.folder';
 export const PENDING_DELETION_FOLDER = '_待刪除';
 
-const HELPER_NAMES = new Set(['.DS_Store', 'adobe-stock.png']);
+export const ASSET_METADATA_FILENAME = '_素材標籤.json';
+
+const HELPER_NAMES = new Set(['.DS_Store', 'adobe-stock.png', ASSET_METADATA_FILENAME]);
 const HELPER_EXTENSIONS = new Set(['command']);
 const PREVIEW_ORDER = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'];
 
@@ -151,6 +153,10 @@ export function buildAssetIndex(files, options = {}) {
     asset.preview = asset.variants.find((variant) => previewRank(variant) < Number.MAX_SAFE_INTEGER) || null;
     asset.formats = [...new Set(asset.variants.map((variant) => variant.extension || 'file'))];
     asset.stockId = stockIdFor(asset);
+    asset.metadataKey = asset.stockId || `drive:${asset.variants.map((variant) => variant.id).sort()[0]}`;
+    const metadata = options.metadata?.entries?.[asset.metadataKey] || {};
+    asset.tags = Array.isArray(metadata.tags) ? metadata.tags : [];
+    asset.description = typeof metadata.description === 'string' ? metadata.description : '';
     asset.totalSize = asset.variants.reduce((sum, variant) => sum + variant.size, 0);
     asset.searchText = [
       asset.title,
@@ -159,6 +165,8 @@ export function buildAssetIndex(files, options = {}) {
       asset.sourceCategory,
       asset.directory,
       asset.formats.join(' '),
+      asset.tags.join(' '),
+      asset.description,
     ].join(' ').toLocaleLowerCase('zh-Hant');
     return asset;
   });
@@ -173,7 +181,7 @@ export function buildAssetIndex(files, options = {}) {
   for (const asset of assets) categoryCounts[asset.category] = (categoryCounts[asset.category] || 0) + 1;
 
   return {
-    version: 2,
+    version: 3,
     generatedAt: options.generatedAt || new Date().toISOString(),
     rootFolderId: options.rootFolderId || '',
     stats: {

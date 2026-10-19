@@ -1,6 +1,7 @@
 import { getStore } from '@netlify/blobs';
 import crypto from 'node:crypto';
 import {
+  ASSET_METADATA_FILENAME,
   DRIVE_FULL_SCOPE,
   DRIVE_FOLDER_MIME,
   DRIVE_READONLY_SCOPE,
@@ -14,7 +15,7 @@ import {
 
 const SESSION_COOKIE = 'dghm_session';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'insecure-dev-secret-please-set-SESSION_SECRET';
-const CACHE_KEY = 'drive-index-v1';
+const CACHE_KEY = 'drive-index-v2';
 const CACHE_MAX_AGE = 15 * 60 * 1000;
 const MAX_DRIVE_ITEMS = 15000;
 const MAX_UPLOAD_SIZE = 2 * 1024 * 1024 * 1024;
@@ -173,10 +174,91 @@ function uploadDestinations(folders, rootFolderId) {
   return destinations;
 }
 
+function normalizeTags(value) {
+  const seen = new Set();
+  const tags = [];
+  for (const item of Array.isArray(value) ? value : []) {
+    const tag = String(item || '').replace(/[\r\n]/g, ' ').trim().slice(0, 40);
+    const key = tag.toLocaleLowerCase('zh-Hant');
+    if (!tag || seen.has(key)) continue;
+    seen.add(key);
+    tags.push(tag);
+    if (tags.length >= 20) break;
+  }
+  return tags;
+}
+
+function normalizeMetadataDocument(value) {
+  const entries = {};
+  const source = value && typeof value === 'object' && value.entries && typeof value.entries === 'object'
+    ? value.entries
+    : {};
+  for (const [key, record] of Object.entries(source).slice(0, MAX_DRIVE_ITEMS)) {
+    if (!record || typeof record !== 'object') continue;
+    const safeKey = String(key).slice(0, 180);
+    if (!safeKey) continue;
+    entries[safeKey] = {
+      tags: normalizeTags(record.tags),
+      description: String(record.description || '').replace(/\r\n/g, '\n').trim().slice(0, 500),
+      updatedAt: String(record.updatedAt || ''),
+    };
+  }
+  return { version: 1, entries };
+}
+
+async function readMetadataFile(fileId, accessToken) {
+  if (!fileId) return { version: 1, entries: {} };
+  const response = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!response.ok) throw Object.assign(new Error('無法讀取素材標籤檔'), { status: response.status });
+  return normalizeMetadataDocument(await response.json().catch(() => ({})));
+}
+
+async function findMetadataFile(rootFolderId, accessToken) {
+  const children = await listFolder(rootFolderId, accessToken);
+  return children.find((item) => item.name === ASSET_METADATA_FILENAME && item.mimeType !== DRIVE_FOLDER_MIME) || null;
+}
+
+async function saveMetadataFile(rootFolderId, metadata, accessToken) {
+  let file = await findMetadataFile(rootFolderId, accessToken);
+  if (!file) {
+    file = await driveJson(
+      'https://www.googleapis.com/drive/v3/files?fields=id,name&supportsAllDrives=true',
+      accessToken,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: ASSET_METADATA_FILENAME,
+          mimeType: 'application/json',
+          parents: [rootFolderId],
+        }),
+      }
+    );
+  }
+  const response = await fetch(
+    `https://www.googleapis.com/upload/drive/v3/files/${encodeURIComponent(file.id)}?uploadType=media&fields=id&supportsAllDrives=true`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+      body: JSON.stringify(normalizeMetadataDocument(metadata), null, 2),
+    }
+  );
+  if (!response.ok) {
+    const detail = await response.json().catch(() => ({}));
+    throw Object.assign(new Error(detail.error?.message || '無法儲存素材標籤'), { status: response.status });
+  }
+}
+
 async function readCachedIndex(rootFolderId) {
   const store = getStore('asset-library');
   const cached = await store.get(CACHE_KEY, { type: 'json' });
-  if (!cached || cached.version !== 2 || cached.rootFolderId !== rootFolderId || !cached.generatedAt) return null;
+  if (!cached || cached.version !== 3 || cached.rootFolderId !== rootFolderId || !cached.generatedAt) return null;
   if (Date.now() - new Date(cached.generatedAt).getTime() > CACHE_MAX_AGE) return null;
   return cached;
 }
@@ -187,7 +269,9 @@ async function getIndex(rootFolderId, accessToken, refresh = false) {
     if (cached) return { index: cached, cached: true };
   }
   const { files, folders } = await crawlDrive(rootFolderId, accessToken);
-  const index = buildAssetIndex(files, { rootFolderId });
+  const metadataFile = files.find((file) => file.name === ASSET_METADATA_FILENAME && file.path.length === 0);
+  const metadata = await readMetadataFile(metadataFile?.id, accessToken);
+  const index = buildAssetIndex(files, { rootFolderId, metadata });
   index.destinations = uploadDestinations(folders, rootFolderId);
   const store = getStore('asset-library');
   await store.setJSON(CACHE_KEY, index);
@@ -292,7 +376,7 @@ export default async (req, context) => {
 
   try {
     const action = context.params.action;
-    const writeAction = req.method === 'POST' && (action === 'upload-session' || action === 'archive');
+    const writeAction = req.method === 'POST' && (action === 'upload-session' || action === 'archive' || action === 'metadata');
     if (writeAction) assertSameOrigin(req);
     const rootFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
     if (!rootFolderId) return json(503, { ok: false, code: 'root_not_configured', error: '尚未設定素材庫根資料夾' });
@@ -344,6 +428,26 @@ export default async (req, context) => {
         status: 200,
         headers,
       });
+    }
+
+    if (action === 'metadata' && req.method === 'POST') {
+      const body = await readJsonBody(req);
+      const metadataKey = String(body.metadataKey || '').slice(0, 180);
+      const tags = normalizeTags(body.tags);
+      const description = String(body.description || '').replace(/\r\n/g, '\n').trim().slice(0, 500);
+      if (!metadataKey) return json(400, { ok: false, error: '缺少素材識別碼' });
+
+      const { index } = await getIndex(rootFolderId, auth.accessToken, false);
+      const asset = index.assets.find((item) => item.metadataKey === metadataKey);
+      if (!asset) return json(403, { ok: false, error: '素材不在目前素材庫範圍內' });
+
+      const metadataFile = await findMetadataFile(rootFolderId, auth.accessToken);
+      const metadata = await readMetadataFile(metadataFile?.id, auth.accessToken);
+      const record = { tags, description, updatedAt: new Date().toISOString() };
+      metadata.entries[metadataKey] = record;
+      await saveMetadataFile(rootFolderId, metadata, auth.accessToken);
+      await clearIndexCache();
+      return json(200, { ok: true, metadataKey, ...record });
     }
 
     if (action === 'upload-session' && req.method === 'POST') {

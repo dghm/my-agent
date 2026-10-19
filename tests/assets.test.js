@@ -65,7 +65,7 @@ test('pending deletion paths are excluded from the asset index', () => {
     { id: 'archived', name: 'old.svg', mimeType: 'image/svg+xml', path: ['_待刪除'] },
     { id: 'active', name: 'active.svg', mimeType: 'image/svg+xml', path: ['ICONs'], parentId: 'icons' },
   ]);
-  assert.equal(index.version, 2);
+  assert.equal(index.version, 3);
   assert.equal(index.stats.assets, 1);
   assert.equal(index.assets[0].variants[0].parentId, 'icons');
 });
@@ -144,4 +144,25 @@ test('same-stem variants become one searchable asset', () => {
   assert.equal(index.assets[0].category, '圖示');
   assert.equal(index.assets[0].stockId, 'AdobeStock_123');
   assert.equal(index.assets[0].preview.id, 'png-1');
+});
+
+test('asset metadata adds searchable tags and descriptions to a whole format group', () => {
+  const index = buildAssetIndex([
+    { id: 'png-transport', name: 'AdobeStock_220758439.png', mimeType: 'image/png', path: ['01_圖示', '一般圖示'] },
+    { id: 'svg-transport', name: 'AdobeStock_220758439.svg', mimeType: 'image/svg+xml', path: ['01_圖示', '一般圖示'] },
+  ], {
+    metadata: {
+      entries: {
+        AdobeStock_220758439: {
+          tags: ['交通運輸', 'Transportation'],
+          description: '汽車、公車、火車與飛機圖示',
+        },
+      },
+    },
+  });
+  assert.equal(index.assets.length, 1);
+  assert.equal(index.assets[0].metadataKey, 'AdobeStock_220758439');
+  assert.deepEqual(index.assets[0].tags, ['交通運輸', 'Transportation']);
+  assert.match(index.assets[0].searchText, /transportation/);
+  assert.match(index.assets[0].searchText, /飛機圖示/);
 });

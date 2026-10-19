@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="dghm-ui.css?v=20261015-1">
   <link rel="stylesheet" href="app-shell.css?v=20261015-1">
-  <link rel="stylesheet" href="asset-library.css?v=20261016-1">
+  <link rel="stylesheet" href="asset-library.css?v=20261019-2">
 </head>
 <body data-tool="assets">
   <div id="tool-workspace" class="asset-page">
@@ -47,7 +47,7 @@
         <label class="asset-search">
           <span class="sr-only">搜尋素材</span>
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
-          <input id="asset-search" type="search" placeholder="搜尋名稱、Adobe Stock ID、資料夾…" autocomplete="off">
+          <input id="asset-search" type="search" placeholder="搜尋名稱、標籤、描述、Adobe Stock ID…" autocomplete="off">
         </label>
         <label class="asset-select-wrap">
           <span>格式</span>
@@ -112,6 +112,32 @@
         <div><dt>Adobe Stock</dt><dd id="asset-dialog-stock">—</dd></div>
         <div><dt>檔案總量</dt><dd id="asset-dialog-size">—</dd></div>
       </dl>
+      <section class="asset-annotation" aria-labelledby="asset-annotation-title">
+        <div class="asset-annotation-head">
+          <h3 id="asset-annotation-title">標籤與描述</h3>
+          <button id="asset-annotation-edit" type="button" class="asset-text-button" hidden>編輯</button>
+        </div>
+        <div id="asset-annotation-view">
+          <div id="asset-dialog-tags" class="asset-tag-list"></div>
+          <p id="asset-dialog-description" class="asset-description"></p>
+        </div>
+        <form id="asset-annotation-form" class="asset-annotation-form" hidden>
+          <label>
+            <span>標籤</span>
+            <input id="asset-tags-input" type="text" maxlength="500" placeholder="交通運輸、Transportation、物流、車輛">
+          </label>
+          <small>以逗號分隔，最多 20 個；中文、英文都能搜尋。</small>
+          <label>
+            <span>描述</span>
+            <textarea id="asset-description-input" maxlength="500" rows="3" placeholder="例如：包含汽車、公車、火車、飛機與船舶圖示"></textarea>
+          </label>
+          <p id="asset-annotation-status" class="asset-annotation-status" role="status"></p>
+          <div class="asset-annotation-actions">
+            <button id="asset-annotation-cancel" type="button" class="asset-button-secondary">取消</button>
+            <button id="asset-annotation-save" type="submit" class="asset-button-primary">儲存標籤</button>
+          </div>
+        </form>
+      </section>
       <h3>可用格式</h3>
       <div id="asset-dialog-variants" class="asset-variant-list"></div>
       <div class="asset-dialog-actions">
@@ -163,6 +189,6 @@
   <script>mountAppShell({ activeTool: 'assets' });</script>
   <script src="dghm-ui.js?v=20261015-1"></script>
   <script>initTheme('my-agent-theme');</script>
-  <script src="asset-library.js?v=20261016-1"></script>
+  <script src="asset-library.js?v=20261019-2"></script>
 </body>
 </html>

@@ -54,6 +54,16 @@
     dialogStock: document.getElementById('asset-dialog-stock'),
     dialogSize: document.getElementById('asset-dialog-size'),
     dialogVariants: document.getElementById('asset-dialog-variants'),
+    annotationEdit: document.getElementById('asset-annotation-edit'),
+    annotationView: document.getElementById('asset-annotation-view'),
+    annotationForm: document.getElementById('asset-annotation-form'),
+    annotationCancel: document.getElementById('asset-annotation-cancel'),
+    annotationSave: document.getElementById('asset-annotation-save'),
+    annotationStatus: document.getElementById('asset-annotation-status'),
+    tags: document.getElementById('asset-dialog-tags'),
+    description: document.getElementById('asset-dialog-description'),
+    tagsInput: document.getElementById('asset-tags-input'),
+    descriptionInput: document.getElementById('asset-description-input'),
     archiveOpen: document.getElementById('asset-archive-open'),
     uploadDialog: document.getElementById('asset-upload-dialog'),
     uploadForm: document.getElementById('asset-upload-form'),
@@ -201,6 +211,96 @@
     return result;
   }
 
+  function updateAssetSearchText(asset) {
+    asset.searchText = [
+      asset.title,
+      asset.stockId,
+      asset.category,
+      asset.sourceCategory,
+      asset.directory,
+      asset.formats.join(' '),
+      (asset.tags || []).join(' '),
+      asset.description || '',
+    ].join(' ').toLocaleLowerCase('zh-Hant');
+  }
+
+  function renderAnnotation(asset) {
+    clearNode(els.tags);
+    var tags = asset.tags || [];
+    if (tags.length) {
+      tags.forEach(function (tag) {
+        var chip = document.createElement('span');
+        chip.className = 'asset-tag';
+        chip.textContent = tag;
+        els.tags.appendChild(chip);
+      });
+    } else {
+      var empty = document.createElement('span');
+      empty.className = 'asset-tag-empty';
+      empty.textContent = '尚未加入標籤';
+      els.tags.appendChild(empty);
+    }
+    els.description.textContent = asset.description || '尚未加入描述。';
+    els.annotationEdit.hidden = !state.writable;
+    els.annotationView.hidden = false;
+    els.annotationForm.hidden = true;
+    els.annotationStatus.textContent = '';
+  }
+
+  function editAnnotation() {
+    if (!state.activeAsset || !state.writable) return;
+    els.tagsInput.value = (state.activeAsset.tags || []).join('、');
+    els.descriptionInput.value = state.activeAsset.description || '';
+    els.annotationView.hidden = true;
+    els.annotationForm.hidden = false;
+    els.annotationStatus.textContent = '';
+    els.tagsInput.focus();
+  }
+
+  function cancelAnnotationEdit() {
+    if (!state.activeAsset) return;
+    renderAnnotation(state.activeAsset);
+  }
+
+  function splitTags(value) {
+    var seen = new Set();
+    return String(value || '').split(/[,，、\n]+/).map(function (tag) { return tag.trim(); }).filter(function (tag) {
+      var key = tag.toLocaleLowerCase('zh-Hant');
+      if (!tag || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 20);
+  }
+
+  async function saveAnnotation(event) {
+    event.preventDefault();
+    if (!state.activeAsset || !state.writable) return;
+    els.annotationSave.disabled = true;
+    els.annotationCancel.disabled = true;
+    els.annotationStatus.textContent = '正在儲存到 Google Drive…';
+    try {
+      var data = await fetchJson('/api/assets/metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          metadataKey: state.activeAsset.metadataKey,
+          tags: splitTags(els.tagsInput.value),
+          description: els.descriptionInput.value,
+        }),
+      });
+      state.activeAsset.tags = data.tags || [];
+      state.activeAsset.description = data.description || '';
+      updateAssetSearchText(state.activeAsset);
+      renderAnnotation(state.activeAsset);
+      render();
+    } catch (error) {
+      els.annotationStatus.textContent = error.message;
+    } finally {
+      els.annotationSave.disabled = false;
+      els.annotationCancel.disabled = false;
+    }
+  }
+
   function createCard(asset) {
     var button = document.createElement('button');
     button.type = 'button';
@@ -288,6 +388,7 @@
     els.dialogPath.textContent = asset.path;
     els.dialogStock.textContent = asset.stockId || '—';
     els.dialogSize.textContent = formatBytes(asset.totalSize);
+    renderAnnotation(asset);
     clearNode(els.dialogVariants);
 
     asset.variants.forEach(function (variant) {
@@ -428,6 +529,7 @@
     try {
       var data = await fetchJson('/api/assets/index' + (refresh ? '?refresh=1' : ''));
       state.assets = data.assets || [];
+      state.assets.forEach(updateAssetSearchText);
       state.stats = data.stats || {};
       state.destinations = data.destinations || [];
       els.count.textContent = formatNumber(state.stats.assets);
@@ -524,6 +626,9 @@
     els.dialog.close();
     els.archiveDialog.showModal();
   });
+  els.annotationEdit.addEventListener('click', editAnnotation);
+  els.annotationCancel.addEventListener('click', cancelAnnotationEdit);
+  els.annotationForm.addEventListener('submit', saveAnnotation);
   els.archiveCancel.addEventListener('click', function () { els.archiveDialog.close(); });
   els.archiveConfirm.addEventListener('click', archiveActiveAsset);
   els.loadMore.addEventListener('click', function () { state.limit += 120; render(); });
