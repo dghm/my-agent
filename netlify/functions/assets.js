@@ -368,9 +368,9 @@ async function organizeLibrary(rootFolderId, accessToken) {
     await ensureFolder(rootFolderId, '00_待整理', accessToken);
   }
 
-  for (const [fileId, categoryName, newName] of ORGANIZATION_PLAN) {
+  await mapInBatches(ORGANIZATION_PLAN, 6, async ([fileId, categoryName, newName]) => {
     await moveAndRenameFolder(fileId, categoryIds[categoryName], newName, accessToken);
-  }
+  });
   await driveJson(
     `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(rootFolderId)}?fields=id,name&supportsAllDrives=true`,
     accessToken,
