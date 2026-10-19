@@ -15,6 +15,10 @@
     destinations: [],
     uploadFiles: [],
     activeAsset: null,
+    previewZoom: 1,
+    previewImage: null,
+    previewBaseWidth: 0,
+    previewBaseHeight: 0,
   };
 
   var els = {
@@ -48,6 +52,13 @@
     dialog: document.getElementById('asset-dialog'),
     dialogClose: document.getElementById('asset-dialog-close'),
     dialogPreview: document.getElementById('asset-dialog-preview'),
+    dialogPrev: document.getElementById('asset-dialog-prev'),
+    dialogNext: document.getElementById('asset-dialog-next'),
+    previewZoomOut: document.getElementById('asset-preview-zoom-out'),
+    previewZoomReset: document.getElementById('asset-preview-zoom-reset'),
+    previewZoomIn: document.getElementById('asset-preview-zoom-in'),
+    previewZoomValue: document.getElementById('asset-preview-zoom-value'),
+    previewPosition: document.getElementById('asset-preview-position'),
     dialogCategory: document.getElementById('asset-dialog-category'),
     dialogTitle: document.getElementById('asset-dialog-title'),
     dialogPath: document.getElementById('asset-dialog-path'),
@@ -352,6 +363,63 @@
     return button;
   }
 
+  function highResolutionThumbnail(url) {
+    return String(url || '').replace(/=s\d+(?:-c)?(?=$|&)/, '=s1600');
+  }
+
+  function fitPreviewImage() {
+    var image = state.previewImage;
+    if (!image || !image.naturalWidth || !image.naturalHeight) return;
+    var width = Math.max(100, els.dialogPreview.clientWidth - 84);
+    var height = Math.max(100, els.dialogPreview.clientHeight - 120);
+    var scale = Math.min(width / image.naturalWidth, height / image.naturalHeight);
+    state.previewBaseWidth = Math.max(1, Math.round(image.naturalWidth * scale));
+    state.previewBaseHeight = Math.max(1, Math.round(image.naturalHeight * scale));
+    applyPreviewZoom(false);
+  }
+
+  function applyPreviewZoom(center) {
+    var image = state.previewImage;
+    if (!image || !state.previewBaseWidth || !state.previewBaseHeight) return;
+    image.style.maxWidth = 'none';
+    image.style.maxHeight = 'none';
+    image.style.width = Math.round(state.previewBaseWidth * state.previewZoom) + 'px';
+    image.style.height = Math.round(state.previewBaseHeight * state.previewZoom) + 'px';
+    els.previewZoomValue.textContent = Math.round(state.previewZoom * 100) + '%';
+    els.previewZoomOut.disabled = state.previewZoom <= 1;
+    els.previewZoomIn.disabled = state.previewZoom >= 6;
+    if (center !== false) {
+      requestAnimationFrame(function () {
+        els.dialogPreview.scrollLeft = Math.max(0, (els.dialogPreview.scrollWidth - els.dialogPreview.clientWidth) / 2);
+        els.dialogPreview.scrollTop = Math.max(0, (els.dialogPreview.scrollHeight - els.dialogPreview.clientHeight) / 2);
+      });
+    }
+  }
+
+  function changePreviewZoom(direction) {
+    var levels = [1, 1.5, 2, 3, 4, 6];
+    var index = levels.indexOf(state.previewZoom);
+    if (index === -1) index = 0;
+    state.previewZoom = levels[Math.max(0, Math.min(levels.length - 1, index + direction))];
+    applyPreviewZoom(true);
+  }
+
+  function updatePreviewNavigation(asset) {
+    var assets = filteredAssets();
+    var index = assets.findIndex(function (item) { return item.id === asset.id; });
+    els.dialogPrev.disabled = index <= 0;
+    els.dialogNext.disabled = index < 0 || index >= assets.length - 1;
+    els.previewPosition.textContent = index >= 0 ? (index + 1) + ' / ' + assets.length : '';
+  }
+
+  function navigateAsset(offset) {
+    if (!state.activeAsset) return;
+    var assets = filteredAssets();
+    var index = assets.findIndex(function (item) { return item.id === state.activeAsset.id; });
+    var next = assets[index + offset];
+    if (next) openAsset(next, true);
+  }
+
   function render() {
     var assets = filteredAssets();
     var visibleAssets = assets.slice(0, state.limit);
@@ -368,14 +436,21 @@
     renderCategories();
   }
 
-  function openAsset(asset) {
+  function openAsset(asset, keepDialogOpen) {
     state.activeAsset = asset;
+    state.previewZoom = 1;
+    state.previewImage = null;
+    state.previewBaseWidth = 0;
+    state.previewBaseHeight = 0;
+    els.previewZoomValue.textContent = '100%';
     clearNode(els.dialogPreview);
     if (asset.preview && asset.preview.thumbnailLink) {
       var image = document.createElement('img');
-      image.src = asset.preview.thumbnailLink;
+      image.src = highResolutionThumbnail(asset.preview.thumbnailLink);
       image.alt = asset.title + ' 預覽';
       image.referrerPolicy = 'no-referrer';
+      image.addEventListener('load', fitPreviewImage, { once: true });
+      state.previewImage = image;
       els.dialogPreview.appendChild(image);
     } else {
       var noPreview = document.createElement('span');
@@ -417,8 +492,9 @@
     });
 
     els.archiveOpen.hidden = !state.writable;
+    updatePreviewNavigation(asset);
 
-    els.dialog.showModal();
+    if (!keepDialogOpen || !els.dialog.open) els.dialog.showModal();
   }
 
   function renderUploadFiles(states) {
@@ -629,6 +705,11 @@
   els.annotationEdit.addEventListener('click', editAnnotation);
   els.annotationCancel.addEventListener('click', cancelAnnotationEdit);
   els.annotationForm.addEventListener('submit', saveAnnotation);
+  els.dialogPrev.addEventListener('click', function () { navigateAsset(-1); });
+  els.dialogNext.addEventListener('click', function () { navigateAsset(1); });
+  els.previewZoomOut.addEventListener('click', function () { changePreviewZoom(-1); });
+  els.previewZoomIn.addEventListener('click', function () { changePreviewZoom(1); });
+  els.previewZoomReset.addEventListener('click', function () { state.previewZoom = 1; applyPreviewZoom(true); });
   els.archiveCancel.addEventListener('click', function () { els.archiveDialog.close(); });
   els.archiveConfirm.addEventListener('click', archiveActiveAsset);
   els.loadMore.addEventListener('click', function () { state.limit += 120; render(); });
@@ -641,6 +722,13 @@
   els.dialogClose.addEventListener('click', function () { els.dialog.close(); });
   els.dialog.addEventListener('click', function (event) {
     if (event.target === els.dialog) els.dialog.close();
+  });
+  document.addEventListener('keydown', function (event) {
+    if (!els.dialog.open || /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName)) return;
+    if (event.key === 'ArrowLeft') { event.preventDefault(); navigateAsset(-1); }
+    if (event.key === 'ArrowRight') { event.preventDefault(); navigateAsset(1); }
+    if (event.key === '+' || event.key === '=') { event.preventDefault(); changePreviewZoom(1); }
+    if (event.key === '-') { event.preventDefault(); changePreviewZoom(-1); }
   });
 
   start();

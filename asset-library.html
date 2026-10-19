@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="dghm-ui.css?v=20261015-1">
   <link rel="stylesheet" href="app-shell.css?v=20261015-1">
-  <link rel="stylesheet" href="asset-library.css?v=20261019-2">
+  <link rel="stylesheet" href="asset-library.css?v=20261019-3">
 </head>
 <body data-tool="assets">
   <div id="tool-workspace" class="asset-page">
@@ -103,7 +103,18 @@
 
   <dialog id="asset-dialog" class="asset-dialog">
     <button id="asset-dialog-close" type="button" class="asset-dialog-close" aria-label="關閉">×</button>
-    <div id="asset-dialog-preview" class="asset-dialog-preview"></div>
+    <div class="asset-preview-panel">
+      <button id="asset-dialog-prev" type="button" class="asset-preview-nav asset-preview-prev" aria-label="上一個素材">‹</button>
+      <div id="asset-dialog-preview" class="asset-dialog-preview"></div>
+      <button id="asset-dialog-next" type="button" class="asset-preview-nav asset-preview-next" aria-label="下一個素材">›</button>
+      <div class="asset-preview-tools" aria-label="預覽縮放控制">
+        <button id="asset-preview-zoom-out" type="button" aria-label="縮小預覽">−</button>
+        <button id="asset-preview-zoom-reset" type="button">適合</button>
+        <span id="asset-preview-zoom-value">100%</span>
+        <button id="asset-preview-zoom-in" type="button" aria-label="放大預覽">＋</button>
+        <span id="asset-preview-position" class="asset-preview-position"></span>
+      </div>
+    </div>
     <div class="asset-dialog-body">
       <p id="asset-dialog-category" class="asset-dialog-category"></p>
       <h2 id="asset-dialog-title"></h2>
@@ -189,6 +200,6 @@
   <script>mountAppShell({ activeTool: 'assets' });</script>
   <script src="dghm-ui.js?v=20261015-1"></script>
   <script>initTheme('my-agent-theme');</script>
-  <script src="asset-library.js?v=20261019-2"></script>
+  <script src="asset-library.js?v=20261019-3"></script>
 </body>
 </html>
