@@ -20,30 +20,6 @@ const MAX_DRIVE_ITEMS = 15000;
 const MAX_UPLOAD_SIZE = 2 * 1024 * 1024 * 1024;
 const MAX_ARCHIVE_FILES = 24;
 
-const ORGANIZATION_PLAN = [
-  ['1kwTkwmwIBvvnQyjJQBceH8uleqJMN2aC', '01_圖示', '一般圖示'],
-  ['1B8Cpf-BxiHdkUn1EmEUhjQvDIdBgk5ke', '01_圖示', '物流圖示'],
-  ['1-YNAqQvvV6d4huBAHw8Dnj2ajtIike6g', '01_圖示', '設計字母'],
-  ['1EF88aHlgeq9osfNFaxbeUZM38elcMGRg', '02_介面素材', '介面元件'],
-  ['1DS7-dlHadObP3dp-f4DFrHw66vhtdYDg', '02_介面素材', '介面套件'],
-  ['1gSKgdS8qxLVasQ-C1_D-wQmx_3f1dGp-', '03_行銷節慶', '社群貼文'],
-  ['1WZvoYUBc09jFc5OPlfVZMQiigQV_QYDS', '03_行銷節慶', '社群貼文範本'],
-  ['1VNDT03JG2hl9bvnEk_IYY8MDMGglYX6b', '03_行銷節慶', '生日卡片'],
-  ['19NGM_oItfs-2bn4zKE8OkWut3dI6eJS1', '03_行銷節慶', '生日卡片（待合併）'],
-  ['1GvxfH55k-67qzT3rvr3o8hxYUN0L_45m', '03_行銷節慶', '聖誕節'],
-  ['1rvKeZ6UWXzgiucLV62Z0f9eG8BgfjURB', '03_行銷節慶', '中秋節'],
-  ['11JDPQKZ6pmI6FXk4vFuD0aPpyjGdXTuU', '04_印刷版型', '名片'],
-  ['1HFl4PsYCdwxOUYKdoV2EsSFctuDfbiaN', '04_印刷版型', '名片素材（待合併）'],
-  ['1eUvTmPqpTgdaEgdmzR3n8xYSVxI7eW4k', '04_印刷版型', 'A4單張'],
-  ['13xLfCKpDkfQWUWay3152n5jy_tiHwMLj', '04_印刷版型', '三折頁'],
-  ['1p4SCIsApFSX1DrfL4YtYPjDGzl_5v3XY', '04_印刷版型', '展場海報'],
-  ['1SmQ4H6rB0KpcIF-cfteBbAyNzySD4hnZ', '05_圖片', '抽象背景'],
-  ['1OyWZR3L3nUehINCGDVEbwSBJmf95zn4M', '05_圖片', '冷鏈'],
-  ['1-U8ecI8emKiDk5gVwsN2ESeqn6TQ6uzI', '05_圖片', '客服'],
-  ['1cEi0Y3pGyV5AmobZ_iUQM_BjTbofaFlv', '05_圖片', '圖庫圖片'],
-  ['16PBa87oq_dlkOFzsPspUDv0U-wBMqjTl', '05_圖片', '專案圖片'],
-];
-
 function json(status, payload, extraHeaders = {}) {
   return new Response(JSON.stringify(payload), {
     status,
@@ -301,89 +277,6 @@ async function ensurePendingFolder(rootFolderId, accessToken) {
   return created.id;
 }
 
-async function ensureFolder(parentId, name, accessToken) {
-  const children = await listFolder(parentId, accessToken);
-  const existing = children.find((item) => item.mimeType === DRIVE_FOLDER_MIME && item.name === name);
-  if (existing) return existing.id;
-  const created = await driveJson(
-    'https://www.googleapis.com/drive/v3/files?fields=id&supportsAllDrives=true',
-    accessToken,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, mimeType: DRIVE_FOLDER_MIME, parents: [parentId] }),
-    }
-  );
-  return created.id;
-}
-
-async function moveAndRenameFolder(fileId, parentId, name, accessToken) {
-  const fields = encodeURIComponent('id,name,mimeType,parents,trashed');
-  const current = await driveJson(
-    `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?fields=${fields}&supportsAllDrives=true`,
-    accessToken
-  );
-  if (current.trashed || current.mimeType !== DRIVE_FOLDER_MIME) throw new Error(`找不到待整理資料夾：${fileId}`);
-  const params = new URLSearchParams({ fields: 'id,name,parents', supportsAllDrives: 'true' });
-  if (!(current.parents || []).includes(parentId)) params.set('addParents', parentId);
-  const oldParents = (current.parents || []).filter((id) => id !== parentId);
-  if (oldParents.length) params.set('removeParents', oldParents.join(','));
-  return driveJson(
-    `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?${params}`,
-    accessToken,
-    {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
-    }
-  );
-}
-
-async function organizeLibrary(rootFolderId, accessToken) {
-  const categoryNames = ['01_圖示', '02_介面素材', '03_行銷節慶', '04_印刷版型', '05_圖片'];
-  const categoryIds = Object.fromEntries(
-    await Promise.all(categoryNames.map(async (name) => [name, await ensureFolder(rootFolderId, name, accessToken)]))
-  );
-  await Promise.all([
-    ensureFolder(rootFolderId, '06_動態素材', accessToken),
-    ensureFolder(rootFolderId, '90_封存', accessToken),
-    ensurePendingFolder(rootFolderId, accessToken),
-  ]);
-
-  const rootChildren = await listFolder(rootFolderId, accessToken);
-  const staging = rootChildren.find((item) =>
-    item.mimeType === DRIVE_FOLDER_MIME && /^00_待整理(?:_|$)/.test(item.name)
-  );
-  if (staging && staging.name !== '00_待整理') {
-    await driveJson(
-      `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(staging.id)}?fields=id,name&supportsAllDrives=true`,
-      accessToken,
-      {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: '00_待整理' }),
-      }
-    );
-  } else if (!staging) {
-    await ensureFolder(rootFolderId, '00_待整理', accessToken);
-  }
-
-  await mapInBatches(ORGANIZATION_PLAN, 6, async ([fileId, categoryName, newName]) => {
-    await moveAndRenameFolder(fileId, categoryIds[categoryName], newName, accessToken);
-  });
-  await driveJson(
-    `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(rootFolderId)}?fields=id,name&supportsAllDrives=true`,
-    accessToken,
-    {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: '設計素材庫' }),
-    }
-  );
-  await clearIndexCache();
-  return { moved: ORGANIZATION_PLAN.length, rootName: '設計素材庫' };
-}
-
 async function mapInBatches(items, limit, callback) {
   for (let index = 0; index < items.length; index += limit) {
     await Promise.all(items.slice(index, index + limit).map(callback));
@@ -399,7 +292,7 @@ export default async (req, context) => {
 
   try {
     const action = context.params.action;
-    const writeAction = req.method === 'POST' && (action === 'upload-session' || action === 'archive' || action === 'organize-library');
+    const writeAction = req.method === 'POST' && (action === 'upload-session' || action === 'archive');
     if (writeAction) assertSameOrigin(req);
     const rootFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
     if (!rootFolderId) return json(503, { ok: false, code: 'root_not_configured', error: '尚未設定素材庫根資料夾' });
@@ -423,10 +316,6 @@ export default async (req, context) => {
       const refresh = new URL(req.url).searchParams.get('refresh') === '1';
       const result = await getIndex(rootFolderId, auth.accessToken, refresh);
       return json(200, { ok: true, cached: result.cached, ...result.index });
-    }
-
-    if (action === 'organize-library' && req.method === 'POST') {
-      return json(200, { ok: true, ...(await organizeLibrary(rootFolderId, auth.accessToken)) });
     }
 
     if (action === 'download') {
