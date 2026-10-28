@@ -166,6 +166,19 @@ function findItem(state, cycleKeyValue, itemId) {
   return { cycle, item: cycle.items.find((candidate) => candidate.id === itemId) };
 }
 
+export function renameItem(state, requestedCycle, item, label) {
+  item.label = label;
+  if (!item.persistent || !item.templateId) return;
+  const template = state.templateItems.find((candidate) => candidate.id === item.templateId);
+  if (template) template.label = label;
+  Object.entries(state.cycles).forEach(([key, cycle]) => {
+    if (key < requestedCycle) return;
+    cycle.items.forEach((candidate) => {
+      if (candidate.templateId === item.templateId) candidate.label = label;
+    });
+  });
+}
+
 export default async (req) => {
   const session = sessionFromRequest(req);
   if (!session) return json(401, { ok: false, error: '請先登入工作台', code: 'unauthenticated' });
@@ -216,6 +229,14 @@ export default async (req) => {
       if (!item) return json(404, { ok: false, error: '找不到這個 Checklist 項目' });
       item.completed = input?.completed === true;
       item.completedAt = item.completed ? now : null;
+    } else if (action === 'edit') {
+      const itemId = String(input?.itemId || '').trim();
+      if (!ID_PATTERN.test(itemId)) return json(400, { ok: false, error: 'Checklist 項目編號錯誤' });
+      const normalized = validateLabel(input?.label);
+      if (normalized.error) return json(400, { ok: false, error: normalized.error });
+      const { item } = findItem(state, requestedCycle, itemId);
+      if (!item) return json(404, { ok: false, error: '找不到這個 Checklist 項目' });
+      renameItem(state, requestedCycle, item, normalized.label);
     } else if (action === 'promote') {
       const itemId = String(input?.itemId || '').trim();
       if (!ID_PATTERN.test(itemId)) return json(400, { ok: false, error: 'Checklist 項目編號錯誤' });

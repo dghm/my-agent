@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ensureCycle, getCycleContext } from '../netlify/functions/accounting-checklist.js';
+import { ensureCycle, getCycleContext, renameItem } from '../netlify/functions/accounting-checklist.js';
 
 function state(templateItems = [], cycles = {}) {
   return { version: 1, templateItems, cycles };
@@ -31,4 +31,17 @@ test('new cycles copy fixed templates without carrying completion state', () => 
   ]);
   assert.equal(ensureCycle(value, '2026-12', () => 'unexpected'), false);
   assert.equal(value.cycles['2026-12'].items.length, 1);
+});
+
+test('renaming a fixed item updates its template and current or future cycles only', () => {
+  const value = state([{ id: 'template-1', label: '舊名稱' }], {
+    '2026-08': { items: [{ id: 'old-item', templateId: 'template-1', persistent: true, label: '舊名稱' }] },
+    '2026-10': { items: [{ id: 'current-item', templateId: 'template-1', persistent: true, label: '舊名稱' }] },
+    '2026-12': { items: [{ id: 'future-item', templateId: 'template-1', persistent: true, label: '舊名稱' }] },
+  });
+  renameItem(value, '2026-10', value.cycles['2026-10'].items[0], '新名稱');
+  assert.equal(value.templateItems[0].label, '新名稱');
+  assert.equal(value.cycles['2026-08'].items[0].label, '舊名稱');
+  assert.equal(value.cycles['2026-10'].items[0].label, '新名稱');
+  assert.equal(value.cycles['2026-12'].items[0].label, '新名稱');
 });
