@@ -46,6 +46,52 @@
     .board-grid { grid-template-columns: 1fr; }
   }
 
+  /* ---- Recurring reminders ---- */
+  .recurring-card {
+    padding: 20px; border: 1px solid var(--surface-border); border-radius: var(--radius);
+    background: var(--surface-panel-bg); box-shadow: var(--shadow-sm);
+  }
+  .recurring-card.is-urgent { border-color: rgba(230, 111, 57, .5); box-shadow: 0 10px 30px rgba(230, 111, 57, .1); }
+  .recurring-card.is-overdue { border-color: rgba(192, 57, 43, .5); }
+  .recurring-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+  .recurring-kicker { display: block; margin-bottom: 5px; color: var(--orange); font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+  .recurring-head h3 { margin: 0 0 5px; color: var(--navy-text); font-size: 17px; }
+  .recurring-meta { margin: 0; color: var(--surface-text-muted); font-size: 11px; }
+  .recurring-progress { flex: 0 0 180px; text-align: right; }
+  .recurring-progress strong { display: block; color: var(--navy-text); font-size: 16px; }
+  .recurring-progress-track { height: 6px; margin-top: 7px; overflow: hidden; border-radius: 999px; background: var(--surface-bg); }
+  .recurring-progress-track span { display: block; height: 100%; border-radius: inherit; background: var(--orange); transition: width .2s ease; }
+  .accounting-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; margin: 17px 0 0; }
+  .accounting-item {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 9px;
+    min-height: 38px; padding: 7px 9px; border-radius: var(--radius-xs); background: var(--surface-bg);
+  }
+  .accounting-item input { width: 17px; height: 17px; margin: 0; accent-color: var(--orange); cursor: pointer; }
+  .accounting-item-label { color: var(--surface-text); font-size: 12px; line-height: 1.45; }
+  .accounting-item.is-complete .accounting-item-label { color: var(--surface-text-faint); text-decoration: line-through; }
+  .accounting-item-actions { display: flex; align-items: center; gap: 5px; }
+  .accounting-badge { padding: 2px 6px; border-radius: 999px; color: var(--surface-text-muted); background: var(--surface-panel-bg); font-size: 9px; font-weight: 700; }
+  .accounting-badge.is-temporary { color: var(--orange); }
+  .accounting-action {
+    padding: 3px 5px; border: 0; border-radius: 5px; background: transparent;
+    color: var(--surface-text-muted); font: inherit; font-size: 9px; cursor: pointer;
+  }
+  .accounting-action:hover { background: var(--surface-panel-bg); color: var(--navy-text); }
+  .accounting-add { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--surface-border); }
+  .accounting-add input[type="text"] {
+    min-width: 0; flex: 1; padding: 9px 11px; border: 1px solid var(--surface-border); border-radius: var(--radius-xs);
+    background: var(--surface-bg); color: var(--surface-text); font: inherit; font-size: 12px;
+  }
+  .accounting-add label { display: flex; align-items: center; gap: 5px; color: var(--surface-text-muted); font-size: 11px; white-space: nowrap; }
+  .accounting-add input[type="checkbox"] { accent-color: var(--orange); }
+  .accounting-add button {
+    padding: 9px 13px; border: 0; border-radius: var(--radius-xs); background: var(--navy); color: #fff;
+    font: inherit; font-size: 11px; font-weight: 800; cursor: pointer;
+  }
+  .accounting-add button:disabled, .accounting-action:disabled, .accounting-item input:disabled { opacity: .5; cursor: wait; }
+  .accounting-message { min-height: 16px; margin: 8px 0 0; color: var(--surface-text-muted); font-size: 10px; }
+  .accounting-message.is-error { color: #C0392B; }
+
   /* ---- Review block ---- */
   .review-grid {
     display: grid; grid-template-columns: minmax(0, 2fr) minmax(270px, 1fr);
@@ -289,6 +335,9 @@
     .hero, .support-grid, .service-monitor-grid, .review-grid { grid-template-columns: 1fr; }
     .hero-main { padding: 22px; }
     .timeline-step { flex: 1 1 45%; }
+    .recurring-head, .accounting-add { align-items: stretch; flex-direction: column; }
+    .recurring-progress { flex-basis: auto; text-align: left; }
+    .accounting-list { grid-template-columns: 1fr; }
   }
   @media (max-width: 420px) {
     .brand .sub { display: none; }
@@ -296,6 +345,8 @@
     .timeline-step { flex: none; width: 100%; }
     .tool-list { grid-template-columns: 1fr; }
     .section-head { align-items: flex-start; flex-direction: column; gap: 4px; }
+    .accounting-item { grid-template-columns: auto minmax(0, 1fr); align-items: start; }
+    .accounting-item-actions { grid-column: 2; flex-wrap: wrap; }
   }
 </style>
 </head>
@@ -321,6 +372,16 @@
         <div id="tomorrow-events"><p class="board-empty">載入中…</p></div>
       </div>
     </div>
+  </section>
+
+  <section class="section" aria-labelledby="recurring-reminders-title">
+    <div class="section-head">
+      <h2 id="recurring-reminders-title">例行提醒</h2>
+      <p>固定流程會自動帶入，也能補上當期臨時事項</p>
+    </div>
+    <article class="recurring-card" id="accounting-checklist-card" aria-labelledby="accounting-checklist-title">
+      <div id="accounting-checklist"><p class="board-empty">載入中…</p></div>
+    </article>
   </section>
 
   <section class="section" aria-labelledby="work-review-title">
@@ -500,6 +561,8 @@ initTheme('my-agent-theme');
   var SITE_HEALTH_CACHE_KEY = 'dghm-site-monitor-last';
   var MAKE_MONITOR_CACHE_KEY = 'dghm-make-monitor-last';
   var MILESTONE_CACHE_KEY = 'dghm-milestones-cache-v1';
+  var accountingChecklistData = null;
+  var accountingChecklistBusy = false;
   var makeMonitorData = null;
   var makeScenarioListExpanded = false;
   var SERIES_COLORS = [
@@ -537,6 +600,84 @@ initTheme('my-agent-theme');
     try {
       return new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
     } catch (error) { return ''; }
+  }
+
+  function formatAccountingMonth(cycle) {
+    var parts = String(cycle || '').split('-');
+    return parts.length === 2 ? Number(parts[0]) + ' 年 ' + Number(parts[1]) + ' 月' : cycle;
+  }
+
+  function formatAccountingDueDate(value) {
+    var parts = String(value || '').split('-');
+    return parts.length === 3 ? Number(parts[1]) + ' 月 ' + Number(parts[2]) + ' 日' : value;
+  }
+
+  function renderAccountingChecklist(data) {
+    accountingChecklistData = data;
+    var card = document.getElementById('accounting-checklist-card');
+    var container = document.getElementById('accounting-checklist');
+    card.className = 'recurring-card' + (data.urgent ? ' is-urgent' : '') + (data.overdue ? ' is-overdue' : '');
+    var percent = data.totalCount ? Math.round(data.completedCount / data.totalCount * 100) : 0;
+    var status = data.overdue
+      ? '已逾期，完成後將切換至下一期'
+      : (data.complete ? '本期已完成' : (data.urgent ? '月底將至，請安排準備' : '截止 ' + formatAccountingDueDate(data.dueDate)));
+    var items = (data.items || []).map(function (item) {
+      var badge = item.persistent
+        ? '<span class="accounting-badge">固定</span>'
+        : '<span class="accounting-badge is-temporary">本期</span>';
+      var promote = item.persistent ? '' : '<button class="accounting-action" type="button" data-accounting-action="promote" data-item-id="' + escapeHtml(item.id) + '">設為固定</button>';
+      return '<div class="accounting-item' + (item.completed ? ' is-complete' : '') + '">' +
+        '<input type="checkbox" aria-label="完成 ' + escapeHtml(item.label) + '" data-accounting-action="toggle" data-item-id="' + escapeHtml(item.id) + '"' + (item.completed ? ' checked' : '') + (accountingChecklistBusy ? ' disabled' : '') + '>' +
+        '<span class="accounting-item-label">' + escapeHtml(item.label) + '</span>' +
+        '<span class="accounting-item-actions">' + badge + promote +
+          '<button class="accounting-action" type="button" aria-label="刪除 ' + escapeHtml(item.label) + '" data-accounting-action="remove" data-item-id="' + escapeHtml(item.id) + '">刪除</button></span></div>';
+    }).join('');
+    if (!items) items = '<p class="board-empty">目前還沒有項目。先在下方加入第一個固定或本期項目。</p>';
+    container.innerHTML = '<div class="recurring-head"><div><span class="recurring-kicker">BIMONTHLY · ACCOUNTING</span>' +
+      '<h3 id="accounting-checklist-title">' + escapeHtml(formatAccountingMonth(data.cycle)) + '會計交件準備</h3>' +
+      '<p class="recurring-meta">' + escapeHtml(status) + '</p></div>' +
+      '<div class="recurring-progress"><strong>' + data.completedCount + ' / ' + data.totalCount + ' 完成</strong>' +
+        '<div class="recurring-progress-track" aria-hidden="true"><span style="width:' + percent + '%"></span></div></div></div>' +
+      '<div class="accounting-list">' + items + '</div>' +
+      '<form class="accounting-add" id="accounting-add-form"><input id="accounting-new-item" type="text" maxlength="100" required placeholder="新增要準備的項目">' +
+        '<label><input id="accounting-new-persistent" type="checkbox" checked> 每期固定帶入</label>' +
+        '<button type="submit"' + (accountingChecklistBusy ? ' disabled' : '') + '>加入 Checklist</button></form>' +
+      '<p class="accounting-message" id="accounting-message" aria-live="polite"></p>';
+  }
+
+  function renderAccountingError(message) {
+    document.getElementById('accounting-checklist').innerHTML = '<p class="board-empty">' + escapeHtml(message || 'Checklist 載入失敗') + '</p>';
+  }
+
+  async function accountingRequest(payload) {
+    accountingChecklistBusy = true;
+    if (accountingChecklistData) renderAccountingChecklist(accountingChecklistData);
+    try {
+      var response = await fetch('/api/accounting-checklist', {
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.assign({ cycle: accountingChecklistData.cycle }, payload))
+      });
+      var data = await response.json().catch(function () { return {}; });
+      if (!response.ok || !data.ok) throw new Error(data.error || 'Checklist 更新失敗');
+      accountingChecklistBusy = false;
+      renderAccountingChecklist(data);
+    } catch (error) {
+      accountingChecklistBusy = false;
+      if (accountingChecklistData) renderAccountingChecklist(accountingChecklistData);
+      var message = document.getElementById('accounting-message');
+      if (message) { message.className = 'accounting-message is-error'; message.textContent = error.message || 'Checklist 更新失敗'; }
+    }
+  }
+
+  async function loadAccountingChecklist() {
+    try {
+      var response = await fetch('/api/accounting-checklist', { credentials: 'same-origin', cache: 'no-store' });
+      var data = await response.json().catch(function () { return {}; });
+      if (!response.ok || !data.ok) throw new Error(data.error || 'Checklist 載入失敗');
+      renderAccountingChecklist(data);
+    } catch (error) {
+      renderAccountingError(error.message || 'Checklist 載入失敗');
+    }
   }
 
   function resolveProjectColor(color) {
@@ -928,7 +1069,39 @@ initTheme('my-agent-theme');
     if (button.dataset.action === 'toggle-scenario') toggleMakeScenario(button);
   });
 
+  document.getElementById('accounting-checklist').addEventListener('submit', function (event) {
+    if (event.target.id !== 'accounting-add-form') return;
+    event.preventDefault();
+    var input = document.getElementById('accounting-new-item');
+    var persistent = document.getElementById('accounting-new-persistent').checked;
+    if (input.value.trim()) accountingRequest({ action: 'add', label: input.value.trim(), persistent: persistent });
+  });
+
+  document.getElementById('accounting-checklist').addEventListener('change', function (event) {
+    var control = event.target.closest('[data-accounting-action="toggle"]');
+    if (!control || accountingChecklistBusy) return;
+    accountingRequest({ action: 'toggle', itemId: control.dataset.itemId, completed: control.checked });
+  });
+
+  document.getElementById('accounting-checklist').addEventListener('click', function (event) {
+    var button = event.target.closest('button[data-accounting-action]');
+    if (!button || accountingChecklistBusy) return;
+    var item = (accountingChecklistData.items || []).find(function (candidate) { return candidate.id === button.dataset.itemId; });
+    if (!item) return;
+    if (button.dataset.accountingAction === 'promote') {
+      accountingRequest({ action: 'promote', itemId: item.id });
+      return;
+    }
+    if (button.dataset.accountingAction === 'remove') {
+      var warning = item.persistent
+        ? '刪除固定項目會同時停止未來自動帶入，確定要刪除嗎？'
+        : '確定要刪除這個本期項目嗎？';
+      if (window.confirm(warning)) accountingRequest({ action: 'remove', itemId: item.id, removeFromTemplate: item.persistent });
+    }
+  });
+
   loadCalendarBoards();
+  loadAccountingChecklist();
   loadLastWeekDistribution();
   loadMilestoneFocus();
   loadSiteHealth();
