@@ -72,6 +72,23 @@ function cycleIsComplete(cycle) {
   return !cycle?.items?.length || cycle.items.every((item) => item.completed === true);
 }
 
+export function buildCycleHistory(state, activeCycle) {
+  return Object.entries(state.cycles || {})
+    .filter(([key]) => CYCLE_PATTERN.test(key) && key < activeCycle)
+    .sort(([left], [right]) => right.localeCompare(left))
+    .map(([key, cycle]) => {
+      const items = Array.isArray(cycle.items) ? cycle.items : [];
+      const completedCount = items.filter((item) => item.completed === true).length;
+      return {
+        cycle: key,
+        items,
+        completedCount,
+        totalCount: items.length,
+        complete: items.length > 0 && completedCount === items.length,
+      };
+    });
+}
+
 function dueDateForCycle(key) {
   const [year, month] = key.split('-').map(Number);
   const day = new Date(Date.UTC(year, month, 0)).getUTCDate();
@@ -150,6 +167,7 @@ function publicPayload(state, context) {
     completedCount,
     totalCount: cycle.items.length,
     complete: cycleIsComplete(cycle) && cycle.items.length > 0,
+    history: buildCycleHistory(state, context.key),
   };
 }
 

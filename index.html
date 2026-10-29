@@ -91,6 +91,25 @@
   .accounting-add button:disabled, .accounting-action:disabled, .accounting-item input:disabled { opacity: .5; cursor: wait; }
   .accounting-message { min-height: 16px; margin: 8px 0 0; color: var(--surface-text-muted); font-size: 10px; }
   .accounting-message.is-error { color: #C0392B; }
+  .accounting-history { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--surface-border); }
+  .accounting-history-title { margin: 0 0 9px; color: var(--navy-text); font-size: 12px; font-weight: 800; }
+  .accounting-history-year + .accounting-history-year { margin-top: 10px; }
+  .accounting-history-year-label { margin: 0 0 6px; color: var(--surface-text-faint); font-size: 10px; font-weight: 800; letter-spacing: .08em; }
+  .accounting-history-cycle { overflow: hidden; border: 1px solid var(--surface-border); border-radius: var(--radius-xs); background: var(--surface-bg); }
+  .accounting-history-cycle + .accounting-history-cycle { margin-top: 6px; }
+  .accounting-history-cycle summary { display: flex; align-items: center; gap: 10px; padding: 10px 12px; color: var(--surface-text); cursor: pointer; list-style: none; }
+  .accounting-history-cycle summary::-webkit-details-marker { display: none; }
+  .accounting-history-cycle summary::after { content: '+'; margin-left: auto; color: var(--surface-text-faint); font-size: 15px; }
+  .accounting-history-cycle[open] summary::after { content: '\2212'; }
+  .accounting-history-month { color: var(--navy-text); font-size: 12px; font-weight: 800; }
+  .accounting-history-count { color: var(--surface-text-muted); font-size: 10px; }
+  .accounting-history-status { padding: 2px 7px; border-radius: 999px; background: rgba(30, 123, 52, .1); color: #1E7B34; font-size: 9px; font-weight: 800; }
+  .accounting-history-status.is-incomplete { background: rgba(192, 57, 43, .1); color: #C0392B; }
+  .accounting-history-items { display: grid; gap: 6px; margin: 0; padding: 0 12px 12px; list-style: none; }
+  .accounting-history-items li { display: flex; align-items: center; gap: 8px; padding: 7px 9px; border-radius: 6px; background: var(--surface-panel-bg); color: var(--surface-text); font-size: 11px; }
+  .accounting-history-items li::before { content: '\25cb'; color: var(--surface-text-faint); }
+  .accounting-history-items li.is-complete { color: var(--surface-text-faint); text-decoration: line-through; }
+  .accounting-history-items li.is-complete::before { content: '\2713'; color: #1E7B34; text-decoration: none; }
 
   /* ---- Review block ---- */
   .review-grid {
@@ -612,6 +631,32 @@ initTheme('my-agent-theme');
     return parts.length === 3 ? Number(parts[1]) + ' 月 ' + Number(parts[2]) + ' 日' : value;
   }
 
+  function renderAccountingHistory(history) {
+    if (!history || !history.length) return '';
+    var years = {};
+    history.forEach(function (entry) {
+      var year = String(entry.cycle).slice(0, 4);
+      if (!years[year]) years[year] = [];
+      years[year].push(entry);
+    });
+    var groups = Object.keys(years).sort().reverse().map(function (year) {
+      var cycles = years[year].map(function (entry) {
+        var month = Number(String(entry.cycle).slice(5));
+        var incomplete = entry.totalCount > 0 && !entry.complete;
+        var status = entry.totalCount === 0 ? '無項目' : (entry.complete ? '已完成' : '逾期未完成');
+        var items = (entry.items || []).map(function (item) {
+          return '<li class="' + (item.completed ? 'is-complete' : '') + '">' + escapeHtml(item.label) + '</li>';
+        }).join('') || '<li>本期沒有項目</li>';
+        return '<details class="accounting-history-cycle"><summary><span class="accounting-history-month">' + month + ' 月</span>' +
+          '<span class="accounting-history-count">' + entry.completedCount + ' / ' + entry.totalCount + ' 完成</span>' +
+          '<span class="accounting-history-status' + (incomplete ? ' is-incomplete' : '') + '">' + status + '</span></summary>' +
+          '<ul class="accounting-history-items">' + items + '</ul></details>';
+      }).join('');
+      return '<div class="accounting-history-year"><p class="accounting-history-year-label">' + year + ' 年</p>' + cycles + '</div>';
+    }).join('');
+    return '<section class="accounting-history" aria-labelledby="accounting-history-title"><h4 class="accounting-history-title" id="accounting-history-title">歷史期別</h4>' + groups + '</section>';
+  }
+
   function renderAccountingChecklist(data) {
     accountingChecklistData = data;
     var card = document.getElementById('accounting-checklist-card');
@@ -643,7 +688,7 @@ initTheme('my-agent-theme');
       '<form class="accounting-add" id="accounting-add-form"><input id="accounting-new-item" type="text" maxlength="100" required placeholder="新增要準備的項目">' +
         '<label><input id="accounting-new-persistent" type="checkbox" checked> 每期固定帶入</label>' +
         '<button type="submit"' + (accountingChecklistBusy ? ' disabled' : '') + '>加入 Checklist</button></form>' +
-      '<p class="accounting-message" id="accounting-message" aria-live="polite"></p>';
+      '<p class="accounting-message" id="accounting-message" aria-live="polite"></p>' + renderAccountingHistory(data.history);
   }
 
   function renderAccountingError(message) {

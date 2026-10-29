@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ensureCycle, getCycleContext, renameItem } from '../netlify/functions/accounting-checklist.js';
+import { buildCycleHistory, ensureCycle, getCycleContext, renameItem } from '../netlify/functions/accounting-checklist.js';
 
 function state(templateItems = [], cycles = {}) {
   return { version: 1, templateItems, cycles };
@@ -44,4 +44,22 @@ test('renaming a fixed item updates its template and current or future cycles on
   assert.equal(value.cycles['2026-08'].items[0].label, '舊名稱');
   assert.equal(value.cycles['2026-10'].items[0].label, '新名稱');
   assert.equal(value.cycles['2026-12'].items[0].label, '新名稱');
+});
+
+test('history includes only earlier cycles in reverse order with completion summaries', () => {
+  const value = state([], {
+    '2026-06': { items: [{ label: '舊項目', completed: true }] },
+    '2026-08': { items: [{ label: '項目 A', completed: true }, { label: '項目 B', completed: false }] },
+    '2026-10': { items: [{ label: '本期項目', completed: false }] },
+    '2026-12': { items: [{ label: '未來項目', completed: false }] },
+  });
+  const history = buildCycleHistory(value, '2026-10');
+  assert.deepEqual(history.map((entry) => entry.cycle), ['2026-08', '2026-06']);
+  assert.deepEqual(
+    history.map(({ completedCount, totalCount, complete }) => ({ completedCount, totalCount, complete })),
+    [
+      { completedCount: 1, totalCount: 2, complete: false },
+      { completedCount: 1, totalCount: 1, complete: true },
+    ],
+  );
 });
