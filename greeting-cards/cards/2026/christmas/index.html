@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#073451">
+  <title>聖誕賀卡 2026</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #073451;
+      --royal: #0d67a7;
+      --ice: #d9edf8;
+      --paper: #f3faff;
+      --muted: #6f96ae;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { min-height: 100%; }
+
+    body {
+      margin: 0;
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 22%, rgba(75, 151, 205, .28), transparent 34rem),
+        linear-gradient(155deg, #061d31 0%, #020b14 100%);
+      font-family: "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -20%;
+      pointer-events: none;
+      background: radial-gradient(circle, rgba(170, 220, 248, .12) 0 1px, transparent 1.5px);
+      background-size: 34px 34px;
+      opacity: .5;
+      animation: ambient 18s linear infinite;
+    }
+
+    .stage {
+      width: min(100vw, 440px);
+      height: min(100svh, 880px);
+      padding: max(0px, env(safe-area-inset-top)) 0 max(0px, env(safe-area-inset-bottom));
+      display: grid;
+      place-items: center;
+    }
+
+    .card {
+      position: relative;
+      width: min(100%, calc(100svh / 2));
+      aspect-ratio: 1 / 2;
+      max-height: 100%;
+      overflow: hidden;
+      isolation: isolate;
+      background: var(--paper);
+      box-shadow: 0 32px 90px rgba(0, 0, 0, .46);
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 30;
+      pointer-events: none;
+      background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.16) 49%, transparent 61%);
+      transform: translateX(-120%);
+      animation: paperGlint 1.4s ease 10.7s both;
+    }
+
+    .sky {
+      position: absolute;
+      z-index: 1;
+      left: -10%;
+      top: -3%;
+      width: 120%;
+      height: 48%;
+      border-radius: 0 0 50% 50% / 0 0 34% 34%;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 47% 26%, rgba(24, 120, 182, .84), transparent 35%),
+        linear-gradient(155deg, #0e5686 0%, #062f4b 58%, #031d31 100%);
+      box-shadow: 0 14px 30px rgba(8, 62, 96, .16);
+      opacity: 0;
+      transform: scale(.92) translateY(-4%);
+      transform-origin: center top;
+      animation: skyIn 1.25s cubic-bezier(.2,.8,.2,1) .2s forwards;
+    }
+
+    .sky::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 68% 27%, rgba(255,255,255,.14), transparent 2px);
+      background-size: 43px 43px;
+      opacity: .8;
+    }
+
+    /* Exact vector layers exported from the Figma A5 artwork (1368 × 1180). */
+    .artwork {
+      position: absolute;
+      z-index: 2;
+      left: 0;
+      top: 0;
+      width: 100%;
+      aspect-ratio: 1368 / 1180;
+      overflow: visible;
+    }
+
+    .figma-layer {
+      position: absolute;
+      display: block;
+      max-width: none;
+    }
+
+    .scene-base {
+      left: 5.848%;
+      top: 14.915%;
+      width: 88.304%;
+      overflow: visible;
+    }
+
+    .crystal-globe {
+      opacity: 0;
+      transform: translateY(10%);
+      transform-origin: center bottom;
+      animation: globeRise 1.05s cubic-bezier(.22,.7,.25,1) .18s forwards;
+    }
+
+    .hill-layer,
+    .tree-layer {
+      opacity: 0;
+      transform-box: fill-box;
+      transform-origin: center bottom;
+    }
+
+    .hill-front { animation: hillPop .72s cubic-bezier(.18,.82,.25,1.2) 1.15s forwards; }
+    .hill-mid { animation: hillPop .72s cubic-bezier(.18,.82,.25,1.2) 1.45s forwards; }
+    .hill-far { animation: hillPop .72s cubic-bezier(.18,.82,.25,1.2) 1.75s forwards; }
+    .tree-layer { animation: treeGrow .72s cubic-bezier(.2,.85,.25,1.16) 2.52s forwards; }
+
+    .figma-house {
+      opacity: 0;
+      transform: translateY(22%) scale(.08);
+      transform-origin: center bottom;
+      animation: housePop .92s cubic-bezier(.16,.9,.24,1.24) var(--delay) forwards;
+    }
+
+    .fh-01 { left:7.566%; top:66.949%; width:15.326%; --delay:3.30s; }
+    .fh-02 { left:21.784%; top:55.847%; width:7.776%; --delay:3.45s; }
+    .fh-03 { left:64.181%; top:46.356%; width:8.875%; --delay:3.60s; }
+    .fh-04 { left:21.601%; top:66.441%; width:20.760%; --delay:3.75s; }
+    .fh-05 { left:58.663%; top:68.729%; width:21.438%; --delay:3.90s; }
+    .fh-06 { left:82.164%; top:45.000%; width:6.140%; --delay:4.05s; }
+    .fh-07 { left:12.610%; top:49.746%; width:7.228%; --delay:4.20s; }
+    .fh-08 { left:73.392%; top:41.780%; width:7.228%; --delay:4.35s; }
+    .fh-09 { left:51.754%; top:51.949%; width:14.010%; --delay:4.50s; }
+
+    .snowfall {
+      position: absolute;
+      z-index: 10;
+      left: 5.848%;
+      top: 14.915%;
+      width: 88.304%;
+      height: 74.068%;
+      overflow: hidden;
+      border-radius: 50% 50% 0 0 / 70% 70% 0 0;
+      pointer-events: none;
+      opacity: 0;
+      animation: snowfallIn .8s ease 5.45s forwards;
+    }
+
+    .falling-flake {
+      position: absolute;
+      left: var(--left);
+      top: -8%;
+      width: var(--size);
+      opacity: 0;
+      will-change: transform, opacity;
+      animation: snowFall var(--duration) linear var(--delay) infinite;
+    }
+
+    .snowflake {
+      position: absolute;
+      z-index: 4;
+      width: var(--size);
+      height: var(--size);
+      color: rgba(255,255,255,.94);
+      opacity: 0;
+      filter: drop-shadow(0 4px 4px rgba(0,0,0,.12));
+      animation:
+        flakeIn .7s ease var(--delay) forwards,
+        flakeFloat var(--speed) ease-in-out calc(var(--delay) + .7s) infinite alternate;
+    }
+
+    .snowflake use, .snowflake line { stroke: currentColor; }
+    .flake-1 { --size: 12%; --delay: 1.2s; --speed: 4.8s; left: 5%; top: 13%; }
+    .flake-2 { --size: 8%; --delay: 1.55s; --speed: 5.6s; right: 8%; top: 12%; }
+    .flake-3 { --size: 6%; --delay: 1.85s; --speed: 4.2s; left: 45%; top: 6%; }
+    .flake-4 { --size: 10%; --delay: 2.1s; --speed: 6s; right: 20%; top: 29%; }
+
+    .title-wrap {
+      position: absolute;
+      z-index: 8;
+      left: 50%;
+      top: 44.5%;
+      width: 43%;
+      transform: translateX(-50%);
+      filter: drop-shadow(0 4px 7px rgba(0, 22, 39, .18));
+      opacity: 0;
+      transition: opacity .2s ease;
+    }
+
+    .title-wrap.is-loaded { opacity: 1; }
+
+    .title-wrap img,
+    .title-wrap svg {
+      width: 100%;
+      display: block;
+      overflow: visible;
+    }
+
+    .title-wrap.is-loaded svg path {
+      fill: transparent;
+      stroke: #073451;
+      stroke-width: .62;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: var(--len);
+      stroke-dashoffset: var(--len);
+      animation:
+        letteringDraw var(--draw) cubic-bezier(.3,.65,.25,1) var(--draw-delay) forwards,
+        letteringFill .5s ease var(--fill-delay) forwards;
+    }
+
+    .flight {
+      position: absolute;
+      z-index: 7;
+      left: 13%;
+      top: 13%;
+      width: 74%;
+      height: auto;
+      aspect-ratio: 507.1009 / 305.5377;
+      opacity: 0;
+      animation: santaFade 1.35s ease 6.65s forwards;
+      will-change: opacity;
+    }
+
+    .flight img {
+      position: absolute;
+      filter: drop-shadow(0 4px 3px rgba(0,0,0,.16));
+    }
+
+    .figma-santa {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .figma-santa img { filter: none; }
+
+    .santa-flat {
+      left: 13.36%;
+      top: -1.22%;
+      width: 60.23%;
+      height: 43.49%;
+      display: block;
+    }
+
+    .flight .deer { left: 10%; top: 4%; width: 22%; }
+    .flight .sleigh { left: 55%; top: 13%; width: 34%; }
+    .harness { position: absolute; left: 29%; top: 49%; width: 29%; height: 18%; }
+    .harness path { fill: none; stroke: #fff; stroke-width: 2.3; stroke-linecap: round; }
+
+    .hills {
+      position: absolute;
+      z-index: 2;
+      left: -8%;
+      top: 35%;
+      width: 116%;
+      height: 22%;
+      opacity: 0;
+      transform: translateY(16%);
+      animation: hillsIn 1.05s ease 2.15s forwards;
+    }
+
+    .hills .far { fill: #c7deeb; }
+    .hills .near { fill: #e1f0f7; }
+
+    .village {
+      position: absolute;
+      z-index: 5;
+      left: -2%;
+      top: 38.5%;
+      width: 104%;
+      height: 23%;
+      overflow: visible;
+    }
+
+    .house {
+      opacity: 0;
+      transform: translateY(65px);
+      transform-box: fill-box;
+      transform-origin: center bottom;
+      animation: houseRise .78s cubic-bezier(.18,.78,.25,1) var(--delay) forwards;
+      filter: drop-shadow(0 7px 8px rgba(35, 74, 96, .12));
+    }
+
+    .house .body, .house .roof { fill: #fff; }
+    .house .window { fill: #9bc7df; }
+    .h1 { --delay: 2.65s; }
+    .h2 { --delay: 2.82s; }
+    .h3 { --delay: 2.98s; }
+    .h4 { --delay: 3.14s; }
+    .h5 { --delay: 3.3s; }
+    .h6 { --delay: 3.46s; }
+
+    .message {
+      position: absolute;
+      z-index: 11;
+      left: 7%;
+      top: 61.5%;
+      width: 86%;
+      text-align: center;
+      color: var(--ink);
+    }
+
+    .eyebrow {
+      margin: 0 0 1.6em;
+      color: #779eb5;
+      font-size: clamp(9px, 2.4cqi, 12px);
+      font-weight: 500;
+      letter-spacing: .32em;
+      text-transform: uppercase;
+      opacity: 0;
+      animation: fadeUp .7s ease 7.9s forwards;
+    }
+
+    .greeting {
+      margin: 0;
+      font-family: "Songti TC", "Noto Serif TC", serif;
+      font-size: clamp(16px, 4.6cqi, 22px);
+      line-height: 1.85;
+      letter-spacing: .04em;
+    }
+
+    .greeting .line { white-space: nowrap; }
+
+    .greeting .char {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(.7em);
+      filter: blur(4px);
+      animation: charIn .42s ease forwards;
+      animation-delay: calc(8.35s + var(--i) * .07s);
+    }
+
+    .signature {
+      position: absolute;
+      z-index: 12;
+      left: 50%;
+      bottom: 4.2%;
+      width: 42%;
+      transform: translateX(-50%) translateY(16px);
+      opacity: 0;
+      animation: signatureIn .8s ease 10.6s forwards;
+    }
+
+    .signature img { display: block; width: 100%; }
+
+    .replay {
+      position: absolute;
+      z-index: 40;
+      right: 4%;
+      bottom: 3%;
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      border: 1px solid rgba(7, 52, 81, .18);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #315f7d;
+      background: rgba(255,255,255,.68);
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+      opacity: 0;
+      animation: replayIn .5s ease 11.2s forwards;
+    }
+
+    .replay svg { width: 18px; height: 18px; }
+    .replay:focus-visible { outline: 2px solid #2a78a8; outline-offset: 3px; }
+
+    .card.is-replaying *, .card.is-replaying *::before, .card.is-replaying *::after {
+      animation: none !important;
+    }
+
+    @keyframes ambient { to { transform: translate3d(34px, 34px, 0); } }
+    @keyframes paperGlint { from { transform: translateX(-120%); } to { transform: translateX(120%); } }
+    @keyframes skyIn { to { opacity: 1; transform: scale(1) translateY(0); } }
+    @keyframes globeRise {
+      from { opacity: 0; transform: translateY(10%); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes hillPop {
+      0% { opacity: 0; transform: translateY(28%) scaleY(.45); }
+      68% { opacity: 1; transform: translateY(-2%) scaleY(1.045); }
+      100% { opacity: 1; transform: translateY(0) scaleY(1); }
+    }
+    @keyframes treeGrow {
+      0% { opacity: 0; transform: translateY(18%) scale(.25,.06); }
+      72% { opacity: 1; transform: translateY(-2%) scale(1.04,1.08); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes flakeIn { to { opacity: .92; } }
+    @keyframes flakeFloat { to { transform: translate3d(5px, 9px, 0) rotate(18deg); } }
+    @keyframes hillsIn { to { opacity: 1; transform: translateY(0); } }
+    @keyframes housePop {
+      0% { opacity: 0; transform: translateY(22%) scale(.08); }
+      58% { opacity: 1; transform: translateY(-3%) scale(1.09); }
+      78% { opacity: 1; transform: translateY(1%) scale(.96); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes snowFall {
+      0% { top: -8%; opacity: 0; transform: translate3d(0,0,0) rotate(0); }
+      10% { opacity: var(--flake-opacity); }
+      86% { opacity: var(--flake-opacity); }
+      100% { top: 104%; opacity: 0; transform: translate3d(var(--drift),0,0) rotate(var(--spin)); }
+    }
+    @keyframes snowfallIn { to { opacity: 1; } }
+    @keyframes letteringDraw { to { stroke-dashoffset: 0; } }
+    @keyframes letteringFill { to { fill: #073451; stroke: rgba(7,52,81,.2); } }
+    @keyframes santaFade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+    @keyframes charIn { to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+    @keyframes signatureIn { to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+    @keyframes replayIn { to { opacity: 1; } }
+
+    @media (min-width: 769px) and (min-aspect-ratio: 6 / 5) {
+      .stage {
+        width: min(94vw, 1072px);
+        height: min(92svh, 620px);
+      }
+
+      .card {
+        width: 100%;
+        height: auto;
+        max-height: 100%;
+        aspect-ratio: 1072 / 620;
+        border-radius: 22px;
+      }
+
+      .artwork {
+        left: 1.5%;
+        top: 1.5%;
+        width: 56%;
+      }
+
+      .flight {
+        left: 8.5%;
+        top: 12.5%;
+        width: 29%;
+        height: auto;
+      }
+
+      .santa-flat {
+        left: 23.36%;
+        top: 27.78%;
+        width: 70.23%;
+        height: 102.49%;
+      }
+
+      .title-wrap {
+        left: 77%;
+        top: 13%;
+        width: 27%;
+        filter: drop-shadow(0 4px 7px rgba(5, 45, 70, .12));
+      }
+
+      .message {
+        left: 60.5%;
+        top: 50%;
+        width: 34%;
+      }
+
+      .eyebrow { margin-bottom: 1.8em; }
+
+      .greeting {
+        font-size: clamp(16px, 1.7vw, 22px);
+        line-height: 1.9;
+      }
+
+      .signature {
+        left: 77.5%;
+        bottom: 8%;
+        width: 22%;
+      }
+
+      .replay { right: 2.4%; bottom: 4%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-delay: 0s !important;
+        animation-iteration-count: 1 !important;
+      }
+      .flight { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <section class="card" aria-label="2026 聖誕賀卡：感謝這一年的同行，祝您與團隊聖誕平安、新年順心。萬能數維有限公司敬賀">
+      <div class="artwork" aria-hidden="true">
+        <svg class="figma-layer scene-base" viewBox="0 0 1208 874" aria-hidden="true">
+          <defs>
+            <mask id="scene-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1208" height="874">
+              <path d="M0 604C0 443.809 63.636 290.179 176.908 176.907C290.179 63.636 443.809 0 604 0C764.191 0 917.821 63.636 1031.09 176.907C1144.36 290.179 1208 443.809 1208 604V874H0V604Z" fill="white"/>
+            </mask>
+            <linearGradient id="crystal-blue" x1="604" y1="0" x2="604" y2="874" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#062A4B"/>
+              <stop offset=".48" stop-color="#1767B1"/>
+              <stop offset=".78" stop-color="#77BDE5"/>
+              <stop offset=".92" stop-color="#D9F1FD"/>
+              <stop offset="1" stop-color="#FFFFFF"/>
+            </linearGradient>
+            <linearGradient id="hill-blue" x1="0" y1="428.142" x2="1208" y2="428.142" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#EAF7FF"/><stop offset="1" stop-color="#9CCCE7"/>
+            </linearGradient>
+            <linearGradient id="hill-ice" x1="0" y1="625.077" x2="80.779" y2="1060.65" gradientUnits="userSpaceOnUse">
+              <stop stop-color="white"/><stop offset="1" stop-color="#CBE8F7"/>
+            </linearGradient>
+          </defs>
+          <g mask="url(#scene-mask)">
+            <g class="crystal-globe">
+              <path d="M0 604C0 443.809 63.636 290.179 176.908 176.907C290.179 63.636 443.809 0 604 0C764.191 0 917.821 63.636 1031.09 176.907C1144.36 290.179 1208 443.809 1208 604V874H0V604Z" fill="url(#crystal-blue)"/>
+              <path opacity=".92" d="M90 134C165 204 245 192 300 124C360 196 430 196 476 124C526 202 596 202 652 124C710 184 776 176 838 104V-106H90V134Z" fill="#0B3762"/>
+              <path opacity=".92" d="M180 39C255 104 325 96 374 34C435 106 505 94 546 29C606 91 670 82 724 10V-116H180V39Z" fill="#13528E"/>
+            </g>
+            <path class="hill-layer hill-far" d="M0 579C190 496 335 546 475 674C634 490 835 404 1208 434V874H0V579Z" fill="url(#hill-blue)"/>
+            <path class="hill-layer hill-mid" d="M0 694C165 609 330 619 530 814C720 634 932 578 1208 666V874H0V694Z" fill="url(#hill-ice)"/>
+            <path class="hill-layer hill-front" d="M0 800C240 716 432 762 620 894C785 759 986 740 1208 808V944H0V800Z" fill="#F8FAFB"/>
+            <g class="tree-layer" fill="#F6F8F9">
+              <path d="M431.5 611L491.5 492L551.5 611H431.5Z"/><path d="M498.5 601H484.5V671H498.5V601Z"/>
+              <path d="M493.5 648L545.5 548L597.5 648H493.5Z"/><path d="M551.5 638H539.5V683H551.5V638Z"/>
+              <path d="M-12.5 634L35.5 538L83.5 634H-12.5Z"/><path d="M41.5 624H29.5V669H41.5V624Z"/>
+              <path d="M694.5 846L648.5 754L602.5 846H694.5Z"/><path d="M643.5 838H653.5V892H643.5V838Z"/>
+              <path d="M1106.5 758L1054.5 658L1002.5 758H1106.5Z"/><path d="M1048.5 748H1060.5V793H1048.5V748Z"/>
+              <path d="M1164.5 792L1116.5 696L1068.5 792H1164.5Z"/><path d="M1110.5 782H1122.5V827H1110.5V782Z"/>
+            </g>
+          </g>
+        </svg>
+
+        <img class="figma-layer figma-house fh-01" src="figma-house-01.svg" alt="">
+        <img class="figma-layer figma-house fh-02" src="figma-house-02.svg" alt="">
+        <img class="figma-layer figma-house fh-03" src="figma-house-03.svg" alt="">
+        <img class="figma-layer figma-house fh-04" src="figma-house-04.svg" alt="">
+        <img class="figma-layer figma-house fh-05" src="figma-house-05.svg" alt="">
+        <img class="figma-layer figma-house fh-06" src="figma-house-06.svg" alt="">
+        <img class="figma-layer figma-house fh-07" src="figma-house-07.svg" alt="">
+        <img class="figma-layer figma-house fh-08" src="figma-house-08.svg" alt="">
+        <img class="figma-layer figma-house fh-09" src="figma-house-09.svg" alt="">
+
+        <div class="snowfall"></div>
+      </div>
+
+      <div class="title-wrap" role="img" aria-label="Christmas is Coming">
+        <img class="lettering-fallback" src="christmas-is-coming.svg" alt="">
+      </div>
+
+      <div class="flight" aria-hidden="true">
+        <div class="figma-santa">
+          <img class="santa-flat" src="figma-santa-flat.svg" alt="">
+        </div>
+      </div>
+
+      <div class="message">
+        <p class="eyebrow">A little Christmas wish</p>
+        <p class="greeting" data-text="感謝這一年的同行|祝您與團隊聖誕平安、新年順心"></p>
+      </div>
+
+      <div class="signature"><img src="dghm-logo.svg" alt="萬能數維有限公司"></div>
+
+      <button class="replay" type="button" aria-label="重新播放動畫" title="重新播放">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 8.5V4.5M19 8.5h-4M19 8.5a7.5 7.5 0 1 0 .4 6.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      var card = document.querySelector('.card');
+      var greeting = document.querySelector('.greeting');
+      var replay = document.querySelector('.replay');
+      var snowfall = document.querySelector('.snowfall');
+      var titleWrap = document.querySelector('.title-wrap');
+      var snowSources = [
+        'figma-snowflake-01.svg',
+        'figma-snowflake-02.svg',
+        'figma-snowflake-03.svg',
+        'figma-snowflake-04.svg'
+      ];
+
+      function createSnowfall() {
+        var count = window.matchMedia('(max-width: 768px)').matches ? 22 : 30;
+        snowfall.innerHTML = '';
+
+        for (var i = 0; i < count; i++) {
+          var flake = document.createElement('img');
+          var duration = 5.8 + Math.random() * 5.2;
+          flake.className = 'falling-flake';
+          flake.src = snowSources[i % snowSources.length];
+          flake.alt = '';
+          flake.style.setProperty('--left', (2 + Math.random() * 96) + '%');
+          flake.style.setProperty('--size', (1.2 + Math.random() * 2.2) + '%');
+          flake.style.setProperty('--duration', duration + 's');
+          flake.style.setProperty('--delay', (-Math.random() * duration) + 's');
+          flake.style.setProperty('--drift', (-36 + Math.random() * 72) + 'px');
+          flake.style.setProperty('--spin', (-180 + Math.random() * 360) + 'deg');
+          flake.style.setProperty('--flake-opacity', (0.35 + Math.random() * 0.45).toFixed(2));
+          snowfall.appendChild(flake);
+        }
+      }
+
+      function loadLettering() {
+        fetch('christmas-is-coming.svg')
+          .then(function (response) {
+            if (!response.ok) throw new Error('Unable to load lettering SVG');
+            return response.text();
+          })
+          .then(function (markup) {
+            titleWrap.innerHTML = markup;
+            var svg = titleWrap.querySelector('svg');
+            var paths = Array.from(svg.querySelectorAll('path'));
+            var delay = 4.1;
+            var letteringPlan = [
+              { index: 2, duration: 1.15, gap: .08, name: 'shared-c' },
+              { index: 0, duration: 2.35, gap: .08, name: 'hristmas' },
+              { index: 6, duration: .16, gap: .12, name: 'christmas-i-dot' },
+              { index: 12, duration: .14, gap: .08, name: 'left-dot-1' },
+              { index: 11, duration: .14, gap: .08, name: 'left-dot-2' },
+              { index: 10, duration: .14, gap: .08, name: 'left-dot-3' },
+              { index: 9, duration: .14, gap: .08, name: 'left-dot-4' },
+              { index: 8, duration: .14, gap: .08, name: 'left-dot-5' },
+              { index: 7, duration: .14, gap: .12, name: 'left-dot-6' },
+              { index: 4, duration: .45, gap: .08, name: 'i' },
+              { index: 5, duration: .16, gap: .08, name: 'shared-i-dot' },
+              { index: 3, duration: .62, gap: .10, name: 's' },
+              { index: 18, duration: .14, gap: .08, name: 'right-dot-1' },
+              { index: 17, duration: .14, gap: .08, name: 'right-dot-2' },
+              { index: 16, duration: .14, gap: .08, name: 'right-dot-3' },
+              { index: 15, duration: .14, gap: .08, name: 'right-dot-4' },
+              { index: 14, duration: .14, gap: .08, name: 'right-dot-5' },
+              { index: 13, duration: .14, gap: .14, name: 'right-dot-6' },
+              { index: 1, duration: 2.25, gap: 0, name: 'oming' }
+            ];
+
+            svg.removeAttribute('width');
+            svg.removeAttribute('height');
+            paths.forEach(function (path) {
+              var length = Math.max(1, path.getTotalLength());
+              path.style.setProperty('--len', length);
+              path.style.setProperty('--draw', '.01s');
+              path.style.setProperty('--draw-delay', '30s');
+              path.style.setProperty('--fill-delay', '30s');
+            });
+            letteringPlan.forEach(function (step) {
+              var path = paths[step.index];
+              if (!path) return;
+
+              path.dataset.letteringPart = step.name;
+              path.style.setProperty('--draw', step.duration + 's');
+              path.style.setProperty('--draw-delay', delay + 's');
+              path.style.setProperty('--fill-delay', (delay + step.duration * .78) + 's');
+              delay += step.duration + step.gap;
+            });
+            titleWrap.classList.add('is-loaded');
+          })
+          .catch(function () {
+            titleWrap.classList.add('is-loaded');
+          });
+      }
+
+      var text = greeting.getAttribute('data-text').split('|');
+      var index = 0;
+      greeting.innerHTML = text.map(function (line) {
+        var chars = Array.from(line).map(function (char) {
+          return '<span class="char" style="--i:' + (index++) + '">' + char + '</span>';
+        }).join('');
+        index += 2;
+        return '<span class="line">' + chars + '</span>';
+      }).join('<br>');
+
+      createSnowfall();
+      loadLettering();
+
+      replay.addEventListener('click', function () {
+        createSnowfall();
+        card.classList.add('is-replaying');
+        void card.offsetWidth;
+        card.classList.remove('is-replaying');
+      });
+    })();
+  </script>
+</body>
+</html>
