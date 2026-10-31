@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="dghm-ui.css?v=20260914-1">
   <link rel="stylesheet" href="app-shell.css?v=20260915-1">
-  <link rel="stylesheet" href="greeting-cards/admin.css?v=20260914-4">
+  <link rel="stylesheet" href="greeting-cards/admin.css?v=20261031-1">
 </head>
 <body data-tool="greeting-cards">
   <div id="tool-workspace" class="gc-page">
@@ -28,7 +28,7 @@
 
           <div class="gc-list-head">
             <span class="gc-section-label">選擇賀卡</span>
-            <span class="gc-planned-note">個人化功能規劃中</span>
+            <span class="gc-planned-note">個人化預覽測試中</span>
           </div>
           <div id="gc-card-list" class="gc-card-list" aria-live="polite"></div>
         </div>
@@ -51,6 +51,31 @@
             <button type="button" data-gc-device="mobile" aria-pressed="false">手機</button>
           </div>
         </div>
+
+        <section id="gc-content-preview" class="gc-content-preview" aria-labelledby="gc-content-preview-title" hidden>
+          <div class="gc-content-preview-head">
+            <div>
+              <span class="gc-section-label">內容預覽</span>
+              <strong id="gc-content-preview-title">個人化版本</strong>
+            </div>
+            <span id="gc-preview-source" class="gc-preview-source">本機模擬資料</span>
+          </div>
+          <div class="gc-content-mode" role="group" aria-label="內容版本">
+            <button type="button" class="is-active" data-gc-content-mode="public" aria-pressed="true">公版</button>
+            <button type="button" data-gc-content-mode="client" aria-pressed="false">客戶</button>
+            <button type="button" data-gc-content-mode="friend" aria-pressed="false">親友</button>
+            <button type="button" data-gc-content-mode="family" aria-pressed="false">家人</button>
+            <button type="button" data-gc-content-mode="vendor" aria-pressed="false">廠商</button>
+          </div>
+          <label id="gc-recipient-field" class="gc-recipient-field" for="gc-preview-recipient">
+            <span>指定對象</span>
+            <select id="gc-preview-recipient"></select>
+          </label>
+          <p class="gc-content-summary">
+            <span id="gc-preview-content-label">公版預設</span>
+            <span id="gc-preview-signature">公司署名 · DGHM 中文 Logo</span>
+          </p>
+        </section>
 
         <div id="gc-preview-placeholder" class="gc-preview-empty">
           <strong>尚未選擇賀卡</strong>
@@ -85,6 +110,6 @@
       storageKey: 'dghm-greeting-cards-editor-width'
     });
   </script>
-  <script src="greeting-cards/admin.js?v=20260914-4"></script>
+  <script src="greeting-cards/admin.js?v=20261031-2"></script>
 </body>
 </html>

@@ -6,10 +6,10 @@
       "year": 2026,
       "campaign": 2026,
       "festival": "christmas",
-      "personalized": false,
+      "personalized": true,
       "personalization": {
-        "enabled": false,
-        "status": "planned"
+        "enabled": true,
+        "status": "local-preview"
       },
       "status": "preview",
       "title": "2026 聖誕賀卡",

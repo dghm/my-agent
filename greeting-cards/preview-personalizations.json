@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "template": "2026-christmas",
+  "source": "local-fixture",
+  "items": [
+    {
+      "id": "public-default",
+      "mode": "public",
+      "label": "公版預設",
+      "recipientName": "",
+      "greetingLines": [
+        "感謝這一年的同行",
+        "祝您與團隊聖誕平安、新年順心"
+      ],
+      "signatureType": "company",
+      "signatureText": "萬能數維有限公司 敬賀",
+      "logoVariant": "dghm-zh",
+      "websiteStatus": "preview"
+    },
+    {
+      "id": "client-demo-01",
+      "mode": "client",
+      "label": "客戶範例｜澄光設計",
+      "recipientName": "澄光設計團隊",
+      "greetingLines": [
+        "感謝今年一路以來的信任與合作",
+        "祝福團隊聖誕平安、來年計畫順利"
+      ],
+      "signatureType": "company",
+      "signatureText": "萬能數維有限公司 敬賀",
+      "logoVariant": "dghm-zh",
+      "websiteStatus": "preview"
+    },
+    {
+      "id": "client-demo-02",
+      "mode": "client",
+      "label": "客戶範例｜遠森工作室",
+      "recipientName": "遠森工作室",
+      "greetingLines": [
+        "謝謝這一年共同完成的每一個階段",
+        "祝您聖誕愉快，新的一年持續發光"
+      ],
+      "signatureType": "company",
+      "signatureText": "萬能數維有限公司 敬賀",
+      "logoVariant": "dghm-zh",
+      "websiteStatus": "preview"
+    },
+    {
+      "id": "friend-demo-01",
+      "mode": "friend",
+      "label": "親友範例｜Kevin",
+      "recipientName": "Kevin",
+      "greetingLines": [
+        "謝謝你一直都在，也陪我走過好多變化",
+        "願新的一年，我們都更靠近想要的生活"
+      ],
+      "signatureType": "personal",
+      "signatureText": "謝萬錤 Aries Hsieh",
+      "logoVariant": "personal-name",
+      "websiteStatus": "preview"
+    },
+    {
+      "id": "family-demo-01",
+      "mode": "family",
+      "label": "家人範例｜媽媽",
+      "recipientName": "媽媽",
+      "greetingLines": [
+        "又一起平安走過了一年",
+        "願新的一年，全家健康自在、常常相聚"
+      ],
+      "signatureType": "personal",
+      "signatureText": "萬錤",
+      "logoVariant": "personal-name",
+      "websiteStatus": "preview"
+    },
+    {
+      "id": "vendor-demo-01",
+      "mode": "vendor",
+      "label": "廠商範例｜星橋印刷",
+      "recipientName": "星橋印刷團隊",
+      "greetingLines": [
+        "謝謝今年每一次即時可靠的協助",
+        "祝福團隊聖誕愉快、來年合作順利"
+      ],
+      "signatureType": "company",
+      "signatureText": "萬能數維有限公司 敬賀",
+      "logoVariant": "dghm-zh",
+      "websiteStatus": "preview"
+    }
+  ]
+}

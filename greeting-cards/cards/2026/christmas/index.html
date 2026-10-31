@@ -380,6 +380,20 @@
     }
 
     .signature img { display: block; width: 100%; }
+    .signature[hidden] { display: none; }
+    .signature-logo[hidden],
+    .signature-text[hidden] { display: none; }
+    .signature-text {
+      display: block;
+      color: var(--ink);
+      font-family: "Songti TC", "Noto Serif TC", serif;
+      font-size: clamp(13px, 2.8cqi, 18px);
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .signature.is-personal { width: 48%; }
 
     .replay {
       position: absolute;
@@ -509,6 +523,8 @@
         width: 22%;
       }
 
+      html:not([data-preview="mobile"]) .signature.is-personal { width: 30%; }
+
       html:not([data-preview="mobile"]) .replay { right: 2.4%; bottom: 4%; }
     }
 
@@ -538,6 +554,7 @@
     html[data-preview="desktop"] .eyebrow { margin-bottom: 1.8em; }
     html[data-preview="desktop"] .greeting { font-size: clamp(16px, 1.7vw, 22px); line-height: 1.9; }
     html[data-preview="desktop"] .signature { left: 77.5%; bottom: 8%; width: 22%; }
+    html[data-preview="desktop"] .signature.is-personal { width: 30%; }
     html[data-preview="desktop"] .replay { right: 2.4%; bottom: 4%; }
 
     @media (prefers-reduced-motion: reduce) {
@@ -621,7 +638,10 @@
         <p class="greeting" data-text="感謝這一年的同行|祝您與團隊聖誕平安、新年順心"></p>
       </div>
 
-      <div class="signature"><img src="dghm-logo.svg" alt="萬能數維有限公司"></div>
+      <div class="signature">
+        <img class="signature-logo" src="dghm-logo.svg" alt="萬能數維有限公司">
+        <span class="signature-text" hidden></span>
+      </div>
 
       <button class="replay" type="button" aria-label="重新播放動畫" title="重新播放">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 8.5V4.5M19 8.5h-4M19 8.5a7.5 7.5 0 1 0 .4 6.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -636,12 +656,89 @@
       var replay = document.querySelector('.replay');
       var snowfall = document.querySelector('.snowfall');
       var titleWrap = document.querySelector('.title-wrap');
+      var signature = document.querySelector('.signature');
+      var signatureLogo = document.querySelector('.signature-logo');
+      var signatureText = document.querySelector('.signature-text');
       var snowSources = [
         'figma-snowflake-01.svg',
         'figma-snowflake-02.svg',
         'figma-snowflake-03.svg',
         'figma-snowflake-04.svg'
       ];
+      var defaultContent = {
+        id: 'public-default',
+        mode: 'public',
+        label: '公版預設',
+        recipientName: '',
+        greetingLines: ['感謝這一年的同行', '祝您與團隊聖誕平安、新年順心'],
+        signatureType: 'company',
+        signatureText: '萬能數維有限公司 敬賀',
+        logoVariant: 'dghm-zh'
+      };
+
+      function renderGreeting(lines) {
+        var normalized = Array.isArray(lines) ? lines : String(lines || '').split(/\||\n/);
+        var index = 0;
+        greeting.innerHTML = '';
+
+        normalized.filter(Boolean).forEach(function (line, lineIndex) {
+          if (lineIndex) greeting.appendChild(document.createElement('br'));
+          var lineElement = document.createElement('span');
+          lineElement.className = 'line';
+          Array.from(line).forEach(function (char) {
+            var charElement = document.createElement('span');
+            charElement.className = 'char';
+            charElement.style.setProperty('--i', index++);
+            charElement.textContent = char;
+            lineElement.appendChild(charElement);
+          });
+          index += 2;
+          greeting.appendChild(lineElement);
+        });
+      }
+
+      function applyContent(content) {
+        var next = Object.assign({}, defaultContent, content || {});
+        var lines = Array.isArray(next.greetingLines)
+          ? next.greetingLines
+          : String(next.greetingLines || '').split(/\||\n/);
+        renderGreeting(lines);
+
+        var hideSignature = next.signatureType === 'none' || next.logoVariant === 'none';
+        signature.hidden = hideSignature;
+        signature.classList.toggle('is-personal', !hideSignature && next.signatureType === 'personal');
+        if (!hideSignature && next.logoVariant === 'dghm-zh' && next.signatureType === 'company') {
+          signatureLogo.hidden = false;
+          signatureText.hidden = true;
+          signatureLogo.alt = next.signatureText || '萬能數維有限公司';
+        } else if (!hideSignature) {
+          signatureLogo.hidden = true;
+          signatureText.hidden = false;
+          signatureText.textContent = next.signatureText || 'Aries 敬上';
+        }
+
+        var greetingText = lines.join('，');
+        card.setAttribute('aria-label', '2026 聖誕賀卡：' + greetingText + '。' + (next.signatureText || ''));
+        document.documentElement.dataset.contentMode = next.mode || 'public';
+      }
+
+      function loadDemoContent() {
+        var demoId = new URLSearchParams(location.search).get('demo');
+        if (!demoId) return;
+        fetch('../../../preview-personalizations.json', { cache: 'no-store' })
+          .then(function (response) {
+            if (!response.ok) throw new Error('Unable to load preview content');
+            return response.json();
+          })
+          .then(function (data) {
+            var items = Array.isArray(data.items) ? data.items : [];
+            var item = items.find(function (candidate) { return candidate.id === demoId; });
+            if (item) applyContent(item);
+          })
+          .catch(function (error) {
+            console.warn('Preview content fallback:', error.message);
+          });
+      }
 
       function createSnowfall() {
         var count = window.matchMedia('(max-width: 768px)').matches ? 22 : 30;
@@ -723,18 +820,16 @@
           });
       }
 
-      var text = greeting.getAttribute('data-text').split('|');
-      var index = 0;
-      greeting.innerHTML = text.map(function (line) {
-        var chars = Array.from(line).map(function (char) {
-          return '<span class="char" style="--i:' + (index++) + '">' + char + '</span>';
-        }).join('');
-        index += 2;
-        return '<span class="line">' + chars + '</span>';
-      }).join('<br>');
-
+      applyContent(defaultContent);
+      loadDemoContent();
       createSnowfall();
       loadLettering();
+
+      window.DGHMGreetingCard = { applyContent: applyContent };
+      window.addEventListener('message', function (event) {
+        if (event.origin !== location.origin || !event.data || event.data.type !== 'dghm:greeting-card-preview') return;
+        applyContent(event.data.content);
+      });
 
       replay.addEventListener('click', function () {
         createSnowfall();
