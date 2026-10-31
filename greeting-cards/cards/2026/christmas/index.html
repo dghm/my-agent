@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#073451">
   <title>聖誕賀卡 2026</title>
+  <script>
+    (function () {
+      var preview = new URLSearchParams(location.search).get('preview');
+      if (preview === 'desktop' || preview === 'mobile') {
+        document.documentElement.dataset.preview = preview;
+      }
+    })();
+  </script>
   <style>
     :root {
       color-scheme: light;
@@ -442,12 +450,12 @@
     @keyframes replayIn { to { opacity: 1; } }
 
     @media (min-width: 769px) and (min-aspect-ratio: 6 / 5) {
-      .stage {
+      html:not([data-preview="mobile"]) .stage {
         width: min(94vw, 1072px);
         height: min(92svh, 620px);
       }
 
-      .card {
+      html:not([data-preview="mobile"]) .card {
         width: 100%;
         height: auto;
         max-height: 100%;
@@ -455,54 +463,82 @@
         border-radius: 22px;
       }
 
-      .artwork {
+      html:not([data-preview="mobile"]) .artwork {
         left: 1.5%;
         top: 1.5%;
         width: 56%;
       }
 
-      .flight {
+      html:not([data-preview="mobile"]) .flight {
         left: 8.5%;
         top: 12.5%;
         width: 29%;
         height: auto;
       }
 
-      .santa-flat {
+      html:not([data-preview="mobile"]) .santa-flat {
         left: 23.36%;
         top: 27.78%;
         width: 70.23%;
         height: 102.49%;
       }
 
-      .title-wrap {
+      html:not([data-preview="mobile"]) .title-wrap {
         left: 77%;
         top: 13%;
         width: 27%;
         filter: drop-shadow(0 4px 7px rgba(5, 45, 70, .12));
       }
 
-      .message {
+      html:not([data-preview="mobile"]) .message {
         left: 60.5%;
         top: 50%;
         width: 34%;
       }
 
-      .eyebrow { margin-bottom: 1.8em; }
+      html:not([data-preview="mobile"]) .eyebrow { margin-bottom: 1.8em; }
 
-      .greeting {
+      html:not([data-preview="mobile"]) .greeting {
         font-size: clamp(16px, 1.7vw, 22px);
         line-height: 1.9;
       }
 
-      .signature {
+      html:not([data-preview="mobile"]) .signature {
         left: 77.5%;
         bottom: 8%;
         width: 22%;
       }
 
-      .replay { right: 2.4%; bottom: 4%; }
+      html:not([data-preview="mobile"]) .replay { right: 2.4%; bottom: 4%; }
     }
+
+    html[data-preview="desktop"] .stage {
+      width: min(94vw, 1072px);
+      height: min(92svh, 620px);
+    }
+
+    html[data-preview="desktop"] .card {
+      width: 100%;
+      height: auto;
+      max-height: 100%;
+      aspect-ratio: 1072 / 620;
+      border-radius: 22px;
+    }
+
+    html[data-preview="desktop"] .artwork { left: 1.5%; top: 1.5%; width: 56%; }
+    html[data-preview="desktop"] .flight { left: 8.5%; top: 12.5%; width: 29%; height: auto; }
+    html[data-preview="desktop"] .santa-flat { left: 23.36%; top: 27.78%; width: 70.23%; height: 102.49%; }
+    html[data-preview="desktop"] .title-wrap {
+      left: 77%;
+      top: 13%;
+      width: 27%;
+      filter: drop-shadow(0 4px 7px rgba(5, 45, 70, .12));
+    }
+    html[data-preview="desktop"] .message { left: 60.5%; top: 50%; width: 34%; }
+    html[data-preview="desktop"] .eyebrow { margin-bottom: 1.8em; }
+    html[data-preview="desktop"] .greeting { font-size: clamp(16px, 1.7vw, 22px); line-height: 1.9; }
+    html[data-preview="desktop"] .signature { left: 77.5%; bottom: 8%; width: 22%; }
+    html[data-preview="desktop"] .replay { right: 2.4%; bottom: 4%; }
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {

@@ -8,7 +8,7 @@
     archived: '已封存'
   };
   var FESTIVAL_ORDER = { 'mid-autumn': 0, christmas: 1, 'lunar-new-year': 2 };
-  var state = { campaigns: new Map(), activeCampaign: null, selectedId: null };
+  var state = { campaigns: new Map(), activeCampaign: null, selectedId: null, selectedCard: null, device: 'desktop' };
 
   var cardList = document.getElementById('gc-card-list');
   var campaignSelect = document.getElementById('gc-campaign-select');
@@ -77,6 +77,7 @@
   function selectCard(card) {
     if (!card) return;
     state.selectedId = card.id;
+    state.selectedCard = card;
     history.replaceState(null, '', '#card=' + encodeURIComponent(card.id));
     cardList.querySelectorAll('.gc-card-row').forEach(function (button) {
       var selected = button.dataset.cardId === card.id;
@@ -102,19 +103,23 @@
 
     placeholder.hidden = true;
     deviceFrame.hidden = false;
-    iframe.src = localUrl;
+    iframe.src = localUrl + '?preview=' + encodeURIComponent(state.device);
     iframe.title = card.title + '預覽';
     openCard.href = card.publicUrl || localUrl;
     openCard.hidden = false;
   }
 
   function setDevice(device) {
+    state.device = device;
     deviceFrame.dataset.device = device;
     document.querySelectorAll('[data-gc-device]').forEach(function (button) {
       var active = button.dataset.gcDevice === device;
       button.classList.toggle('is-active', active);
       button.setAttribute('aria-pressed', String(active));
     });
+    if (state.selectedCard && state.selectedCard.previewAvailable !== false) {
+      iframe.src = 'greeting-cards/' + state.selectedCard.cardPath + '?preview=' + encodeURIComponent(device);
+    }
   }
 
   campaignSelect.addEventListener('change', function () {
