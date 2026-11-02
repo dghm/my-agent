@@ -135,11 +135,14 @@
     }
 
     .crystal-globe {
+      clip-path: url(#scene-clip);
       opacity: 0;
       transform: translateY(10%);
       transform-origin: center bottom;
       animation: globeRise .95s cubic-bezier(.22,.7,.25,1) .15s forwards;
     }
+
+    .cloud-layer { opacity: .82; }
 
     .hill-layer,
     .tree-layer {
@@ -613,8 +616,10 @@
           <g clip-path="url(#scene-clip)">
             <g class="crystal-globe">
               <path d="M0 604C0 443.809 63.636 290.179 176.908 176.907C290.179 63.636 443.809 0 604 0C764.191 0 917.821 63.636 1031.09 176.907C1144.36 290.179 1208 443.809 1208 604V874H0V604Z" fill="url(#crystal-blue)"/>
-              <path opacity=".92" d="M90 134C165 204 245 192 300 124C360 196 430 196 476 124C526 202 596 202 652 124C710 184 776 176 838 104V-106H90V134Z" fill="#0B3762"/>
-              <path opacity=".92" d="M180 39C255 104 325 96 374 34C435 106 505 94 546 29C606 91 670 82 724 10V-116H180V39Z" fill="#13528E"/>
+              <g class="cloud-layer" transform="translate(0 38)">
+                <path opacity=".92" d="M90 134C165 204 245 192 300 124C360 196 430 196 476 124C526 202 596 202 652 124C710 184 776 176 838 104V-106H90V134Z" fill="#0B3762"/>
+                <path opacity=".92" d="M180 39C255 104 325 96 374 34C435 106 505 94 546 29C606 91 670 82 724 10V-116H180V39Z" fill="#13528E"/>
+              </g>
             </g>
             <path class="hill-layer hill-far" d="M0 579C190 496 335 546 475 674C634 490 835 404 1208 434V874H0V579Z" fill="url(#hill-blue)"/>
             <path class="hill-layer hill-mid" d="M0 694C165 609 330 619 530 814C720 634 932 578 1208 666V874H0V694Z" fill="url(#hill-ice)"/>
