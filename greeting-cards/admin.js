@@ -39,6 +39,14 @@
   var previewContentLabel = document.getElementById('gc-preview-content-label');
   var previewSignature = document.getElementById('gc-preview-signature');
   var previewSource = document.getElementById('gc-preview-source');
+  var sharePreview = document.getElementById('gc-share-preview');
+  var qrCode = document.getElementById('gc-qr-code');
+  var shareStatus = document.getElementById('gc-share-status');
+  var shareUrl = document.getElementById('gc-share-url');
+  var copyUrl = document.getElementById('gc-copy-url');
+  var downloadQr = document.getElementById('gc-download-qr');
+  var openPublicCard = document.getElementById('gc-open-public-card');
+  var qrModulePromise = null;
 
   function escapeHtml(value) {
     return String(value == null ? '' : value)
@@ -80,7 +88,7 @@
 
     cardList.innerHTML = cards.map(function (card) {
       var planned = card.personalization && card.personalization.enabled
-        ? '<span class="gc-kind">個人化本機預覽</span>' : '';
+        ? '<span class="gc-kind">個人化' + (state.previewSource === 'airtable' ? ' Airtable' : '本機預覽') + '</span>' : '';
       return '<button type="button" class="gc-card-row" data-card-id="' + escapeHtml(card.id) + '">' +
         '<span class="gc-card-copy"><strong class="gc-card-title">' + escapeHtml(card.title) + '</strong>' +
         '<span class="gc-card-meta">' + statusBadge(card) + planned +
@@ -104,6 +112,40 @@
     if (!item || item.signatureType === 'none' || item.logoVariant === 'none') return '不顯示署名';
     if (item.signatureType === 'personal') return '個人署名 · 中文名字樣式';
     return '公司署名 · DGHM 中文 Logo';
+  }
+
+  function renderSharePreview(item) {
+    var available = Boolean(item && item.publicUrl && item.publicCode && state.previewSource === 'airtable');
+    sharePreview.hidden = !available;
+    if (!available) {
+      qrCode.innerHTML = '';
+      return;
+    }
+
+    shareUrl.textContent = item.publicUrl;
+    shareUrl.title = item.publicUrl;
+    openPublicCard.href = item.publicUrl;
+    shareStatus.textContent = item.websiteStatus === 'published' ? '已發布' : '預覽';
+    qrCode.setAttribute('aria-label', item.label + ' 專屬賀卡 QR Code');
+    qrCode.innerHTML = '<span aria-hidden="true">產生中…</span>';
+
+    if (!qrModulePromise) qrModulePromise = import('./vendor/qrcode.mjs');
+    var url = item.publicUrl;
+    qrModulePromise.then(function (module) {
+      var active = activePreviewItem();
+      if (!active || active.publicUrl !== url) return;
+      var qr = module.default(0, 'M');
+      qr.addData(url);
+      qr.make();
+      qrCode.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 16, scalable: true });
+      var svg = qrCode.querySelector('svg');
+      if (svg) {
+        svg.setAttribute('role', 'img');
+        svg.setAttribute('aria-label', item.label + ' 專屬賀卡 QR Code');
+      }
+    }).catch(function () {
+      qrCode.textContent = 'QR Code 產生失敗';
+    });
   }
 
   function renderContentControls(card) {
@@ -140,6 +182,7 @@
     var item = activePreviewItem();
     previewContentLabel.textContent = item ? item.label : (MODE_LABELS[state.previewMode] || state.previewMode);
     previewSignature.textContent = signatureSummary(item);
+    renderSharePreview(item);
   }
 
   function previewPath(card, includeDevice) {
@@ -252,6 +295,30 @@
     state.selectedPreviewId = recipientSelect.value;
     renderContentControls(state.selectedCard);
     refreshPreview();
+  });
+
+  copyUrl.addEventListener('click', function () {
+    var item = activePreviewItem();
+    if (!item || !item.publicUrl) return;
+    navigator.clipboard.writeText(item.publicUrl).then(function () {
+      copyUrl.textContent = '已複製';
+      setTimeout(function () { copyUrl.textContent = '複製網址'; }, 1600);
+    });
+  });
+
+  downloadQr.addEventListener('click', function () {
+    var item = activePreviewItem();
+    var svg = qrCode.querySelector('svg');
+    if (!item || !svg) return;
+    var markup = '<?xml version="1.0" encoding="UTF-8"?>\n' + svg.outerHTML;
+    var url = URL.createObjectURL(new Blob([markup], { type: 'image/svg+xml;charset=utf-8' }));
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = '2026-christmas-' + (item.recipientName || item.mode) + '-qr.svg';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   });
 
   function loadPreviewData() {

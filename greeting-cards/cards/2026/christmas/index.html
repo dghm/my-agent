@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow, noarchive">
   <meta name="theme-color" content="#073451">
   <title>聖誕賀卡 2026</title>
   <script>
@@ -395,6 +397,24 @@
     }
     .signature.is-personal { width: 48%; }
 
+    .card-status-message {
+      position: absolute;
+      z-index: 80;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 12%;
+      color: #073451;
+      background: rgba(247, 251, 253, .94);
+      font-family: "Songti TC", "Noto Serif TC", serif;
+      font-size: clamp(16px, 3.8cqi, 24px);
+      line-height: 1.8;
+      letter-spacing: .08em;
+      text-align: center;
+      backdrop-filter: blur(8px);
+    }
+    .card-status-message[hidden] { display: none; }
+
     .replay {
       position: absolute;
       z-index: 40;
@@ -643,6 +663,8 @@
         <span class="signature-text" hidden></span>
       </div>
 
+      <div class="card-status-message" role="status" hidden>這張賀卡目前尚未開放，或連結已失效。</div>
+
       <button class="replay" type="button" aria-label="重新播放動畫" title="重新播放">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 8.5V4.5M19 8.5h-4M19 8.5a7.5 7.5 0 1 0 .4 6.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
@@ -659,6 +681,7 @@
       var signature = document.querySelector('.signature');
       var signatureLogo = document.querySelector('.signature-logo');
       var signatureText = document.querySelector('.signature-text');
+      var statusMessage = document.querySelector('.card-status-message');
       var snowSources = [
         'figma-snowflake-01.svg',
         'figma-snowflake-02.svg',
@@ -738,6 +761,30 @@
           .catch(function (error) {
             console.warn('Preview content fallback:', error.message);
           });
+      }
+
+      function loadPublicContent() {
+        var publicCode = new URLSearchParams(location.search).get('c');
+        if (!publicCode) return false;
+        var apiOrigin = location.hostname === 'cards.dghm.tw' ? 'https://my-agent.dghm.tw' : location.origin;
+        fetch(apiOrigin + '/api/public-greeting-card?c=' + encodeURIComponent(publicCode), {
+          cache: 'no-store',
+          referrerPolicy: 'no-referrer'
+        })
+          .then(function (response) {
+            if (!response.ok) throw new Error('Card unavailable');
+            return response.json();
+          })
+          .then(function (data) {
+            if (!data || !data.ok || !data.content) throw new Error('Card unavailable');
+            statusMessage.hidden = true;
+            applyContent(data.content);
+          })
+          .catch(function () {
+            statusMessage.hidden = false;
+            card.setAttribute('aria-label', statusMessage.textContent.trim());
+          });
+        return true;
       }
 
       function createSnowfall() {
@@ -821,7 +868,7 @@
       }
 
       applyContent(defaultContent);
-      loadDemoContent();
+      if (!loadPublicContent()) loadDemoContent();
       createSnowfall();
       loadLettering();
 

@@ -2,12 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import handler, { buildPreviewItems } from '../netlify/functions/greeting-cards.js';
+import publicHandler, { withinAvailability } from '../netlify/functions/public-greeting-card.js';
 
 const CARD = {
   year: 'flddlYmss0faJe03E', festival: 'fldeUIsh9wBncgniM', recipient: 'fld4dZDrUQVIkJQtY',
   category: 'fldCWeUDJoFdBv7NV', greeting: 'fldMGXuTJQU5zBhCA', template: 'fldwFU60KWNU6DDSO',
   recipientLabel: 'fld7VjnmfMSDPxfTt', signatureType: 'fldoFfIhXP7xFZBns', signatureText: 'fldMUV5TYeFKvcGSN',
-  logoVariant: 'fldVmZeqkd1B4pjiv', websiteStatus: 'fldsQ6TklClpsV78A',
+  logoVariant: 'fldVmZeqkd1B4pjiv', websiteStatus: 'fldsQ6TklClpsV78A', publicCode: 'fldmsyGUo4XK2JejX',
 };
 const RECIPIENT = { name: 'fldnpDUlEhbqfuzGz', category: 'fldzUAZDgjfXl61mf', displayName: 'fldhzttF6DtLL7ctq' };
 const GREETING = { year: 'fldZB5YwTMbpcgfl2', festival: 'fld36XYxl9rkBBGFI', greeting: 'fldKX7bCblbPt3NNQ' };
@@ -20,6 +21,7 @@ function fixtureRecords() {
         [CARD.year]: '2026', [CARD.festival]: '聖誕', [CARD.recipient]: ['recRecipient'], [CARD.category]: ['家人'],
         [CARD.greeting]: '暄晴聖誕節開心', [CARD.template]: '2026-christmas', [CARD.signatureType]: '個人',
         [CARD.signatureText]: '萬錤', [CARD.logoVariant]: '個人中文名', [CARD.websiteStatus]: '預覽',
+        [CARD.publicCode]: '0123456789abcdef0123456789abcdef01234567',
       },
     }],
     recipients: [{ id: 'recRecipient', fields: { [RECIPIENT.name]: '完整姓名', [RECIPIENT.displayName]: '晴晴', [RECIPIENT.category]: '家人' } }],
@@ -42,6 +44,7 @@ test('buildPreviewItems returns public and personalized safe preview data', () =
   assert.deepEqual(items[0].greetingLines, ['暄晴聖誕節開心']);
   assert.equal(items[0].signatureType, 'personal');
   assert.equal(items[0].signatureText, '萬錤');
+  assert.match(items[0].publicUrl, /^https:\/\/my-agent\.dghm\.tw\//);
   assert.equal(items[1].mode, 'public');
   assert.deepEqual(items[1].greetingLines, ['上帝賜你全家平安喜樂']);
   assert.equal(JSON.stringify(items).includes('recPrivateAirtableId'), false);
@@ -93,4 +96,57 @@ test('endpoint reads Airtable server-side and omits private fields', async () =>
     if (previousSecret === undefined) delete process.env.SESSION_SECRET; else process.env.SESSION_SECRET = previousSecret;
     if (previousToken === undefined) delete process.env.AIRTABLE_GREETING_CARDS_TOKEN; else process.env.AIRTABLE_GREETING_CARDS_TOKEN = previousToken;
   }
+});
+
+test('public endpoint returns only safe personalized content for a valid preview token', async () => {
+  const previousToken = process.env.AIRTABLE_GREETING_CARDS_TOKEN;
+  const previousFetch = globalThis.fetch;
+  const data = fixtureRecords();
+  process.env.AIRTABLE_GREETING_CARDS_TOKEN = 'pat-test';
+  globalThis.fetch = async (url) => {
+    const value = String(url);
+    if (value.includes('tblFxLv8DgbIVyPkW')) return Response.json({ records: data.cards });
+    if (value.includes('tblyMZJSwfayCFu8G')) return Response.json({ records: data.recipients });
+    if (value.includes('tblsQVFkqi8pXGsE4')) return Response.json({ records: data.greetings });
+    return Response.json({ error: { type: 'NOT_FOUND' } }, { status: 404 });
+  };
+  try {
+    const response = await publicHandler(new Request('https://example.test/api/public-greeting-card?c=0123456789abcdef0123456789abcdef01234567', {
+      headers: { origin: 'https://cards.dghm.tw' },
+    }));
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('access-control-allow-origin'), 'https://cards.dghm.tw');
+    const payload = await response.json();
+    assert.deepEqual(payload.content.greetingLines, ['暄晴聖誕節開心']);
+    assert.equal(payload.content.signatureType, 'personal');
+    assert.equal(JSON.stringify(payload).includes('晴晴'), false);
+    assert.equal(JSON.stringify(payload).includes('0123456789abcdef'), false);
+    assert.equal(JSON.stringify(payload).includes('recPrivateAirtableId'), false);
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousToken === undefined) delete process.env.AIRTABLE_GREETING_CARDS_TOKEN; else process.env.AIRTABLE_GREETING_CARDS_TOKEN = previousToken;
+  }
+});
+
+test('public endpoint rejects malformed tokens without querying Airtable', async () => {
+  const previousToken = process.env.AIRTABLE_GREETING_CARDS_TOKEN;
+  const previousFetch = globalThis.fetch;
+  process.env.AIRTABLE_GREETING_CARDS_TOKEN = 'pat-test';
+  globalThis.fetch = async () => { throw new Error('Airtable should not be queried'); };
+  try {
+    const response = await publicHandler(new Request('https://example.test/api/public-greeting-card?c=short'));
+    assert.equal(response.status, 404);
+    assert.equal((await response.json()).code, 'card_unavailable');
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousToken === undefined) delete process.env.AIRTABLE_GREETING_CARDS_TOKEN; else process.env.AIRTABLE_GREETING_CARDS_TOKEN = previousToken;
+  }
+});
+
+test('public availability enforces status, activation, and expiration windows', () => {
+  const now = Date.parse('2026-11-02T00:00:00Z');
+  assert.equal(withinAvailability({ websiteStatus: 'preview', enabledAt: '', expiresAt: '' }, now), true);
+  assert.equal(withinAvailability({ websiteStatus: 'draft', enabledAt: '', expiresAt: '' }, now), false);
+  assert.equal(withinAvailability({ websiteStatus: 'published', enabledAt: '2026-11-03T00:00:00Z', expiresAt: '' }, now), false);
+  assert.equal(withinAvailability({ websiteStatus: 'published', enabledAt: '', expiresAt: '2026-11-01T00:00:00Z' }, now), false);
 });

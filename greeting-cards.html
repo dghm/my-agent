@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="dghm-ui.css?v=20260914-1">
   <link rel="stylesheet" href="app-shell.css?v=20260915-1">
-  <link rel="stylesheet" href="greeting-cards/admin.css?v=20261031-1">
+  <link rel="stylesheet" href="greeting-cards/admin.css?v=20261102-1">
 </head>
 <body data-tool="greeting-cards">
   <div id="tool-workspace" class="gc-page">
@@ -75,6 +75,22 @@
             <span id="gc-preview-content-label">公版預設</span>
             <span id="gc-preview-signature">公司署名 · DGHM 中文 Logo</span>
           </p>
+          <section id="gc-share-preview" class="gc-share-preview" aria-labelledby="gc-share-title" hidden>
+            <div id="gc-qr-code" class="gc-qr-code" aria-label="專屬賀卡 QR Code"></div>
+            <div class="gc-share-details">
+              <div class="gc-share-title-row">
+                <strong id="gc-share-title">專屬預覽網址</strong>
+                <span id="gc-share-status" class="gc-share-status">預覽</span>
+              </div>
+              <code id="gc-share-url"></code>
+              <p>只有持有這組連結的人才能讀取個人化內容。</p>
+              <div class="gc-share-actions">
+                <button id="gc-copy-url" type="button">複製網址</button>
+                <button id="gc-download-qr" type="button">下載 QR SVG</button>
+                <a id="gc-open-public-card" href="#" target="_blank" rel="noopener">開啟測試卡 ↗</a>
+              </div>
+            </div>
+          </section>
         </section>
 
         <div id="gc-preview-placeholder" class="gc-preview-empty">
@@ -110,6 +126,6 @@
       storageKey: 'dghm-greeting-cards-editor-width'
     });
   </script>
-  <script src="greeting-cards/admin.js?v=20261031-2"></script>
+  <script src="greeting-cards/admin.js?v=20261102-1"></script>
 </body>
 </html>

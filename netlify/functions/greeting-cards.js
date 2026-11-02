@@ -1,19 +1,20 @@
 import crypto from 'node:crypto';
 
-const BASE_ID = 'appnhALSuMU5xcGVf';
-const CARD_TABLE_ID = 'tblFxLv8DgbIVyPkW';
-const RECIPIENT_TABLE_ID = 'tblyMZJSwfayCFu8G';
-const GREETING_TABLE_ID = 'tblsQVFkqi8pXGsE4';
+export const BASE_ID = 'appnhALSuMU5xcGVf';
+export const CARD_TABLE_ID = 'tblFxLv8DgbIVyPkW';
+export const RECIPIENT_TABLE_ID = 'tblyMZJSwfayCFu8G';
+export const GREETING_TABLE_ID = 'tblsQVFkqi8pXGsE4';
 
-const CARD_FIELDS = {
+export const CARD_FIELDS = {
   name: 'fldoykuaCIECMEDHW', year: 'flddlYmss0faJe03E', festival: 'fldeUIsh9wBncgniM',
   recipient: 'fld4dZDrUQVIkJQtY', category: 'fldCWeUDJoFdBv7NV', greeting: 'fldMGXuTJQU5zBhCA',
   websiteStatus: 'fldsQ6TklClpsV78A', template: 'fldwFU60KWNU6DDSO', recipientLabel: 'fld7VjnmfMSDPxfTt',
   signatureType: 'fldoFfIhXP7xFZBns', signatureText: 'fldMUV5TYeFKvcGSN', logoVariant: 'fldVmZeqkd1B4pjiv',
-  enabledAt: 'fldXg0AoXecbk8kdq', expiresAt: 'fldC7Vg0qSvIcWw80',
+  enabledAt: 'fldXg0AoXecbk8kdq', expiresAt: 'fldC7Vg0qSvIcWw80', publicCode: 'fldmsyGUo4XK2JejX',
+  publicUrl: 'fld3PMvxmDmn1Sfjw',
 };
-const RECIPIENT_FIELDS = { name: 'fldnpDUlEhbqfuzGz', category: 'fldzUAZDgjfXl61mf', displayName: 'fldhzttF6DtLL7ctq' };
-const GREETING_FIELDS = { year: 'fldZB5YwTMbpcgfl2', festival: 'fld36XYxl9rkBBGFI', greeting: 'fldKX7bCblbPt3NNQ' };
+export const RECIPIENT_FIELDS = { name: 'fldnpDUlEhbqfuzGz', category: 'fldzUAZDgjfXl61mf', displayName: 'fldhzttF6DtLL7ctq' };
+export const GREETING_FIELDS = { year: 'fldZB5YwTMbpcgfl2', festival: 'fld36XYxl9rkBBGFI', greeting: 'fldKX7bCblbPt3NNQ' };
 const MODE_BY_CATEGORY = { 客戶: 'client', 親友: 'friend', 家人: 'family', 廠商: 'vendor' };
 
 function json(status, body) {
@@ -46,7 +47,7 @@ function sessionFromRequest(req) {
   } catch { return null; }
 }
 
-async function listAllRecords(token, tableId, fieldIds) {
+export async function listAllRecords(token, tableId, fieldIds) {
   const records = [];
   let offset = '';
   do {
@@ -99,6 +100,28 @@ function signatureType(value, companyIdentity) {
   return companyIdentity ? 'company' : 'personal';
 }
 
+function websiteStatus(value) {
+  const normalized = textValue(value).trim().toLowerCase();
+  return ({ '草稿': 'draft', '預覽': 'preview', '已發布': 'published', '停用': 'disabled' })[normalized] ||
+    (['draft', 'preview', 'published', 'disabled'].includes(normalized) ? normalized : 'draft');
+}
+
+function publicCardUrl(code, options) {
+  if (!code) return '';
+  const origin = String(options.publicOrigin || 'https://my-agent.dghm.tw/greeting-cards/cards').replace(/\/$/, '');
+  const festivalSlug = options.festival === '聖誕' ? 'christmas' : options.festival === '中秋' ? 'mid-autumn' : 'lunar-new-year';
+  return `${origin}/${encodeURIComponent(options.year)}/${festivalSlug}/?c=${encodeURIComponent(code)}`;
+}
+
+export async function loadGreetingCardData(token) {
+  const [cards, recipients, greetings] = await Promise.all([
+    listAllRecords(token, CARD_TABLE_ID, Object.values(CARD_FIELDS)),
+    listAllRecords(token, RECIPIENT_TABLE_ID, Object.values(RECIPIENT_FIELDS)),
+    listAllRecords(token, GREETING_TABLE_ID, Object.values(GREETING_FIELDS)),
+  ]);
+  return { cards, recipients, greetings };
+}
+
 export function buildPreviewItems(cardRecords, recipientRecords, greetingRecords, options = {}) {
   const year = String(options.year || '2026');
   const festival = String(options.festival || '聖誕');
@@ -132,14 +155,17 @@ export function buildPreviewItems(cardRecords, recipientRecords, greetingRecords
     if (!recipientName || !greetingLines.length) continue;
     const companyIdentity = mode === 'client' || mode === 'vendor';
     const configuredLogo = textValue(fields[CARD_FIELDS.logoVariant]);
+    const publicCode = textValue(fields[CARD_FIELDS.publicCode]).trim();
     items.push({
       id: previewId(record.id), mode, label: `${category}｜${recipientName}`, recipientName, greetingLines,
       signatureType: signatureType(fields[CARD_FIELDS.signatureType], companyIdentity),
       signatureText: textValue(fields[CARD_FIELDS.signatureText]) || (companyIdentity ? '萬能數維有限公司 敬賀' : '謝萬錤 Aries Hsieh'),
       logoVariant: configuredLogo === 'DGHM 中文' ? 'dghm-zh' : configuredLogo === '不顯示' ? 'none' :
         configuredLogo === '個人中文名' ? 'personal-name' : (companyIdentity ? 'dghm-zh' : 'personal-name'),
-      websiteStatus: textValue(fields[CARD_FIELDS.websiteStatus]) || 'draft',
+      websiteStatus: websiteStatus(fields[CARD_FIELDS.websiteStatus]),
       enabledAt: textValue(fields[CARD_FIELDS.enabledAt]), expiresAt: textValue(fields[CARD_FIELDS.expiresAt]),
+      publicCode, publicUrl: publicCardUrl(publicCode, { ...options, year, festival }),
+      configuredPublicUrl: textValue(fields[CARD_FIELDS.publicUrl]),
     });
   }
   return items.sort((a, b) => `${a.mode}-${a.label}`.localeCompare(`${b.mode}-${b.label}`, 'zh-Hant'));
@@ -159,11 +185,8 @@ export default async (req) => {
     return json(400, { ok: false, error: '查詢條件格式錯誤' });
   }
   try {
-    const [cards, recipients, greetings] = await Promise.all([
-      listAllRecords(token, CARD_TABLE_ID, Object.values(CARD_FIELDS)),
-      listAllRecords(token, RECIPIENT_TABLE_ID, Object.values(RECIPIENT_FIELDS)),
-      listAllRecords(token, GREETING_TABLE_ID, Object.values(GREETING_FIELDS)),
-    ]);
+    const { cards, recipients, greetings } = await loadGreetingCardData(token);
+    options.publicOrigin = process.env.GREETING_CARDS_PUBLIC_ORIGIN || 'https://my-agent.dghm.tw/greeting-cards/cards';
     return json(200, { ok: true, source: 'airtable', template: options.template, items: buildPreviewItems(cards, recipients, greetings, options) });
   } catch (error) {
     const message = error instanceof Error ? error.message : '';

@@ -238,6 +238,63 @@
 }
 .gc-content-summary { margin: 8px 0 0; color: var(--surface-text-muted); font-size: 10px; }
 .gc-content-summary span:last-child { text-align: right; }
+.gc-share-preview {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 11px;
+  padding-top: 11px;
+  border-top: 1px solid var(--surface-border);
+}
+.gc-share-preview[hidden] { display: none; }
+.gc-qr-code {
+  width: 104px;
+  height: 104px;
+  padding: 7px;
+  border: 1px solid var(--surface-border);
+  border-radius: 7px;
+  background: #fff;
+}
+.gc-qr-code svg { display: block; width: 100%; height: 100%; }
+.gc-share-details { min-width: 0; }
+.gc-share-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.gc-share-title-row strong { color: var(--surface-text); font-size: 11px; }
+.gc-share-status {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #e8f5ff;
+  color: #0b5c8a;
+  font-size: 9px;
+  font-weight: 800;
+}
+.gc-share-details code {
+  display: block;
+  margin-top: 5px;
+  overflow: hidden;
+  color: var(--surface-text-muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gc-share-details p { margin: 5px 0 8px; color: var(--surface-text-muted); font-size: 9px; line-height: 1.5; }
+.gc-share-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.gc-share-actions button,
+.gc-share-actions a {
+  min-height: 27px;
+  padding: 5px 8px;
+  border: 1px solid var(--surface-border);
+  border-radius: 5px;
+  background: var(--surface-panel-bg);
+  color: var(--navy-text);
+  font: inherit;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.6;
+  text-decoration: none;
+}
+.gc-share-actions button { cursor: pointer; }
+.gc-share-actions button:hover,
+.gc-share-actions a:hover { border-color: var(--navy-text); text-decoration: none; }
 
 .gc-preview-empty {
   flex: 1;
@@ -289,6 +346,8 @@
   .gc-content-mode { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .gc-recipient-field { align-items: flex-start; flex-direction: column; }
   .gc-recipient-field select { width: 100%; }
+  .gc-share-preview { grid-template-columns: 88px minmax(0, 1fr); }
+  .gc-qr-code { width: 88px; height: 88px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
