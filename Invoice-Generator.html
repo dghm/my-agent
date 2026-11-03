@@ -296,7 +296,7 @@
 </head>
 <body>
 <div class="a4-page">
-  <div class="doc-header-banner"><span class="banner-label">應收帳款通知</span></div>
+  <div class="doc-header-banner"><span class="banner-label">{Document Heading}</span></div>
   <div class="inv-header-body">
     <div class="inv-meta-grid">
       <div>
@@ -434,6 +434,8 @@ __TERMS_LI__
 
       <fieldset>
         <legend>01 — 文件識別</legend>
+        <label for="f_doc_title">文件標題 Document Title</label>
+        <input type="text" id="f_doc_title" value="應收帳款通知" placeholder="例如 Invoice">
         <label>公司名稱 Company Name</label>
         <input type="text" id="f_company_name">
 
@@ -943,7 +945,7 @@ function safeFilenamePart(value, fallback) {
 function invoiceExportBasename() {
   return safeFilenamePart(v('f_inv_no'), 'INV') + '_' +
     safeFilenamePart(v('f_company_name'), '客戶') +
-    '_應收帳款通知';
+    '_' + safeFilenamePart(v('f_doc_title'), '應收帳款通知');
 }
 
 function fmtDate(s) {
@@ -1018,6 +1020,7 @@ function buildDoc() {
     '{Company Name}':    v('f_company_name'),
     '{Project Name}':    v('f_project_name'),
     '{INV No.}':         v('f_inv_no'),
+    '{Document Heading}': esc(v('f_doc_title').trim() || '應收帳款通知'),
     '{DH-XX-PJX}':       v('f_proj_code'),
     '{Payment Terms}':   v('f_payment_terms'),
     '{Issue Date}':      fmtDate(v('f_issue_date')),
@@ -1174,7 +1177,7 @@ window.addEventListener('beforeunload', function (e) {
    草稿存讀（下載 JSON / 載入 JSON）
    ============================================================ */
 var FIELD_IDS = [
-  'f_company_name', 'f_project_name', 'f_inv_no', 'f_proj_code',
+  'f_company_name', 'f_project_name', 'f_inv_no', 'f_proj_code', 'f_doc_title',
   'f_payment_terms', 'f_issue_date', 'f_due_date', 'f_inv_number',
   'f_address', 'f_vat', 'f_contact', 'f_phone', 'f_email',
   'f_tax_label', 'f_tax_rate',
@@ -1197,6 +1200,7 @@ function collectDraft() {
 }
 
 function applyDraft(draft) {
+  document.getElementById('f_doc_title').value = '應收帳款通知';
   // Reset missing legacy fields so a previous invoice's bank details cannot leak.
   document.getElementById('f_remit_bank').value = '玉山銀行 楊梅分行';
   document.getElementById('f_remit_code').value = '808';
