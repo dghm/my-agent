@@ -365,10 +365,10 @@ __TOTAL_HINT__
   <div class="inv-section">
     <div class="inv-section-title" style="margin-bottom:6px;">匯款資訊</div>
     <div style="padding:10px 12px;background:var(--bg);border-left:3px solid var(--navy);border-radius:0 6px 6px 0;font-size:0.78rem;color:var(--ink);line-height:1.8;">
-      銀行名稱：玉山銀行 楊梅分行<br>
-      銀行代號：808<br>
-      帳戶名稱：萬能數維有限公司<br>
-      匯款帳號：{Remittance Account}
+      銀行名稱：{Remittance Bank}<br>
+      銀行代號：{Remittance Code}<br>
+      帳戶名稱：{Remittance Holder}<br>
+      匯款帳號：{Remittance Account}{Remittance Swift Line}
     </div>
     <div class="inv-section-title" style="margin-top:20px;">條款與說明</div>
     <ol class="inv-terms-ol">
@@ -548,10 +548,18 @@ __TERMS_LI__
       </fieldset>
 
       <fieldset>
-        <legend>05 — 條款說明</legend>
+        <legend>05 — 匯款資訊與條款說明</legend>
+        <label for="f_remit_bank">銀行名稱</label>
+        <input type="text" id="f_remit_bank" value="玉山銀行 楊梅分行" placeholder="銀行及分行名稱">
+        <label for="f_remit_code">銀行代號</label>
+        <input type="text" id="f_remit_code" value="808" placeholder="例如 808">
+        <label for="f_remit_holder">帳戶名稱（戶名）</label>
+        <input type="text" id="f_remit_holder" value="萬能數維有限公司" placeholder="收款帳戶戶名">
         <label for="f_remit_account">匯款帳號</label>
         <input type="text" id="f_remit_account" value="0369-940-032822" placeholder="請輸入本張通知單的匯款帳號">
-        <p class="hint">此欄更新文件的匯款資訊；條款內若另有帳號，請一併確認。</p>
+        <label for="f_remit_swift">SWIFT（選填）</label>
+        <input type="text" id="f_remit_swift" placeholder="國際匯款 SWIFT 代碼">
+        <p class="hint">以上欄位會更新文件的匯款資訊並隨 JSON 保存；SWIFT 留白時不顯示。條款內若另有匯款資訊，請一併確認。</p>
         <div id="terms-list"></div>
         <button type="button" class="btn-add" onclick="addTerm()">＋ 新增條款</button>
       </fieldset>
@@ -1021,6 +1029,10 @@ function buildDoc() {
     '{Company Phone}':   v('f_phone'),
     '{Company Email}':   v('f_email'),
     '{Remittance Account}': esc(v('f_remit_account')),
+    '{Remittance Bank}': esc(v('f_remit_bank')),
+    '{Remittance Code}': esc(v('f_remit_code')),
+    '{Remittance Holder}': esc(v('f_remit_holder')),
+    '{Remittance Swift Line}': v('f_remit_swift').trim() ? '<br>SWIFT：' + esc(v('f_remit_swift').trim()) : '',
     '{Amount Head}':     items.amountHead,
     '{Subtotal Label}':  items.subtotalLabel,
     '{Subtotal Ex Tax}': items.subtotal,
@@ -1166,7 +1178,8 @@ var FIELD_IDS = [
   'f_payment_terms', 'f_issue_date', 'f_due_date', 'f_inv_number',
   'f_address', 'f_vat', 'f_contact', 'f_phone', 'f_email',
   'f_tax_label', 'f_tax_rate',
-  'f_total_hint', 'f_remit_terms_page', 'f_page_no', 'f_page_total', 'f_remit_account'
+  'f_total_hint', 'f_remit_terms_page', 'f_page_no', 'f_page_total',
+  'f_remit_bank', 'f_remit_code', 'f_remit_holder', 'f_remit_account', 'f_remit_swift'
 ];
 
 function collectDraft() {
@@ -1184,8 +1197,12 @@ function collectDraft() {
 }
 
 function applyDraft(draft) {
-  // Legacy drafts lack this field; do not retain another invoice's account.
+  // Reset missing legacy fields so a previous invoice's bank details cannot leak.
+  document.getElementById('f_remit_bank').value = '玉山銀行 楊梅分行';
+  document.getElementById('f_remit_code').value = '808';
+  document.getElementById('f_remit_holder').value = '萬能數維有限公司';
   document.getElementById('f_remit_account').value = '0369-940-032822';
+  document.getElementById('f_remit_swift').value = '';
   FIELD_IDS.forEach(function (id) {
     if (draft.fields && id in draft.fields) {
       var el = document.getElementById(id);
