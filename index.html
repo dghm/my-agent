@@ -13,6 +13,38 @@
   /* ---- Today board ---- */
   .today-board { margin: 26px 0 0; }
   .today-board .section-head { margin-bottom: 13px; }
+  .dashboard-layout-bar { display: flex; justify-content: flex-end; margin: 22px 0 -10px; }
+  .dashboard-layout-button {
+    display: inline-flex; align-items: center; gap: 7px; padding: 8px 12px;
+    border: 1px solid var(--surface-border); border-radius: 999px; background: var(--surface-panel-bg);
+    color: var(--navy-text); box-shadow: var(--shadow-sm); font: inherit; font-size: 11px; font-weight: 800; cursor: pointer;
+  }
+  .dashboard-layout-button:hover { border-color: rgba(230, 111, 57, .5); color: var(--orange); }
+  .dashboard-panel[hidden] { display: none !important; }
+  .dashboard-layout-dialog {
+    width: min(430px, calc(100vw - 32px)); padding: 0; border: 1px solid var(--surface-border);
+    border-radius: 16px; background: var(--surface-panel-bg); color: var(--surface-text); box-shadow: 0 24px 70px rgba(13, 32, 66, .22);
+  }
+  .dashboard-layout-dialog::backdrop { background: rgba(13, 32, 66, .42); backdrop-filter: blur(3px); }
+  .dashboard-layout-form { padding: 22px; }
+  .dashboard-layout-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+  .dashboard-layout-head h2 { margin: 0 0 5px; color: var(--navy-text); font-size: 19px; }
+  .dashboard-layout-head p { margin: 0; color: var(--surface-text-muted); font-size: 11px; line-height: 1.5; }
+  .dashboard-layout-close { padding: 2px 6px; border: 0; background: transparent; color: var(--surface-text-muted); font-size: 22px; cursor: pointer; }
+  .dashboard-layout-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 18px 0; }
+  .dashboard-layout-option {
+    display: flex; align-items: center; gap: 9px; min-height: 42px; padding: 8px 10px;
+    border: 1px solid var(--surface-border); border-radius: var(--radius-xs); background: var(--surface-bg);
+    color: var(--surface-text); font-size: 12px; cursor: pointer;
+  }
+  .dashboard-layout-option:has(input:checked) { border-color: rgba(230, 111, 57, .4); background: rgba(230, 111, 57, .06); }
+  .dashboard-layout-option input { width: 16px; height: 16px; margin: 0; accent-color: var(--orange); }
+  .dashboard-layout-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 15px; border-top: 1px solid var(--surface-border); }
+  .dashboard-layout-actions button { padding: 9px 13px; border-radius: var(--radius-xs); font: inherit; font-size: 11px; font-weight: 800; cursor: pointer; }
+  .dashboard-layout-reset { border: 0; background: transparent; color: var(--surface-text-muted); }
+  .dashboard-layout-cancel { border: 1px solid var(--surface-border); background: transparent; color: var(--surface-text); }
+  .dashboard-layout-save { border: 0; background: var(--navy); color: #fff; }
+  .dashboard-layout-action-group { display: flex; gap: 8px; }
   .board-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
   .board-card {
     padding: 16px 17px; border-radius: var(--radius);
@@ -366,13 +398,37 @@
     .section-head { align-items: flex-start; flex-direction: column; gap: 4px; }
     .accounting-item { grid-template-columns: auto minmax(0, 1fr); align-items: start; }
     .accounting-item-actions { grid-column: 2; flex-wrap: wrap; }
+    .dashboard-layout-options { grid-template-columns: 1fr; }
+    .dashboard-layout-actions { align-items: stretch; flex-direction: column; }
+    .dashboard-layout-action-group { display: grid; grid-template-columns: 1fr 1fr; }
   }
 </style>
 </head>
 <body data-tool="home">
 <div id="tool-workspace" class="wrap">
 
-  <section class="today-board" aria-labelledby="today-board-title">
+  <div class="dashboard-layout-bar">
+    <button class="dashboard-layout-button" id="dashboard-layout-open" type="button"><span aria-hidden="true">☷</span> 自訂版面</button>
+  </div>
+
+  <dialog class="dashboard-layout-dialog" id="dashboard-layout-dialog" aria-labelledby="dashboard-layout-title">
+    <form class="dashboard-layout-form" id="dashboard-layout-form" method="dialog">
+      <div class="dashboard-layout-head">
+        <div><h2 id="dashboard-layout-title">自訂總覽版面</h2><p>選擇要在總覽顯示的內容，設定會同步至你的帳號。</p></div>
+        <button class="dashboard-layout-close" type="button" data-layout-close aria-label="關閉">×</button>
+      </div>
+      <div class="dashboard-layout-options" id="dashboard-layout-options"></div>
+      <div class="dashboard-layout-actions">
+        <button class="dashboard-layout-reset" id="dashboard-layout-reset" type="button">恢復預設</button>
+        <div class="dashboard-layout-action-group">
+          <button class="dashboard-layout-cancel" type="button" data-layout-close>取消</button>
+          <button class="dashboard-layout-save" type="submit">套用版面</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <section class="today-board dashboard-panel" data-dashboard-panel="today" aria-labelledby="today-board-title">
     <div class="section-head">
       <h2 id="today-board-title">今日看板</h2>
       <p id="today-date-label"></p>
@@ -393,7 +449,7 @@
     </div>
   </section>
 
-  <section class="section" aria-labelledby="recurring-reminders-title">
+  <section class="section dashboard-panel" data-dashboard-panel="reminders" aria-labelledby="recurring-reminders-title">
     <div class="section-head">
       <h2 id="recurring-reminders-title">例行提醒</h2>
       <p>固定流程會自動帶入，也能補上當期臨時事項</p>
@@ -403,7 +459,7 @@
     </article>
   </section>
 
-  <section class="section" aria-labelledby="work-review-title">
+  <section class="section dashboard-panel" data-dashboard-panel="review" aria-labelledby="work-review-title">
     <div class="section-head">
       <h2 id="work-review-title">工作回顧</h2>
       <p>看看已經完成的事，不急著趕往下一個目標</p>
@@ -438,7 +494,7 @@
     </div>
   </section>
 
-  <section class="section" aria-labelledby="service-monitor-title">
+  <section class="section dashboard-panel" data-dashboard-panel="monitoring" aria-labelledby="service-monitor-title">
     <div class="section-head">
       <h2 id="service-monitor-title">服務監控</h2>
       <p id="service-monitor-updated"></p>
@@ -459,7 +515,7 @@
     </div>
   </section>
 
-  <section class="hero" aria-label="主要入口">
+  <section class="hero dashboard-panel" data-dashboard-panel="primary" aria-label="主要入口">
     <div class="hero-main">
       <div class="hero-kicker">✦ 今天從這裡開始</div>
       <h2>AI Skill 總覽</h2>
@@ -476,7 +532,7 @@
     </nav>
   </section>
 
-  <section class="section" aria-labelledby="workflow-title">
+  <section class="section dashboard-panel" data-dashboard-panel="workflow" aria-labelledby="workflow-title">
     <div class="section-head">
       <h2 id="workflow-title">客戶案件流程</h2>
       <p>從需求訪談到收款，依工作階段開啟工具</p>
@@ -544,7 +600,7 @@
     <p class="flow-note">● <a href="meeting-notes.html">會議記錄</a> 可在案件全程使用</p>
   </section>
 
-  <section class="section support-grid" aria-label="輔助工具">
+  <section class="section support-grid dashboard-panel" data-dashboard-panel="tools" aria-label="輔助工具">
     <div>
       <h2 class="support-title"><span aria-hidden="true">◆</span> 內部工作管理</h2>
       <div class="tool-list">
@@ -580,6 +636,17 @@ initTheme('my-agent-theme');
   var SITE_HEALTH_CACHE_KEY = 'dghm-site-monitor-last';
   var MAKE_MONITOR_CACHE_KEY = 'dghm-make-monitor-last';
   var MILESTONE_CACHE_KEY = 'dghm-milestones-cache-v1';
+  var DASHBOARD_LAYOUT_CACHE_KEY = 'dghm-dashboard-layout-v1';
+  var DASHBOARD_PANELS = [
+    { id: 'today', label: '今日看板' },
+    { id: 'reminders', label: '例行提醒' },
+    { id: 'review', label: '工作回顧' },
+    { id: 'monitoring', label: '服務監控' },
+    { id: 'primary', label: '主要入口' },
+    { id: 'workflow', label: '客戶案件流程' },
+    { id: 'tools', label: '輔助工具' }
+  ];
+  var dashboardHiddenPanels = [];
   var accountingChecklistData = null;
   var accountingChecklistBusy = false;
   var makeMonitorData = null;
@@ -593,6 +660,82 @@ initTheme('my-agent-theme');
   function escapeHtml(value) {
     return String(value == null ? '' : value)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function normalizeDashboardHiddenPanels(value) {
+    var allowed = DASHBOARD_PANELS.map(function (panel) { return panel.id; });
+    return Array.isArray(value) ? value.filter(function (id, index) {
+      return allowed.indexOf(id) >= 0 && value.indexOf(id) === index;
+    }) : [];
+  }
+
+  function applyDashboardLayout(hiddenPanels) {
+    dashboardHiddenPanels = normalizeDashboardHiddenPanels(hiddenPanels);
+    document.querySelectorAll('[data-dashboard-panel]').forEach(function (panel) {
+      panel.hidden = dashboardHiddenPanels.indexOf(panel.dataset.dashboardPanel) >= 0;
+    });
+  }
+
+  function cacheDashboardLayout(hiddenPanels) {
+    try { localStorage.setItem(DASHBOARD_LAYOUT_CACHE_KEY, JSON.stringify(hiddenPanels)); } catch (error) {}
+  }
+
+  function readCachedDashboardLayout() {
+    try { return normalizeDashboardHiddenPanels(JSON.parse(localStorage.getItem(DASHBOARD_LAYOUT_CACHE_KEY) || '[]')); }
+    catch (error) { return []; }
+  }
+
+  function renderDashboardLayoutOptions() {
+    document.getElementById('dashboard-layout-options').innerHTML = DASHBOARD_PANELS.map(function (panel) {
+      var checked = dashboardHiddenPanels.indexOf(panel.id) < 0 ? ' checked' : '';
+      return '<label class="dashboard-layout-option"><input type="checkbox" name="dashboard-panel" value="' + panel.id + '"' + checked + '> <span>' + panel.label + '</span></label>';
+    }).join('');
+  }
+
+  async function saveDashboardLayout(hiddenPanels) {
+    applyDashboardLayout(hiddenPanels);
+    cacheDashboardLayout(dashboardHiddenPanels);
+    if (location.protocol === 'file:') return;
+    try {
+      var response = await fetch('/api/dashboard-preferences', {
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hiddenPanels: dashboardHiddenPanels })
+      });
+      if (!response.ok) throw new Error('版面設定同步失敗');
+    } catch (error) {
+      console.warn(error.message || error);
+    }
+  }
+
+  async function setupDashboardCustomization() {
+    applyDashboardLayout(readCachedDashboardLayout());
+    var dialog = document.getElementById('dashboard-layout-dialog');
+    document.getElementById('dashboard-layout-open').addEventListener('click', function () {
+      renderDashboardLayoutOptions();
+      dialog.showModal();
+    });
+    dialog.querySelectorAll('[data-layout-close]').forEach(function (button) {
+      button.addEventListener('click', function () { dialog.close(); });
+    });
+    document.getElementById('dashboard-layout-reset').addEventListener('click', function () {
+      dialog.querySelectorAll('input[name="dashboard-panel"]').forEach(function (input) { input.checked = true; });
+    });
+    document.getElementById('dashboard-layout-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+      var visible = Array.from(dialog.querySelectorAll('input[name="dashboard-panel"]:checked')).map(function (input) { return input.value; });
+      var hidden = DASHBOARD_PANELS.map(function (panel) { return panel.id; }).filter(function (id) { return visible.indexOf(id) < 0; });
+      saveDashboardLayout(hidden);
+      dialog.close();
+    });
+    if (location.protocol === 'file:') return;
+    try {
+      var response = await fetch('/api/dashboard-preferences', { credentials: 'same-origin', cache: 'no-store' });
+      var data = await response.json().catch(function () { return {}; });
+      if (response.ok && data.ok) {
+        applyDashboardLayout(data.hiddenPanels);
+        cacheDashboardLayout(dashboardHiddenPanels);
+      }
+    } catch (error) {}
   }
 
   function taipeiDateStr(offsetDays) {
@@ -1153,6 +1296,7 @@ initTheme('my-agent-theme');
     }
   });
 
+  setupDashboardCustomization();
   loadCalendarBoards();
   loadAccountingChecklist();
   loadLastWeekDistribution();
