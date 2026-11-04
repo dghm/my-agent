@@ -518,6 +518,51 @@
     @keyframes signatureIn { to { opacity: 1; transform: translateX(-50%) translateY(0); } }
     @keyframes replayIn { to { opacity: 1; } }
 
+    @media (max-width: 768px) {
+      body {
+        display: block;
+        background: var(--paper);
+      }
+
+      body::before,
+      body::after { display: none; }
+
+      .stage {
+        width: 100%;
+        max-width: none;
+        height: 100svh;
+        padding: 0;
+        display: block;
+      }
+
+      .card {
+        width: 100%;
+        height: 100%;
+        max-height: none;
+        aspect-ratio: auto;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .message {
+        left: 6%;
+        width: 88%;
+      }
+
+      .eyebrow { margin-bottom: 1.2em; }
+
+      .greeting {
+        font-size: clamp(15px, 4.2vw, 18px);
+        line-height: 1.75;
+      }
+
+      .greeting .line {
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
+    }
+
     @media (min-width: 769px) and (min-aspect-ratio: 6 / 5) {
       html:not([data-preview="mobile"]) .stage {
         width: min(94vw, 1072px);
@@ -910,36 +955,44 @@
             var delay = .25;
             var gapScale = .4;
             var fillDuration = .5;
-            var letteringPlan = [
-              { index: 2, duration: 1.15, gap: .08, name: 'shared-c' },
-              { index: 0, duration: 2.35, gap: .08, name: 'hristmas' },
-              { index: 6, duration: .16, gap: .12, name: 'christmas-i-dot' },
-              { index: 12, duration: .14, gap: .08, name: 'left-dot-1' },
-              { index: 11, duration: .14, gap: .08, name: 'left-dot-2' },
-              { index: 10, duration: .14, gap: .08, name: 'left-dot-3' },
-              { index: 9, duration: .14, gap: .08, name: 'left-dot-4' },
-              { index: 8, duration: .14, gap: .08, name: 'left-dot-5' },
-              { index: 7, duration: .14, gap: .12, name: 'left-dot-6' },
-              { index: 4, duration: .45, gap: .08, name: 'i' },
-              { index: 5, duration: .16, gap: .08, name: 'shared-i-dot' },
-              { index: 3, duration: .62, gap: .10, name: 's' },
-              { index: 18, duration: .14, gap: .08, name: 'right-dot-1' },
-              { index: 17, duration: .14, gap: .08, name: 'right-dot-2' },
-              { index: 16, duration: .14, gap: .08, name: 'right-dot-3' },
-              { index: 15, duration: .14, gap: .08, name: 'right-dot-4' },
-              { index: 14, duration: .14, gap: .08, name: 'right-dot-5' },
-              { index: 13, duration: .14, gap: .14, name: 'right-dot-6' },
-              { index: 1, duration: 2.25, gap: 0, name: 'oming' }
+            var letteringPhases = [
+              { gap: .08, parts: [{ index: 2, duration: 1.15, name: 'shared-c' }] },
+              {
+                gap: .08,
+                parts: [
+                  { index: 0, duration: 2.35, name: 'hristmas' },
+                  { index: 1, duration: 2.35, name: 'oming' }
+                ]
+              },
+              { gap: .12, parts: [{ index: 6, duration: .16, name: 'christmas-i-dot' }] },
+              { gap: .08, parts: [{ index: 12, duration: .14, name: 'left-dot-1' }] },
+              { gap: .08, parts: [{ index: 11, duration: .14, name: 'left-dot-2' }] },
+              { gap: .08, parts: [{ index: 10, duration: .14, name: 'left-dot-3' }] },
+              { gap: .08, parts: [{ index: 9, duration: .14, name: 'left-dot-4' }] },
+              { gap: .08, parts: [{ index: 8, duration: .14, name: 'left-dot-5' }] },
+              { gap: .12, parts: [{ index: 7, duration: .14, name: 'left-dot-6' }] },
+              { gap: .08, parts: [{ index: 4, duration: .45, name: 'i' }] },
+              { gap: .08, parts: [{ index: 5, duration: .16, name: 'shared-i-dot' }] },
+              { gap: .10, parts: [{ index: 3, duration: .62, name: 's' }] },
+              { gap: .08, parts: [{ index: 18, duration: .14, name: 'right-dot-1' }] },
+              { gap: .08, parts: [{ index: 17, duration: .14, name: 'right-dot-2' }] },
+              { gap: .08, parts: [{ index: 16, duration: .14, name: 'right-dot-3' }] },
+              { gap: .08, parts: [{ index: 15, duration: .14, name: 'right-dot-4' }] },
+              { gap: .08, parts: [{ index: 14, duration: .14, name: 'right-dot-5' }] },
+              { gap: 0, parts: [{ index: 13, duration: .14, name: 'right-dot-6' }] }
             ];
-            var finalStep = letteringPlan[letteringPlan.length - 1];
-            var priorDurationTotal = letteringPlan.slice(0, -1).reduce(function (total, step) {
-              return total + step.duration;
+            var phaseDurations = letteringPhases.map(function (phase) {
+              return Math.max.apply(Math, phase.parts.map(function (part) { return part.duration; }));
+            });
+            var finalPhaseDuration = phaseDurations[phaseDurations.length - 1];
+            var priorDurationTotal = phaseDurations.slice(0, -1).reduce(function (total, duration) {
+              return total + duration;
             }, 0);
-            var gapTotal = letteringPlan.reduce(function (total, step) {
-              return total + step.gap * gapScale;
+            var gapTotal = letteringPhases.reduce(function (total, phase) {
+              return total + phase.gap * gapScale;
             }, 0);
             var motionScale = (MAIN_SEQUENCE_END - delay - gapTotal - fillDuration)
-              / (priorDurationTotal + finalStep.duration * .78);
+              / (priorDurationTotal + finalPhaseDuration * .78);
 
             svg.removeAttribute('width');
             svg.removeAttribute('height');
@@ -950,17 +1003,19 @@
               path.style.setProperty('--draw-delay', '30s');
               path.style.setProperty('--fill-delay', '30s');
             });
-            letteringPlan.forEach(function (step) {
-              var path = paths[step.index];
-              if (!path) return;
-              var drawDuration = step.duration * motionScale;
-              var gapDuration = step.gap * gapScale;
+            letteringPhases.forEach(function (phase, phaseIndex) {
+              var phaseDelay = delay;
+              phase.parts.forEach(function (part) {
+                var path = paths[part.index];
+                if (!path) return;
+                var drawDuration = part.duration * motionScale;
 
-              path.dataset.letteringPart = step.name;
-              path.style.setProperty('--draw', drawDuration + 's');
-              path.style.setProperty('--draw-delay', delay + 's');
-              path.style.setProperty('--fill-delay', (delay + drawDuration * .78) + 's');
-              delay += drawDuration + gapDuration;
+                path.dataset.letteringPart = part.name;
+                path.style.setProperty('--draw', drawDuration + 's');
+                path.style.setProperty('--draw-delay', phaseDelay + 's');
+                path.style.setProperty('--fill-delay', (phaseDelay + drawDuration * .78) + 's');
+              });
+              delay += phaseDurations[phaseIndex] * motionScale + phase.gap * gapScale;
             });
             titleWrap.classList.add('is-loaded');
           })
