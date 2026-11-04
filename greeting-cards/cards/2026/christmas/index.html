@@ -520,8 +520,7 @@
 
     @media (max-width: 768px) {
       :root {
-        --mobile-art-shift: min(0px, calc(25svh - 175px));
-        --mobile-content-push: max(0px, calc(105px - 15svh));
+        --mobile-art-shift: min(0px, calc(45svh - 315px));
       }
 
       body {
@@ -554,16 +553,21 @@
 
       .flight { top: calc(13% + var(--mobile-art-shift)); }
 
+      .title-wrap {
+        top: 44.5%;
+        width: 70%;
+      }
+
       .message {
         left: 6%;
-        top: calc(61.5% + var(--mobile-content-push));
+        top: calc(44.5% + 48.4vw + 18px);
         width: 88%;
       }
 
       .eyebrow { margin-bottom: 1.2em; }
 
       .greeting {
-        font-size: clamp(15px, 4.2vw, 18px);
+        font-size: clamp(14px, 4.2vw, 18px);
         line-height: 1.75;
       }
 
@@ -572,9 +576,16 @@
         overflow-wrap: anywhere;
       }
 
+      .signature,
       .signature.is-personal {
-        bottom: calc(13.5% - var(--mobile-content-push));
+        bottom: 3%;
+        min-height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
+
+      .signature img { max-height: 38px; object-fit: contain; }
     }
 
     @media (min-width: 769px) and (min-aspect-ratio: 6 / 5) {
