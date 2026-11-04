@@ -519,6 +519,11 @@
     @keyframes replayIn { to { opacity: 1; } }
 
     @media (max-width: 768px) {
+      :root {
+        --mobile-art-shift: min(0px, calc(25svh - 175px));
+        --mobile-content-push: max(0px, calc(105px - 15svh));
+      }
+
       body {
         display: block;
         background: var(--paper);
@@ -545,8 +550,13 @@
         box-shadow: none;
       }
 
+      .artwork { top: var(--mobile-art-shift); }
+
+      .flight { top: calc(13% + var(--mobile-art-shift)); }
+
       .message {
         left: 6%;
+        top: calc(61.5% + var(--mobile-content-push));
         width: 88%;
       }
 
@@ -560,6 +570,10 @@
       .greeting .line {
         white-space: normal;
         overflow-wrap: anywhere;
+      }
+
+      .signature.is-personal {
+        bottom: calc(13.5% - var(--mobile-content-push));
       }
     }
 
