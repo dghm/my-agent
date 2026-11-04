@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="referrer" content="no-referrer">
   <meta name="robots" content="noindex, nofollow, noarchive">
-  <meta name="theme-color" content="#073451">
+  <meta name="theme-color" content="#0a355a">
   <title>聖誕賀卡 2026</title>
   <script>
     (function () {
@@ -21,8 +21,12 @@
       --ink: #073451;
       --royal: #0d67a7;
       --ice: #d9edf8;
-      --paper: #f3faff;
+      --paper: #f4fafd;
       --muted: #6f96ae;
+      --main-sequence-end: 6.55s;
+      --greeting-start: 4.35s;
+      --greeting-step: .05s;
+      --greeting-char-duration: .34s;
     }
 
     * { box-sizing: border-box; }
@@ -36,8 +40,8 @@
       place-items: center;
       overflow: hidden;
       background:
-        radial-gradient(circle at 50% 22%, rgba(75, 151, 205, .28), transparent 34rem),
-        linear-gradient(155deg, #061d31 0%, #020b14 100%);
+        radial-gradient(ellipse 68% 62% at 50% 48%, rgba(185, 227, 247, .28) 0%, rgba(77, 151, 201, .15) 40%, transparent 72%),
+        linear-gradient(155deg, #0a355a 0%, #0a2947 52%, #061a2c 100%);
       font-family: "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
     }
 
@@ -45,14 +49,28 @@
       content: "";
       position: fixed;
       inset: -20%;
+      z-index: 0;
       pointer-events: none;
-      background: radial-gradient(circle, rgba(170, 220, 248, .12) 0 1px, transparent 1.5px);
-      background-size: 34px 34px;
-      opacity: .5;
-      animation: ambient 18s linear infinite;
+      background:
+        radial-gradient(circle, rgba(235, 248, 255, .26) 0 1px, transparent 1.6px) 0 0 / 64px 64px,
+        radial-gradient(circle, rgba(171, 217, 242, .18) 0 1px, transparent 1.7px) 20px 28px / 97px 97px;
+      opacity: .54;
+      animation: ambient 24s linear infinite;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 7%;
+      z-index: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, rgba(205, 237, 252, .16), transparent 67%);
+      filter: blur(14px);
     }
 
     .stage {
+      position: relative;
+      z-index: 1;
       width: min(100vw, 440px);
       height: min(100svh, 880px);
       padding: max(0px, env(safe-area-inset-top)) 0 max(0px, env(safe-area-inset-bottom));
@@ -68,7 +86,10 @@
       overflow: hidden;
       isolation: isolate;
       background: var(--paper);
-      box-shadow: 0 32px 90px rgba(0, 0, 0, .46);
+      border: 1px solid rgba(241, 250, 255, .46);
+      box-shadow:
+        0 42px 110px rgba(2, 29, 50, .38),
+        0 0 72px rgba(177, 225, 249, .16);
     }
 
     .card::after {
@@ -79,7 +100,7 @@
       pointer-events: none;
       background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.16) 49%, transparent 61%);
       transform: translateX(-120%);
-      animation: paperGlint 1.1s ease 8.75s both;
+      animation: paperGlint 1.1s ease 6.55s both;
     }
 
     .sky {
@@ -259,7 +280,7 @@
       height: auto;
       aspect-ratio: 507.1009 / 305.5377;
       opacity: 0;
-      animation: santaFade 1s ease 5.2s forwards;
+      animation: santaFade 1s ease 5.55s forwards;
       will-change: opacity;
     }
 
@@ -351,7 +372,7 @@
       letter-spacing: .32em;
       text-transform: uppercase;
       opacity: 0;
-      animation: fadeUp .55s ease 6s forwards;
+      animation: fadeUp .5s ease 4.55s forwards;
     }
 
     .greeting {
@@ -369,8 +390,8 @@
       opacity: 0;
       transform: translateY(.7em);
       filter: blur(4px);
-      animation: charIn .42s ease forwards;
-      animation-delay: calc(6.35s + var(--i) * .045s);
+      animation: charIn var(--greeting-char-duration) ease forwards;
+      animation-delay: calc(var(--greeting-start) + var(--i) * var(--greeting-step));
     }
 
     .signature {
@@ -381,12 +402,13 @@
       width: 42%;
       transform: translateX(-50%) translateY(16px);
       opacity: 0;
-      animation: signatureIn .65s ease 8.5s forwards;
+      animation: signatureIn .65s ease 5.9s forwards;
     }
 
     .signature img { display: block; width: 100%; }
     .signature[hidden] { display: none; }
     .signature-logo[hidden],
+    .signature-handwritten[hidden],
     .signature-text[hidden] { display: none; }
     .signature-text {
       display: block;
@@ -398,7 +420,17 @@
       text-align: center;
       white-space: nowrap;
     }
-    .signature.is-personal { width: 48%; }
+    .signature.is-personal {
+      bottom: 13.5%;
+      width: 48%;
+    }
+    .signature.is-personal.is-handwritten { width: 34%; }
+    .signature-handwritten {
+      display: block;
+      width: 100%;
+      max-height: 58px;
+      object-fit: contain;
+    }
 
     .card-status-message {
       position: absolute;
@@ -435,7 +467,7 @@
       backdrop-filter: blur(8px);
       cursor: pointer;
       opacity: 0;
-      animation: replayIn .45s ease 9.25s forwards;
+      animation: replayIn .45s ease 6.8s forwards;
     }
 
     .replay svg { width: 18px; height: 18px; }
@@ -546,7 +578,12 @@
         width: 22%;
       }
 
-      html:not([data-preview="mobile"]) .signature.is-personal { width: 30%; }
+      html:not([data-preview="mobile"]) .signature.is-personal {
+        bottom: 16%;
+        width: 30%;
+      }
+
+      html:not([data-preview="mobile"]) .signature.is-personal.is-handwritten { width: 21%; }
 
       html:not([data-preview="mobile"]) .replay { right: 2.4%; bottom: 4%; }
     }
@@ -577,7 +614,8 @@
     html[data-preview="desktop"] .eyebrow { margin-bottom: 1.8em; }
     html[data-preview="desktop"] .greeting { font-size: clamp(16px, 1.7vw, 22px); line-height: 1.9; }
     html[data-preview="desktop"] .signature { left: 77.5%; bottom: 8%; width: 22%; }
-    html[data-preview="desktop"] .signature.is-personal { width: 30%; }
+    html[data-preview="desktop"] .signature.is-personal { bottom: 16%; width: 30%; }
+    html[data-preview="desktop"] .signature.is-personal.is-handwritten { width: 21%; }
     html[data-preview="desktop"] .replay { right: 2.4%; bottom: 4%; }
 
     @media (prefers-reduced-motion: reduce) {
@@ -665,6 +703,7 @@
 
       <div class="signature">
         <img class="signature-logo" src="dghm-logo.svg" alt="萬能數維有限公司">
+        <img class="signature-handwritten" alt="" hidden>
         <span class="signature-text" hidden></span>
       </div>
 
@@ -685,8 +724,13 @@
       var titleWrap = document.querySelector('.title-wrap');
       var signature = document.querySelector('.signature');
       var signatureLogo = document.querySelector('.signature-logo');
+      var signatureHandwritten = document.querySelector('.signature-handwritten');
       var signatureText = document.querySelector('.signature-text');
       var statusMessage = document.querySelector('.card-status-message');
+      var MAIN_SEQUENCE_END = 6.55;
+      var GREETING_EARLIEST_START = 4.35;
+      var GREETING_CHAR_DURATION = .34;
+      var GREETING_MAX_STEP = .05;
       var snowSources = [
         'figma-snowflake-01.svg',
         'figma-snowflake-02.svg',
@@ -701,12 +745,27 @@
         greetingLines: ['感謝這一年的同行', '祝您與團隊聖誕平安、新年順心'],
         signatureType: 'company',
         signatureText: '萬能數維有限公司 敬賀',
-        logoVariant: 'dghm-zh'
+        logoVariant: 'dghm-zh',
+        signatureSvg: ''
       };
+
+      function showPersonalSignatureText(text) {
+        signature.classList.remove('is-handwritten');
+        signatureHandwritten.hidden = true;
+        signatureHandwritten.removeAttribute('src');
+        signatureText.hidden = false;
+        signatureText.textContent = text || 'Aries 敬上';
+      }
+
+      function safeLocalSvg(value) {
+        var path = String(value || '').trim();
+        return /^(?!\/)(?!.*\.\.)(?!.*:\/\/)[a-zA-Z0-9_./-]+\.svg(?:\?[^#]*)?$/.test(path) ? path : '';
+      }
 
       function renderGreeting(lines) {
         var normalized = Array.isArray(lines) ? lines : String(lines || '').split(/\||\n/);
         var index = 0;
+        var lastCharIndex = -1;
         greeting.innerHTML = '';
 
         normalized.filter(Boolean).forEach(function (line, lineIndex) {
@@ -717,12 +776,23 @@
             var charElement = document.createElement('span');
             charElement.className = 'char';
             charElement.style.setProperty('--i', index++);
+            lastCharIndex = index - 1;
             charElement.textContent = char;
             lineElement.appendChild(charElement);
           });
           index += 2;
           greeting.appendChild(lineElement);
         });
+
+        var availableStagger = Math.max(0, MAIN_SEQUENCE_END - GREETING_EARLIEST_START - GREETING_CHAR_DURATION);
+        var greetingStep = lastCharIndex > 0
+          ? Math.min(GREETING_MAX_STEP, availableStagger / lastCharIndex)
+          : 0;
+        var greetingStart = MAIN_SEQUENCE_END - GREETING_CHAR_DURATION - Math.max(0, lastCharIndex) * greetingStep;
+
+        greeting.style.setProperty('--greeting-start', Math.max(GREETING_EARLIEST_START, greetingStart) + 's');
+        greeting.style.setProperty('--greeting-step', greetingStep + 's');
+        greeting.style.setProperty('--greeting-char-duration', GREETING_CHAR_DURATION + 's');
       }
 
       function applyContent(content) {
@@ -736,13 +806,27 @@
         signature.hidden = hideSignature;
         signature.classList.toggle('is-personal', !hideSignature && next.signatureType === 'personal');
         if (!hideSignature && next.logoVariant === 'dghm-zh' && next.signatureType === 'company') {
+          signature.classList.remove('is-handwritten');
           signatureLogo.hidden = false;
+          signatureHandwritten.hidden = true;
+          signatureHandwritten.removeAttribute('src');
           signatureText.hidden = true;
           signatureLogo.alt = next.signatureText || '萬能數維有限公司';
         } else if (!hideSignature) {
           signatureLogo.hidden = true;
-          signatureText.hidden = false;
-          signatureText.textContent = next.signatureText || 'Aries 敬上';
+          var signatureSvg = safeLocalSvg(next.signatureSvg);
+          if (signatureSvg) {
+            signature.classList.add('is-handwritten');
+            signatureText.hidden = true;
+            signatureHandwritten.hidden = false;
+            signatureHandwritten.alt = next.signatureText || '個人署名';
+            signatureHandwritten.onerror = function () {
+              showPersonalSignatureText(next.signatureText);
+            };
+            signatureHandwritten.src = signatureSvg;
+          } else {
+            showPersonalSignatureText(next.signatureText);
+          }
         }
 
         var greetingText = lines.join('，');
@@ -823,8 +907,9 @@
             titleWrap.innerHTML = markup;
             var svg = titleWrap.querySelector('svg');
             var paths = Array.from(svg.querySelectorAll('path'));
-            var delay = .3;
-            var motionScale = .62;
+            var delay = .25;
+            var gapScale = .4;
+            var fillDuration = .5;
             var letteringPlan = [
               { index: 2, duration: 1.15, gap: .08, name: 'shared-c' },
               { index: 0, duration: 2.35, gap: .08, name: 'hristmas' },
@@ -846,6 +931,15 @@
               { index: 13, duration: .14, gap: .14, name: 'right-dot-6' },
               { index: 1, duration: 2.25, gap: 0, name: 'oming' }
             ];
+            var finalStep = letteringPlan[letteringPlan.length - 1];
+            var priorDurationTotal = letteringPlan.slice(0, -1).reduce(function (total, step) {
+              return total + step.duration;
+            }, 0);
+            var gapTotal = letteringPlan.reduce(function (total, step) {
+              return total + step.gap * gapScale;
+            }, 0);
+            var motionScale = (MAIN_SEQUENCE_END - delay - gapTotal - fillDuration)
+              / (priorDurationTotal + finalStep.duration * .78);
 
             svg.removeAttribute('width');
             svg.removeAttribute('height');
@@ -860,7 +954,7 @@
               var path = paths[step.index];
               if (!path) return;
               var drawDuration = step.duration * motionScale;
-              var gapDuration = step.gap * .4;
+              var gapDuration = step.gap * gapScale;
 
               path.dataset.letteringPart = step.name;
               path.style.setProperty('--draw', drawDuration + 's');
