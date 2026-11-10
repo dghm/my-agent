@@ -184,6 +184,32 @@
       animation: housePop .92s cubic-bezier(.16,.9,.24,1.24) var(--delay) forwards;
     }
 
+    .globe-reflection {
+      left: 5.848%;
+      top: 14.915%;
+      z-index: 12;
+      width: 88.304%;
+      overflow: visible;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(10%);
+      transform-origin: center bottom;
+      will-change: opacity, transform;
+      animation: globeGlassIn .95s cubic-bezier(.22,.7,.25,1) .15s forwards;
+    }
+
+    .globe-reflection .tube-halo {
+      opacity: .56;
+    }
+
+    .globe-reflection .tube-body {
+      opacity: .66;
+    }
+
+    .globe-reflection .tube-core {
+      opacity: .78;
+    }
+
     .fh-01 { left:7.566%; top:66.949%; width:15.326%; --delay:2.65s; }
     .fh-02 { left:21.784%; top:55.847%; width:7.776%; --delay:2.78s; }
     .fh-03 { left:64.181%; top:46.356%; width:8.875%; --delay:2.91s; }
@@ -484,6 +510,10 @@
       from { opacity: 0; transform: translateY(10%); }
       to { opacity: 1; transform: translateY(0); }
     }
+    @keyframes globeGlassIn {
+      from { opacity: 0; transform: translateY(10%); }
+      to { opacity: .52; transform: translateY(0); }
+    }
     @keyframes hillPop {
       0% { opacity: 0; transform: translateY(28%) scaleY(.45); }
       68% { opacity: 1; transform: translateY(-2%) scaleY(1.045); }
@@ -752,6 +782,42 @@
         <img class="figma-layer figma-house fh-07" src="figma-house-07.svg" alt="">
         <img class="figma-layer figma-house fh-08" src="figma-house-08.svg" alt="">
         <img class="figma-layer figma-house fh-09" src="figma-house-09.svg" alt="">
+
+        <svg class="figma-layer globe-reflection" viewBox="0 0 1208 874" aria-hidden="true">
+          <defs>
+            <clipPath id="reflection-globe-clip" clipPathUnits="userSpaceOnUse">
+              <path d="M0 604C0 443.809 63.636 290.179 176.908 176.907C290.179 63.636 443.809 0 604 0C764.191 0 917.821 63.636 1031.09 176.907C1144.36 290.179 1208 443.809 1208 604V874H0V604Z"/>
+            </clipPath>
+            <linearGradient id="reflection-vertical-fade" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="white"/>
+              <stop offset=".5" stop-color="white" stop-opacity=".94"/>
+              <stop offset=".67" stop-color="white" stop-opacity=".28"/>
+              <stop offset=".79" stop-color="white" stop-opacity="0"/>
+              <stop offset="1" stop-color="white" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="reflection-tube-core" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="white" stop-opacity=".04"/>
+              <stop offset=".16" stop-color="white" stop-opacity=".24"/>
+              <stop offset=".5" stop-color="white" stop-opacity=".34"/>
+              <stop offset=".84" stop-color="white" stop-opacity=".2"/>
+              <stop offset="1" stop-color="white" stop-opacity=".03"/>
+            </linearGradient>
+            <filter id="reflection-blur-wide" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="20"/>
+            </filter>
+            <filter id="reflection-blur-soft" x="-25%" y="-25%" width="150%" height="150%">
+              <feGaussianBlur stdDeviation="7"/>
+            </filter>
+            <mask id="reflection-upper-mask">
+              <rect width="1208" height="874" fill="url(#reflection-vertical-fade)"/>
+            </mask>
+          </defs>
+          <g clip-path="url(#reflection-globe-clip)" mask="url(#reflection-upper-mask)">
+            <path class="tube-halo" d="M50 570C56 360 158 188 330 92C425 39 521 18 625 18" fill="none" stroke="white" stroke-opacity=".16" stroke-width="72" stroke-linecap="round" filter="url(#reflection-blur-wide)"/>
+            <path class="tube-body" d="M58 565C63 368 161 207 326 113C415 63 507 38 611 34" fill="none" stroke="white" stroke-opacity=".19" stroke-width="35" stroke-linecap="round" filter="url(#reflection-blur-soft)"/>
+            <path class="tube-core" d="M67 557C73 380 166 226 323 135C408 86 496 59 594 53" fill="none" stroke="url(#reflection-tube-core)" stroke-width="13" stroke-linecap="round" filter="url(#reflection-blur-soft)"/>
+          </g>
+        </svg>
 
         <div class="snowfall"></div>
       </div>
