@@ -277,19 +277,6 @@
 
     .title-wrap.is-loaded { opacity: 1; }
 
-    .festive-ribbon {
-      position: absolute;
-      display: none;
-      pointer-events: none;
-      user-select: none;
-    }
-
-    .festive-ribbon img {
-      display: block;
-      width: 100%;
-      height: auto;
-    }
-
     .title-wrap img,
     .title-wrap svg {
       width: 100%;
@@ -575,14 +562,6 @@
     @keyframes charIn { to { opacity: 1; transform: translateY(0); filter: blur(0); } }
     @keyframes signatureIn { to { opacity: 1; transform: translateX(-50%) translateY(0); } }
     @keyframes replayIn { to { opacity: 1; } }
-    @keyframes ribbonCornerIn {
-      from { opacity: 0; transform: translate(22%, -22%) rotate(5deg) scale(.82); }
-      to { opacity: 1; transform: translate(0, 0) rotate(0) scale(1); }
-    }
-    @keyframes ribbonDividerIn {
-      from { opacity: 0; transform: translateX(22px) scaleX(.84); }
-      to { opacity: 1; transform: translateX(0) scaleX(1); }
-    }
 
     @media (max-width: 768px) {
       :root {
@@ -703,28 +682,6 @@
         filter: drop-shadow(0 4px 7px rgba(5, 45, 70, .12));
       }
 
-      html:not([data-preview="mobile"]) .festive-ribbon { display: block; }
-
-      html:not([data-preview="mobile"]) .festive-ribbon-corner {
-        z-index: 24;
-        right: -1.1%;
-        top: -1.6%;
-        width: 13.8%;
-        opacity: 0;
-        transform-origin: right top;
-        animation: ribbonCornerIn .82s cubic-bezier(.2,.82,.24,1.12) .7s forwards;
-      }
-
-      html:not([data-preview="mobile"]) .festive-ribbon-divider {
-        z-index: 10;
-        left: 61.8%;
-        top: 40.8%;
-        width: 35.2%;
-        opacity: 0;
-        transform-origin: right center;
-        animation: ribbonDividerIn .72s cubic-bezier(.22,.78,.25,1) 4.1s forwards;
-      }
-
       html:not([data-preview="mobile"]) .message {
         left: 60.5%;
         top: 50%;
@@ -783,25 +740,6 @@
       top: 13%;
       width: 27%;
       filter: drop-shadow(0 4px 7px rgba(5, 45, 70, .12));
-    }
-    html[data-preview="desktop"] .festive-ribbon { display: block; }
-    html[data-preview="desktop"] .festive-ribbon-corner {
-      z-index: 24;
-      right: -1.1%;
-      top: -1.6%;
-      width: 13.8%;
-      opacity: 0;
-      transform-origin: right top;
-      animation: ribbonCornerIn .82s cubic-bezier(.2,.82,.24,1.12) .7s forwards;
-    }
-    html[data-preview="desktop"] .festive-ribbon-divider {
-      z-index: 10;
-      left: 61.8%;
-      top: 40.8%;
-      width: 35.2%;
-      opacity: 0;
-      transform-origin: right center;
-      animation: ribbonDividerIn .72s cubic-bezier(.22,.78,.25,1) 4.1s forwards;
     }
     html[data-preview="desktop"] .message { left: 60.5%; top: 50%; bottom: 15%; width: 34%; }
     html[data-preview="desktop"] .eyebrow { margin-bottom: 0; }
@@ -919,14 +857,6 @@
 
       <div class="title-wrap" role="img" aria-label="Christmas is Coming">
         <img class="lettering-fallback" src="christmas-is-coming.svg" alt="">
-      </div>
-
-      <div class="festive-ribbon festive-ribbon-corner" aria-hidden="true">
-        <img src="red-gold-corner-bow.svg" alt="">
-      </div>
-
-      <div class="festive-ribbon festive-ribbon-divider" aria-hidden="true">
-        <img src="red-gold-ribbon-divider.svg" alt="">
       </div>
 
       <div class="flight" aria-hidden="true">
