@@ -385,13 +385,16 @@
       z-index: 11;
       left: 7%;
       top: 61.5%;
+      bottom: 10%;
       width: 86%;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
       text-align: center;
       color: var(--ink);
     }
 
     .eyebrow {
-      margin: 0 0 1.6em;
+      margin: 0;
       color: #779eb5;
       font-size: clamp(9px, 2.4cqi, 12px);
       font-weight: 500;
@@ -407,9 +410,20 @@
       font-size: clamp(16px, 4.6cqi, 22px);
       line-height: 1.85;
       letter-spacing: .04em;
+      align-self: center;
+      max-width: 100%;
+      padding-inline: .35em;
     }
 
-    .greeting .line { white-space: nowrap; }
+    .greeting .line {
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .greeting.is-long {
+      font-size: clamp(14px, 4cqi, 19px);
+      line-height: 1.7;
+    }
 
     .greeting .char {
       display: inline-block;
@@ -450,6 +464,7 @@
       bottom: 13.5%;
       width: 48%;
     }
+    .card:has(.signature.is-personal:not([hidden])) .message { bottom: 19%; }
     .signature.is-personal.is-handwritten { width: 34%; }
     .signature-handwritten {
       display: block;
@@ -591,14 +606,20 @@
       .message {
         left: 6%;
         top: calc(44.5% + 48.4vw + 18px);
+        bottom: 10.5%;
         width: 88%;
       }
 
-      .eyebrow { margin-bottom: 1.2em; }
+      .eyebrow { margin-bottom: 0; }
 
       .greeting {
         font-size: clamp(14px, 4.2vw, 18px);
         line-height: 1.75;
+      }
+
+      .greeting.is-long {
+        font-size: clamp(13px, 3.8vw, 16px);
+        line-height: 1.6;
       }
 
       .greeting .line {
@@ -614,6 +635,8 @@
         align-items: center;
         justify-content: center;
       }
+
+      .card:has(.signature.is-personal:not([hidden])) .message { bottom: 10.5%; }
 
       .signature img { max-height: 38px; object-fit: contain; }
     }
@@ -662,14 +685,20 @@
       html:not([data-preview="mobile"]) .message {
         left: 60.5%;
         top: 50%;
+        bottom: 15%;
         width: 34%;
       }
 
-      html:not([data-preview="mobile"]) .eyebrow { margin-bottom: 1.8em; }
+      html:not([data-preview="mobile"]) .eyebrow { margin-bottom: 0; }
 
       html:not([data-preview="mobile"]) .greeting {
         font-size: clamp(16px, 1.7vw, 22px);
         line-height: 1.9;
+      }
+
+      html:not([data-preview="mobile"]) .greeting.is-long {
+        font-size: clamp(15px, 1.5vw, 19px);
+        line-height: 1.7;
       }
 
       html:not([data-preview="mobile"]) .signature {
@@ -682,6 +711,8 @@
         bottom: 16%;
         width: 30%;
       }
+
+      html:not([data-preview="mobile"]) .card:has(.signature.is-personal:not([hidden])) .message { bottom: 22%; }
 
       html:not([data-preview="mobile"]) .signature.is-personal.is-handwritten { width: 21%; }
 
@@ -710,11 +741,13 @@
       width: 27%;
       filter: drop-shadow(0 4px 7px rgba(5, 45, 70, .12));
     }
-    html[data-preview="desktop"] .message { left: 60.5%; top: 50%; width: 34%; }
-    html[data-preview="desktop"] .eyebrow { margin-bottom: 1.8em; }
+    html[data-preview="desktop"] .message { left: 60.5%; top: 50%; bottom: 15%; width: 34%; }
+    html[data-preview="desktop"] .eyebrow { margin-bottom: 0; }
     html[data-preview="desktop"] .greeting { font-size: clamp(16px, 1.7vw, 22px); line-height: 1.9; }
+    html[data-preview="desktop"] .greeting.is-long { font-size: clamp(15px, 1.5vw, 19px); line-height: 1.7; }
     html[data-preview="desktop"] .signature { left: 77.5%; bottom: 8%; width: 22%; }
     html[data-preview="desktop"] .signature.is-personal { bottom: 16%; width: 30%; }
+    html[data-preview="desktop"] .card:has(.signature.is-personal:not([hidden])) .message { bottom: 22%; }
     html[data-preview="desktop"] .signature.is-personal.is-handwritten { width: 21%; }
     html[data-preview="desktop"] .replay { right: 2.4%; bottom: 4%; }
 
@@ -901,6 +934,7 @@
       function renderGreeting(lines) {
         var normalized = Array.isArray(lines) ? lines : String(lines || '').split(/\||\n/);
         var index = 0;
+        var characterCount = 0;
         var lastCharIndex = -1;
         greeting.innerHTML = '';
 
@@ -912,6 +946,7 @@
             var charElement = document.createElement('span');
             charElement.className = 'char';
             charElement.style.setProperty('--i', index++);
+            characterCount += 1;
             lastCharIndex = index - 1;
             charElement.textContent = char;
             lineElement.appendChild(charElement);
@@ -919,6 +954,9 @@
           index += 2;
           greeting.appendChild(lineElement);
         });
+
+        greeting.classList.toggle('is-long', characterCount > 28);
+        greeting.dataset.characterCount = String(characterCount);
 
         var availableStagger = Math.max(0, MAIN_SEQUENCE_END - GREETING_EARLIEST_START - GREETING_CHAR_DURATION);
         var greetingStep = lastCharIndex > 0
