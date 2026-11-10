@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 132" role="img" aria-labelledby="title desc">
+  <title id="title">紅金蝴蝶結彩帶</title>
+  <desc id="desc">酒紅色緞帶配金色滾邊，右端繫有蝴蝶結。</desc>
+  <defs>
+    <linearGradient id="ribbon" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d13b48"/>
+      <stop offset=".46" stop-color="#a9152a"/>
+      <stop offset="1" stop-color="#790d20"/>
+    </linearGradient>
+    <linearGradient id="ribbonDark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8d1022"/>
+      <stop offset="1" stop-color="#5e0918"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#b98420"/>
+      <stop offset=".5" stop-color="#f2d477"/>
+      <stop offset="1" stop-color="#c3922d"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-30%" width="150%" height="180%">
+      <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#3d1020" flood-opacity=".2"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <path d="M12 57C136 44 259 68 380 54C484 42 578 48 666 56L657 93C558 84 471 84 380 96C249 112 125 85 12 99L31 78Z" fill="url(#ribbon)"/>
+    <path d="M18 57C139 45 259 68 380 54C482 42 575 48 664 56" fill="none" stroke="url(#gold)" stroke-width="7" stroke-linecap="round"/>
+    <path d="M15 99C128 86 248 112 380 96C474 84 561 84 659 93" fill="none" stroke="url(#gold)" stroke-width="5" stroke-linecap="round"/>
+    <path d="M31 78L12 57L5 80L12 99Z" fill="url(#ribbonDark)"/>
+    <path d="M12 57L31 78L12 99" fill="none" stroke="#e8c25d" stroke-width="3" stroke-linejoin="round"/>
+
+    <path d="M669 75C633 37 611 15 590 20C570 25 574 50 589 64C609 82 635 82 669 79Z" fill="url(#ribbon)" stroke="#d8aa3e" stroke-width="5"/>
+    <path d="M681 75C716 35 738 16 750 29C764 44 743 68 718 78C705 83 693 82 681 79Z" fill="url(#ribbon)" stroke="#d8aa3e" stroke-width="5"/>
+    <path d="M671 84C649 95 631 108 617 127L651 118L670 130L682 88Z" fill="url(#ribbonDark)" stroke="#d8aa3e" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M683 84C708 96 724 108 739 128L709 118L688 130L677 90Z" fill="url(#ribbonDark)" stroke="#d8aa3e" stroke-width="4" stroke-linejoin="round"/>
+    <ellipse cx="676" cy="78" rx="18" ry="22" fill="url(#gold)" stroke="#f6df91" stroke-width="3"/>
+    <path d="M665 69C670 63 681 62 688 69" fill="none" stroke="#fff2bd" stroke-width="3" stroke-linecap="round" opacity=".72"/>
+    <path d="M602 28C590 30 592 45 605 55" fill="none" stroke="#f6abb1" stroke-width="4" stroke-linecap="round" opacity=".42"/>
+    <path d="M740 34C747 43 736 57 722 65" fill="none" stroke="#f6abb1" stroke-width="4" stroke-linecap="round" opacity=".38"/>
+  </g>
+</svg>
