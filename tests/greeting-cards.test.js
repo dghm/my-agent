@@ -98,10 +98,11 @@ test('endpoint reads Airtable server-side and omits private fields', async () =>
   }
 });
 
-test('public endpoint returns only safe personalized content for a valid preview token', async () => {
+test('public endpoint returns only safe personalized content for a published card', async () => {
   const previousToken = process.env.AIRTABLE_GREETING_CARDS_TOKEN;
   const previousFetch = globalThis.fetch;
   const data = fixtureRecords();
+  data.cards[0].fields[CARD.websiteStatus] = '已發布';
   process.env.AIRTABLE_GREETING_CARDS_TOKEN = 'pat-test';
   globalThis.fetch = async (url) => {
     const value = String(url);
@@ -145,8 +146,9 @@ test('public endpoint rejects malformed tokens without querying Airtable', async
 
 test('public availability enforces status, activation, and expiration windows', () => {
   const now = Date.parse('2026-11-02T00:00:00Z');
-  assert.equal(withinAvailability({ websiteStatus: 'preview', enabledAt: '', expiresAt: '' }, now), true);
+  assert.equal(withinAvailability({ websiteStatus: 'preview', enabledAt: '', expiresAt: '' }, now), false);
   assert.equal(withinAvailability({ websiteStatus: 'draft', enabledAt: '', expiresAt: '' }, now), false);
+  assert.equal(withinAvailability({ websiteStatus: 'published', enabledAt: '', expiresAt: '' }, now), true);
   assert.equal(withinAvailability({ websiteStatus: 'published', enabledAt: '2026-11-03T00:00:00Z', expiresAt: '' }, now), false);
   assert.equal(withinAvailability({ websiteStatus: 'published', enabledAt: '', expiresAt: '2026-11-01T00:00:00Z' }, now), false);
 });

@@ -38,10 +38,12 @@
   var recipientSelect = document.getElementById('gc-preview-recipient');
   var previewContentLabel = document.getElementById('gc-preview-content-label');
   var previewSignature = document.getElementById('gc-preview-signature');
+  var greetingLength = document.getElementById('gc-greeting-length');
   var previewSource = document.getElementById('gc-preview-source');
   var sharePreview = document.getElementById('gc-share-preview');
   var shareStatus = document.getElementById('gc-share-status');
   var shareUrl = document.getElementById('gc-share-url');
+  var shareNote = document.getElementById('gc-share-note');
   var copyUrl = document.getElementById('gc-copy-url');
   var openPublicCard = document.getElementById('gc-open-public-card');
 
@@ -116,10 +118,31 @@
     sharePreview.hidden = !available;
     if (!available) return;
 
+    var published = item.websiteStatus === 'published';
     shareUrl.textContent = item.publicUrl;
     shareUrl.title = item.publicUrl;
     openPublicCard.href = item.publicUrl;
-    shareStatus.textContent = item.websiteStatus === 'published' ? '已發布' : '預覽';
+    shareStatus.textContent = published ? '已發布' : '未發布';
+    shareStatus.classList.toggle('is-published', published);
+    shareStatus.classList.toggle('is-unpublished', !published);
+    shareNote.textContent = published
+      ? '只有持有這組連結的人才能讀取個人化內容。'
+      : '目前只能在登入後的 my-agent 預覽；網站狀態改為「已發布」後，專屬網址才會對外開啟。';
+    copyUrl.hidden = !published;
+    openPublicCard.hidden = !published;
+  }
+
+  function renderGreetingLength(item) {
+    if (!item || !Array.isArray(item.greetingLines)) {
+      greetingLength.hidden = true;
+      return;
+    }
+    var length = Array.from(item.greetingLines.join('')).length;
+    greetingLength.hidden = false;
+    greetingLength.classList.toggle('is-warning', length > 40);
+    greetingLength.textContent = length > 40
+      ? '賀詞 ' + length + ' 字 · 超過建議的 40 字，請確認桌機與手機版沒有擠壓或超出。'
+      : '賀詞 ' + length + ' 字';
   }
 
   function renderContentControls(card) {
@@ -156,6 +179,7 @@
     var item = activePreviewItem();
     previewContentLabel.textContent = item ? item.label : (MODE_LABELS[state.previewMode] || state.previewMode);
     previewSignature.textContent = signatureSummary(item);
+    renderGreetingLength(item);
     renderSharePreview(item);
   }
 
@@ -273,7 +297,7 @@
 
   copyUrl.addEventListener('click', function () {
     var item = activePreviewItem();
-    if (!item || !item.publicUrl) return;
+    if (!item || !item.publicUrl || item.websiteStatus !== 'published') return;
     navigator.clipboard.writeText(item.publicUrl).then(function () {
       copyUrl.textContent = '已複製';
       setTimeout(function () { copyUrl.textContent = '複製網址'; }, 1600);

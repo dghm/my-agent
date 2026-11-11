@@ -38,7 +38,7 @@ function unavailable(req) {
 }
 
 export function withinAvailability(item, now = Date.now()) {
-  if (!item || !['preview', 'published'].includes(item.websiteStatus)) return false;
+  if (!item || item.websiteStatus !== 'published') return false;
   const enabledAt = item.enabledAt ? Date.parse(item.enabledAt) : NaN;
   const expiresAt = item.expiresAt ? Date.parse(item.expiresAt) : NaN;
   if (Number.isFinite(enabledAt) && now < enabledAt) return false;
