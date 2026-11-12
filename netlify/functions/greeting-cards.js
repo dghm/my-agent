@@ -79,13 +79,7 @@ function textValue(value) {
 function splitGreeting(value) {
   const text = textValue(value).trim();
   if (!text) return [];
-  const explicit = text.split(/\r?\n|\|/).map((line) => line.trim()).filter(Boolean);
-  if (explicit.length > 1 || text.length <= 20) return explicit;
-  const midpoint = Math.floor(text.length / 2);
-  const punctuation = [...text].map((char, index) => '，。！？；'.includes(char) ? index + 1 : -1).filter((index) => index > 0);
-  if (!punctuation.length) return [text];
-  const splitAt = punctuation.sort((a, b) => Math.abs(a - midpoint) - Math.abs(b - midpoint))[0];
-  return [text.slice(0, splitAt), text.slice(splitAt)].map((line) => line.trim()).filter(Boolean);
+  return text.split(/\r?\n|\|/).map((line) => line.trim()).filter(Boolean);
 }
 
 function previewId(recordId) {
