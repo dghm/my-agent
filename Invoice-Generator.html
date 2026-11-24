@@ -452,7 +452,7 @@ __TERMS_LI__
             <label for="invoice-sequence">當月第幾筆</label>
             <input type="number" id="invoice-sequence" min="1" step="1" value="1">
             <button type="button" class="secondary" id="apply-invoice-number">套用單號</button>
-            <p class="hint">格式 YYMM-序號，例如 2611-01。依開立日期（未填則用今天），序號請依實際開單紀錄確認。</p>
+            <p class="hint">格式 INV-YYMM-序號，例如 INV-2611-01。依開立日期（未填則用今天），序號請依實際開單紀錄確認。</p>
           </div>
           <div>
             <label>專案代碼 DH-XX-PJX</label>
@@ -1205,7 +1205,7 @@ function collectDraft() {
 
 function applyDraft(draft) {
   var loadedNumber = draft.fields && draft.fields.f_inv_no || '';
-  var sequenceMatch = String(loadedNumber).match(/^\d{4}-(\d{2,})$/);
+  var sequenceMatch = String(loadedNumber).match(/^(?:INV-)?\d{4}-(\d{2,})$/);
   document.getElementById('invoice-sequence').value = sequenceMatch ? Number(sequenceMatch[1]) : 1;
   document.getElementById('f_doc_title').value = '應收帳款通知';
   // Reset missing legacy fields so a previous invoice's bank details cannot leak.
@@ -1439,7 +1439,7 @@ var _handoffApplied = false;
   refreshOutput();
 })();
 function formatInvoiceNumber(date, sequence) {
-  return String(date.getFullYear()).slice(-2) + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(sequence).padStart(2, '0');
+  return 'INV-' + String(date.getFullYear()).slice(-2) + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(sequence).padStart(2, '0');
 }
 function applyInvoiceNumber() {
   var sequence = Number(document.getElementById('invoice-sequence').value);
