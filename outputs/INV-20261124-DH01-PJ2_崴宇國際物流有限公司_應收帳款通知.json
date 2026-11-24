@@ -1,0 +1,45 @@
+{
+  "kind": "dghm-invoice-draft",
+  "version": 1,
+  "fields": {
+    "f_company_name": "崴宇國際物流有限公司",
+    "f_project_name": "TailorMed 線上查貨系統主機年度續約",
+    "f_inv_no": "2611-01",
+    "f_proj_code": "DH-01-PJ2",
+    "f_doc_title": "應收帳款通知",
+    "f_payment_terms": "一次付清，請於 2026/12/05 前完成付款",
+    "f_issue_date": "2026-11-24",
+    "f_due_date": "2026-12-05",
+    "f_inv_number": "",
+    "f_address": "新北市汐止區康寧街169巷27號10樓",
+    "f_vat": "93585598",
+    "f_contact": "張庭慈 Mimi",
+    "f_phone": "0983-324709",
+    "f_email": "mimi@tailormed-intl.com",
+    "f_tax_label": "營業稅",
+    "f_tax_rate": "5",
+    "f_tax_on": "1",
+    "f_total_hint": "",
+    "f_remit_terms_page": "page1",
+    "f_page_no": "1",
+    "f_page_total": "1",
+    "f_remit_bank": "玉山銀行 楊梅分行",
+    "f_remit_code": "808",
+    "f_remit_holder": "萬能數維有限公司",
+    "f_remit_account": "0369-940-032822",
+    "f_remit_swift": ""
+  },
+  "items": [
+    {
+      "name": "網站主機年度租用（TailorMed 線上查貨系統續約）",
+      "desc": "服務期間：2026/12/01–2027/11/30，共12個月。雲端主機專業方案（含後端程式執行環境），延續 tracking.tailormed-intl.com 線上查貨系統之雲端主機服務，承載前台頁面與後端查詢程式，維持查貨網址、網站安全加密憑證與查詢功能正常運作。",
+      "price": "8000"
+    }
+  ],
+  "terms": [
+    "本通知依已確認之報價單 DH-01-PJ2-QT-2（報價日期：2026/11/03）開立，請款項目為 TailorMed 線上查貨系統主機年度續約。",
+    "本次為年度費用一次請款（100%）：未稅 NT$8,000、營業稅5% NT$400，含稅應付總額 NT$8,400；請於2026/12/05前以銀行匯款方式完成付款。",
+    "服務期間為2026/12/01至2027/11/30，共12個月；本案於報價確認後開立發票，發票資料另行提供。",
+    "本次費用不含系統維護、錯誤修正、功能調整、新增功能、欄位或介面改版、資料庫系統使用者授權費用，以及網域本身之註冊或續約年費；如有需求可另行報價。"
+  ]
+}

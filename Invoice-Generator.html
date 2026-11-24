@@ -449,6 +449,10 @@ __TERMS_LI__
           <div>
             <label>通知單號 INV No.</label>
             <input type="text" id="f_inv_no">
+            <label for="invoice-sequence">當月第幾筆</label>
+            <input type="number" id="invoice-sequence" min="1" step="1" value="1">
+            <button type="button" class="secondary" id="apply-invoice-number">套用單號</button>
+            <p class="hint">格式 YYMM-序號，例如 2611-01。依開立日期（未填則用今天），序號請依實際開單紀錄確認。</p>
           </div>
           <div>
             <label>專案代碼 DH-XX-PJX</label>
@@ -1200,6 +1204,9 @@ function collectDraft() {
 }
 
 function applyDraft(draft) {
+  var loadedNumber = draft.fields && draft.fields.f_inv_no || '';
+  var sequenceMatch = String(loadedNumber).match(/^\d{4}-(\d{2,})$/);
+  document.getElementById('invoice-sequence').value = sequenceMatch ? Number(sequenceMatch[1]) : 1;
   document.getElementById('f_doc_title').value = '應收帳款通知';
   // Reset missing legacy fields so a previous invoice's bank details cannot leak.
   document.getElementById('f_remit_bank').value = '玉山銀行 楊梅分行';
@@ -1431,6 +1438,21 @@ var _handoffApplied = false;
   syncTaxPresets();
   refreshOutput();
 })();
+function formatInvoiceNumber(date, sequence) {
+  return String(date.getFullYear()).slice(-2) + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(sequence).padStart(2, '0');
+}
+function applyInvoiceNumber() {
+  var sequence = Number(document.getElementById('invoice-sequence').value);
+  if (!Number.isSafeInteger(sequence) || sequence < 1) { alert('請輸入大於零的整數序號'); return; }
+  var issueDate = v('f_issue_date');
+  var date = issueDate ? new Date(issueDate + 'T12:00:00') : new Date();
+  if (isNaN(date.getTime())) { alert('請確認開立日期'); return; }
+  document.getElementById('f_inv_no').value = formatInvoiceNumber(date, sequence);
+  _isDirty = true;
+  refreshOutput();
+}
+document.getElementById('apply-invoice-number').addEventListener('click', applyInvoiceNumber);
+if (!v('f_inv_no') && !new URLSearchParams(location.search).has('incomePreview')) applyInvoiceNumber();
 </script>
 <script src="receivables-preview.js"></script>
 </body>
