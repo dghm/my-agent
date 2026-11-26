@@ -521,23 +521,28 @@
       z-index: 40;
       left: 4%;
       bottom: 3%;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      min-height: 38px;
-      padding: 0 6px;
-      border: 1px solid rgba(7, 52, 81, .18);
-      border-radius: 999px;
-      background: rgba(255,255,255,.85);
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      border: 0;
+      background: transparent;
       color: #315f7d;
-      font: inherit;
-      font-size: 10px;
       cursor: pointer;
     }
     .card-reaction[hidden], .card-reaction svg[hidden] { display: none; }
-    .card-reaction svg { width: 15px; height: 15px; flex: none; }
+    .card-reaction svg { width: 18px; height: 18px; }
+    .reaction-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
     .card-reaction:focus-visible { outline: 2px solid #2a78a8; outline-offset: 3px; }
-    .card-reaction[aria-pressed="true"] { color: #a73554; cursor: default; }
+    .card-reaction[aria-pressed="true"] { color: #cf243d; cursor: default; }
 
     .card.is-replaying *, .card.is-replaying *::before, .card.is-replaying *::after {
       animation: none !important;
@@ -1067,16 +1072,26 @@
       function bindReaction(endpoint, liked) {
         var button = document.querySelector('.card-reaction');
         var label = button.querySelector('.reaction-label');
-        function showLiked() {
+        function showLiked(animate) {
           button.setAttribute('aria-pressed', 'true');
           button.disabled = true;
           button.querySelector('.heart-plus').setAttribute('hidden', '');
-          button.querySelector('.heart-filled').removeAttribute('hidden');
+          var heart = button.querySelector('.heart-filled');
+          heart.removeAttribute('hidden');
           label.textContent = '已送出愛心';
+          if (animate && typeof heart.animate === 'function' &&
+              !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            heart.animate([
+              { transform: 'translateY(2px) scale(.65)', offset: 0 },
+              { transform: 'translateY(-9px) scale(1.5)', offset: .42 },
+              { transform: 'translateY(1px) scale(.92)', offset: .76 },
+              { transform: 'translateY(0) scale(1)', offset: 1 }
+            ], { duration: 460, easing: 'ease-out' });
+          }
         }
         button.hidden = false;
         if (liked) {
-          showLiked();
+          showLiked(false);
           return;
         }
         button.addEventListener('click', async function () {
@@ -1091,7 +1106,7 @@
             });
             var result = await response.json();
             if (!response.ok || !result.liked) throw new Error('Reaction unavailable');
-            showLiked();
+            showLiked(true);
           } catch {
             label.textContent = '重試送出';
             button.disabled = false;

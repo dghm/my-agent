@@ -122,7 +122,7 @@
     if (!item || item.reactionStatusAvailable === undefined) return '';
     if (!item.reactionStatusAvailable) return '愛心狀態暫無法取得';
     var receivedAt = Date.parse(item.likedAt);
-    return Number.isFinite(receivedAt) ? '已收到愛心 ' + reactionTimeFormat.format(receivedAt) : '尚未收到愛心';
+    return Number.isFinite(receivedAt) ? '已送出愛心給你 ' + reactionTimeFormat.format(receivedAt) : '尚未送出愛心';
   }
 
   function renderSharePreview(item) {
