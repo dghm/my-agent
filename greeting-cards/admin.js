@@ -34,6 +34,7 @@
   var previewUrl = document.getElementById('gc-preview-url');
   var openCard = document.getElementById('gc-open-card');
   var contentPreview = document.getElementById('gc-content-preview');
+  var previewColumn = contentPreview.parentElement;
   var recipientField = document.getElementById('gc-recipient-field');
   var recipientSelect = document.getElementById('gc-preview-recipient');
   var previewContentLabel = document.getElementById('gc-preview-content-label');
@@ -254,6 +255,12 @@
   function setDevice(device) {
     state.device = device;
     deviceFrame.dataset.device = device;
+    previewColumn.dataset.previewDevice = device;
+    var shareContainer = device === 'mobile' ? previewColumn : contentPreview;
+    if (sharePreview.parentElement !== shareContainer) {
+      shareContainer.appendChild(sharePreview);
+    }
+    previewColumn.scrollTop = 0;
     document.querySelectorAll('[data-gc-device]').forEach(function (button) {
       var active = button.dataset.gcDevice === device;
       button.classList.toggle('is-active', active);
