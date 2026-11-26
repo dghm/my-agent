@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import handler, { buildPreviewItems } from '../netlify/functions/greeting-cards.js';
-import publicHandler, { withinAvailability } from '../netlify/functions/public-greeting-card.js';
+import publicHandler, { createPublicGreetingCardHandler, withinAvailability } from '../netlify/functions/public-greeting-card.js';
 
 const CARD = {
   year: 'flddlYmss0faJe03E', festival: 'fldeUIsh9wBncgniM', recipient: 'fld4dZDrUQVIkJQtY',
@@ -151,4 +151,76 @@ test('public availability enforces status, activation, and expiration windows', 
   assert.equal(withinAvailability({ websiteStatus: 'published', enabledAt: '', expiresAt: '' }, now), true);
   assert.equal(withinAvailability({ websiteStatus: 'published', enabledAt: '2026-11-03T00:00:00Z', expiresAt: '' }, now), false);
   assert.equal(withinAvailability({ websiteStatus: 'published', enabledAt: '', expiresAt: '2026-11-01T00:00:00Z' }, now), false);
+});
+
+test('public card links share one reaction and only the authenticated dashboard receives its timestamp', async (t) => {
+  const env = {
+    AIRTABLE_GREETING_CARDS_TOKEN: 'pat-test',
+    GREETING_CARD_REACTIONS_SYNC_SECRET: 'reactions-test-secret',
+    SESSION_SECRET: 'session-test-secret',
+  };
+  for (const [name, value] of Object.entries(env)) {
+    const previous = process.env[name];
+    process.env[name] = value;
+    t.after(() => {
+      if (previous === undefined) delete process.env[name];
+      else process.env[name] = previous;
+    });
+  }
+
+  const records = fixtureRecords();
+  const fields = records.cards[0].fields;
+  fields[CARD.websiteStatus] = '已發布';
+  const saved = new Map();
+  const receiveReaction = createPublicGreetingCardHandler({
+    openStore: () => ({
+      get: async (key) => saved.get(key) ?? null,
+      list: async () => ({ blobs: [...saved.keys()].map((key) => ({ key })) }),
+      set: async (key, value, options) => {
+        assert.equal(options.onlyIfNew, true);
+        if (saved.has(key)) return { modified: false };
+        saved.set(key, value);
+        return { modified: true };
+      },
+    }),
+  });
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    const address = String(url);
+    if (address.startsWith('https://cards.dghm.tw/')) return receiveReaction(new Request(url, options));
+    if (address.includes('tblFxLv8DgbIVyPkW')) return Response.json({ records: records.cards });
+    if (address.includes('tblyMZJSwfayCFu8G')) return Response.json({ records: records.recipients });
+    if (address.includes('tblsQVFkqi8pXGsE4')) return Response.json({ records: records.greetings });
+    throw new Error('Unexpected request');
+  });
+
+  const endpoint = 'https://cards.dghm.tw/api/public-greeting-card';
+  const longLink = endpoint + '?c=' + fields[CARD.publicCode];
+  const shortLink = endpoint + '?c=' + fields[CARD.publicCode].slice(0, 12);
+  const post = { method: 'POST', headers: { 'Content-Type': 'application/json' } };
+  const loadCard = async () => (await receiveReaction(new Request(shortLink))).json();
+  assert.deepEqual((await loadCard()).reaction, { liked: false });
+  assert.equal((await receiveReaction(new Request(endpoint + '?reactions=1'))).status, 401);
+  const submissions = await Promise.all([shortLink, longLink].map((url) => receiveReaction(new Request(url, post))));
+  assert.deepEqual(await Promise.all(submissions.map((response) => response.json())), [
+    { ok: true, liked: true }, { ok: true, liked: true },
+  ]);
+  assert.equal(saved.size, 1);
+  const firstTimestamp = [...saved.values()][0];
+  assert.ok(Number.isFinite(Date.parse(firstTimestamp)));
+  assert.equal((await receiveReaction(new Request(shortLink, post))).status, 200);
+  assert.deepEqual([...saved.values()], [firstTimestamp]);
+  const publicData = await loadCard();
+  assert.deepEqual(publicData.reaction, { liked: true });
+  assert.equal(JSON.stringify(publicData).includes(firstTimestamp), false);
+
+  const dashboard = await handler(new Request('https://my-agent.dghm.tw/api/greeting-cards', {
+    headers: { cookie: sessionCookie(env.SESSION_SECRET) },
+  }));
+  assert.equal(dashboard.status, 200);
+  const recipients = (await dashboard.json()).items;
+  assert.equal(recipients.find((item) => item.mode === 'family').likedAt, firstTimestamp);
+  assert.equal(recipients.find((item) => item.mode === 'public').likedAt, undefined);
+
+  fields[CARD.websiteStatus] = '草稿';
+  assert.equal((await receiveReaction(new Request(shortLink, post))).status, 404);
 });

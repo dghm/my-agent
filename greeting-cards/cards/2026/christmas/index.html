@@ -516,6 +516,29 @@
     .replay svg { width: 18px; height: 18px; }
     .replay:focus-visible { outline: 2px solid #2a78a8; outline-offset: 3px; }
 
+    .card-reaction {
+      position: absolute;
+      z-index: 40;
+      left: 4%;
+      bottom: 3%;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      min-height: 38px;
+      padding: 0 6px;
+      border: 1px solid rgba(7, 52, 81, .18);
+      border-radius: 999px;
+      background: rgba(255,255,255,.85);
+      color: #315f7d;
+      font: inherit;
+      font-size: 10px;
+      cursor: pointer;
+    }
+    .card-reaction[hidden], .card-reaction svg[hidden] { display: none; }
+    .card-reaction svg { width: 15px; height: 15px; flex: none; }
+    .card-reaction:focus-visible { outline: 2px solid #2a78a8; outline-offset: 3px; }
+    .card-reaction[aria-pressed="true"] { color: #a73554; cursor: default; }
+
     .card.is-replaying *, .card.is-replaying *::before, .card.is-replaying *::after {
       animation: none !important;
     }
@@ -721,6 +744,7 @@
       html:not([data-preview="mobile"]) .signature.is-personal.is-handwritten { width: 21%; }
 
       html:not([data-preview="mobile"]) .replay { right: 2.4%; bottom: 4%; }
+      html:not([data-preview="mobile"]) .card-reaction { left: 2.4%; bottom: 4%; }
     }
 
     html[data-preview="desktop"] .stage {
@@ -754,6 +778,7 @@
     html[data-preview="desktop"] .card:has(.signature.is-personal:not([hidden])) .message { bottom: 22%; }
     html[data-preview="desktop"] .signature.is-personal.is-handwritten { width: 21%; }
     html[data-preview="desktop"] .replay { right: 2.4%; bottom: 4%; }
+    html[data-preview="desktop"] .card-reaction { left: 2.4%; bottom: 4%; }
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
@@ -882,6 +907,15 @@
 
       <div class="card-status-message" role="status" hidden>這張賀卡目前尚未開放，或連結已失效。</div>
 
+      <button class="card-reaction" type="button" aria-pressed="false" hidden>
+        <svg class="heart-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m14.479 19.374-.971.939a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5a5.2 5.2 0 0 1-.219 1.49M15 15h6M18 12v6"/>
+        </svg>
+        <svg class="heart-filled" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" hidden>
+          <path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5Z"/>
+        </svg>
+        <span class="reaction-label" aria-live="polite">送出愛心</span>
+      </button>
       <button class="replay" type="button" aria-label="重新播放動畫" title="重新播放">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 8.5V4.5M19 8.5h-4M19 8.5a7.5 7.5 0 1 0 .4 6.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
@@ -1030,11 +1064,48 @@
           });
       }
 
+      function bindReaction(endpoint, liked) {
+        var button = document.querySelector('.card-reaction');
+        var label = button.querySelector('.reaction-label');
+        function showLiked() {
+          button.setAttribute('aria-pressed', 'true');
+          button.disabled = true;
+          button.querySelector('.heart-plus').setAttribute('hidden', '');
+          button.querySelector('.heart-filled').removeAttribute('hidden');
+          label.textContent = '已送出愛心';
+        }
+        button.hidden = false;
+        if (liked) {
+          showLiked();
+          return;
+        }
+        button.addEventListener('click', async function () {
+          button.disabled = true;
+          label.textContent = '送出中…';
+          try {
+            var response = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              referrerPolicy: 'no-referrer',
+              signal: AbortSignal.timeout(10000)
+            });
+            var result = await response.json();
+            if (!response.ok || !result.liked) throw new Error('Reaction unavailable');
+            showLiked();
+          } catch {
+            label.textContent = '重試送出';
+            button.disabled = false;
+          }
+        });
+      }
+
       function loadPublicContent() {
         var publicCode = new URLSearchParams(location.search).get('c');
         if (!publicCode) return false;
-        var apiOrigin = location.hostname === 'cards.dghm.tw' ? 'https://my-agent.dghm.tw' : location.origin;
-        fetch(apiOrigin + '/api/public-greeting-card?c=' + encodeURIComponent(publicCode), {
+        var query = '/api/public-greeting-card?c=' + encodeURIComponent(publicCode);
+        var isLegacyLink = location.origin === 'https://my-agent.dghm.tw';
+        var reactionEndpoint = (isLegacyLink ? 'https://cards.dghm.tw' : location.origin) + query;
+        fetch(location.origin + query, {
           cache: 'no-store',
           referrerPolicy: 'no-referrer'
         })
@@ -1046,6 +1117,16 @@
             if (!data || !data.ok || !data.content) throw new Error('Card unavailable');
             statusMessage.hidden = true;
             applyContent(data.content);
+            if (data.reaction) {
+              bindReaction(reactionEndpoint, data.reaction.liked);
+            } else if (isLegacyLink) {
+              fetch(reactionEndpoint, { cache: 'no-store', referrerPolicy: 'no-referrer' })
+                .then(function (response) { return response.ok ? response.json() : null; })
+                .then(function (result) {
+                  if (result && result.reaction) bindReaction(reactionEndpoint, result.reaction.liked);
+                })
+                .catch(function () {});
+            }
           })
           .catch(function () {
             statusMessage.hidden = false;

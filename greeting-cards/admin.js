@@ -114,6 +114,17 @@
     return '公司署名 · DGHM 中文 Logo';
   }
 
+  var reactionTimeFormat = new Intl.DateTimeFormat('zh-TW', {
+    dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Taipei'
+  });
+
+  function reactionSummary(item) {
+    if (!item || item.reactionStatusAvailable === undefined) return '';
+    if (!item.reactionStatusAvailable) return '愛心狀態暫無法取得';
+    var receivedAt = Date.parse(item.likedAt);
+    return Number.isFinite(receivedAt) ? '已收到愛心 ' + reactionTimeFormat.format(receivedAt) : '尚未收到愛心';
+  }
+
   function renderSharePreview(item) {
     var available = Boolean(item && item.publicUrl && item.publicCode && state.previewSource === 'airtable');
     sharePreview.hidden = !available;
@@ -173,13 +184,17 @@
 
     recipientField.hidden = state.previewMode === 'public';
     recipientSelect.innerHTML = items.map(function (item) {
-      return '<option value="' + escapeHtml(item.id) + '">' + escapeHtml(item.label) + '</option>';
+      var reaction = reactionSummary(item);
+      var label = reaction ? item.label + ' · ' + reaction : item.label;
+      return '<option value="' + escapeHtml(item.id) + '">' + escapeHtml(label) + '</option>';
     }).join('');
     recipientSelect.value = state.selectedPreviewId || '';
 
     var item = activePreviewItem();
     previewContentLabel.textContent = item ? item.label : (MODE_LABELS[state.previewMode] || state.previewMode);
     previewSignature.textContent = signatureSummary(item);
+    var selectedReaction = reactionSummary(item);
+    if (selectedReaction) previewContentLabel.textContent += ' · ' + selectedReaction;
     renderGreetingLength(item);
     renderSharePreview(item);
   }

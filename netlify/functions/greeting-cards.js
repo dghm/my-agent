@@ -165,6 +165,23 @@ export function buildPreviewItems(cardRecords, recipientRecords, greetingRecords
   return items.sort((a, b) => `${a.mode}-${a.label}`.localeCompare(`${b.mode}-${b.label}`, 'zh-Hant'));
 }
 
+async function loadReactionTimes() {
+  const secret = process.env.GREETING_CARD_REACTIONS_SYNC_SECRET;
+  if (!secret) return null;
+  try {
+    const response = await fetch('https://cards.dghm.tw/api/public-greeting-card?reactions=1', {
+      headers: { Authorization: `Bearer ${secret}` },
+      redirect: 'error',
+      signal: AbortSignal.timeout(3500),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.ok && data.reactions ? data.reactions : null;
+  } catch {
+    return null;
+  }
+}
+
 export default async (req) => {
   if (req.method !== 'GET') return json(405, { ok: false, error: '不支援此請求方式' });
   if (!sessionFromRequest(req)) return json(401, { ok: false, error: '請先登入工作台', code: 'unauthenticated' });
@@ -179,9 +196,21 @@ export default async (req) => {
     return json(400, { ok: false, error: '查詢條件格式錯誤' });
   }
   try {
-    const { cards, recipients, greetings } = await loadGreetingCardData(token);
+    const [{ cards, recipients, greetings }, reactions] = await Promise.all([
+      loadGreetingCardData(token),
+      options.template === '2026-christmas' ? loadReactionTimes() : null,
+    ]);
     options.publicOrigin = process.env.GREETING_CARDS_PUBLIC_ORIGIN || 'https://my-agent.dghm.tw/greeting-cards/cards';
-    return json(200, { ok: true, source: 'airtable', template: options.template, items: buildPreviewItems(cards, recipients, greetings, options) });
+    return json(200, {
+      ok: true,
+      source: 'airtable',
+      template: options.template,
+      items: buildPreviewItems(cards, recipients, greetings, options).map((item) => {
+        if (item.mode === 'public' || !item.publicCode) return item;
+        const likedAt = reactions && Object.hasOwn(reactions, item.id) ? reactions[item.id] : null;
+        return { ...item, likedAt, reactionStatusAvailable: reactions !== null };
+      }),
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : '';
     if (error?.status === 401 || error?.status === 403 || message === 'INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND') {
