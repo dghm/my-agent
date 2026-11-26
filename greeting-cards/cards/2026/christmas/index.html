@@ -523,8 +523,8 @@
       bottom: 3%;
       display: grid;
       place-items: center;
-      width: 38px;
-      height: 38px;
+      width: 44px;
+      height: 44px;
       padding: 0;
       border: 0;
       background: transparent;
@@ -532,7 +532,13 @@
       cursor: pointer;
     }
     .card-reaction[hidden], .card-reaction svg[hidden] { display: none; }
-    .card-reaction svg { width: 18px; height: 18px; }
+    .card-reaction svg { width: 28px; height: 28px; }
+    .card-reaction .reaction-float {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      pointer-events: none;
+    }
     .reaction-label {
       position: absolute;
       width: 1px;
@@ -1081,12 +1087,15 @@
           label.textContent = '已送出愛心';
           if (animate && typeof heart.animate === 'function' &&
               !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            heart.animate([
-              { transform: 'translateY(2px) scale(.65)', offset: 0 },
-              { transform: 'translateY(-9px) scale(1.5)', offset: .42 },
-              { transform: 'translateY(1px) scale(.92)', offset: .76 },
-              { transform: 'translateY(0) scale(1)', offset: 1 }
-            ], { duration: 460, easing: 'ease-out' });
+            var floatingHeart = heart.cloneNode(true);
+            floatingHeart.classList.add('reaction-float');
+            button.appendChild(floatingHeart);
+            var float = floatingHeart.animate([
+              { transform: 'translateY(-28px) scale(.85)', opacity: 1, offset: 0 },
+              { transform: 'translateY(-56px) scale(1.2)', opacity: 1, offset: .4 },
+              { transform: 'translateY(-88px) scale(.95)', opacity: 0, offset: 1 }
+            ], { duration: 720, easing: 'ease-out', fill: 'forwards' });
+            float.finished.then(function () { floatingHeart.remove(); }, function () { floatingHeart.remove(); });
           }
         }
         button.hidden = false;
